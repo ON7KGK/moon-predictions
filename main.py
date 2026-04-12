@@ -1112,9 +1112,13 @@ class MoonPredictionsWindow(QMainWindow):
                 self.labelInfo.text().split(" |")[0] +
                 f" | {shown}/{total} affichés")
 
-        self.labelFooter.setText(
-            f"Calcul : {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"
-        )
+        if use_local:
+            self.labelFooter.setText(
+                f"Calcul : {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+                f" {self.labelTz.text()}")
+        else:
+            self.labelFooter.setText(
+                f"Calcul : {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
 
     # ════════════════════════════════════════════
     # Export
