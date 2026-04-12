@@ -378,9 +378,94 @@ def _short_phase_name(phase_deg: float, illum_pct: float) -> str:
     return "Wan.Cr."
 
 
+def _libration_at(observer, t_sky):
+    """Calcule la libration selenographique (lat, lon) au temps donne.
+
+    Utilise les constantes IAU 2009 pour l'orientation de la Lune.
+    Retourne (lib_lon_deg, lib_lat_deg).
+    """
+    obs_moon = observer.at(t_sky).observe(eph['moon']).apparent()
+    pos = obs_moon.position.au
+    pos_unit = pos / np.linalg.norm(pos)
+
+    T = (t_sky.tt - 2451545.0) / 36525.0
+    d = t_sky.tt - 2451545.0
+
+    # Pole Nord lunaire (IAU 2009)
+    ra_pole = math.radians(269.9949 + 0.0031 * T)
+    dec_pole = math.radians(66.5392 + 0.0130 * T)
+
+    # Rotation propre (meridien principal)
+    W = math.radians((38.3213 + 13.17635815 * d) % 360)
+
+    # Repere selenographique en ICRF
+    z_sel = np.array([
+        math.cos(dec_pole) * math.cos(ra_pole),
+        math.cos(dec_pole) * math.sin(ra_pole),
+        math.sin(dec_pole)
+    ])
+    n = np.array([-math.sin(ra_pole), math.cos(ra_pole), 0.0])
+    e = np.cross(z_sel, n)
+    e = e / np.linalg.norm(e)
+    x_sel = n * math.cos(W) + e * math.sin(W)
+    y_sel = np.cross(z_sel, x_sel)
+
+    # Projection du vecteur de visee
+    px = np.dot(pos_unit, x_sel)
+    py = np.dot(pos_unit, y_sel)
+    pz = np.dot(pos_unit, z_sel)
+
+    lib_lat = math.degrees(math.asin(np.clip(pz, -1, 1)))
+    lib_lon = math.degrees(math.atan2(py, px))
+    return lib_lon, lib_lat
+
+
+def compute_libration(lat: float, lon: float, alt_m: float,
+                      t_sky) -> dict:
+    """Calcule la libration lunaire et le Doppler spread EME.
+
+    Returns dict : lib_lon, lib_lat, lib_rate (deg/h),
+                   doppler_spread_hz (a 10.368 GHz)
+    """
+    location = wgs84.latlon(lat, lon, elevation_m=alt_m)
+    observer = eph['earth'] + location
+
+    lon0, lat0 = _libration_at(observer, t_sky)
+
+    # Taux de libration (derivee centree sur ±30 min)
+    dt = 0.5 / 24  # 30 min en jours juliens
+    t1 = ts.tt_jd(t_sky.tt - dt)
+    t2 = ts.tt_jd(t_sky.tt + dt)
+    lon1, lat1 = _libration_at(observer, t1)
+    lon2, lat2 = _libration_at(observer, t2)
+
+    # Gerer le wrap-around en longitude (±180)
+    dlon = lon2 - lon1
+    if dlon > 180: dlon -= 360
+    if dlon < -180: dlon += 360
+    dlon_dt = dlon / 1.0  # deg/h (1h = 2 × 30min)
+    dlat_dt = (lat2 - lat1) / 1.0
+
+    lib_rate = math.sqrt(dlon_dt**2 + dlat_dt**2)
+
+    # Doppler spread a 10.368 GHz
+    # v_tangentielle = lib_rate × R_lune × pi/180
+    R_MOON = 1737.4  # km
+    v_tan = lib_rate * R_MOON * math.pi / 180 * 1000 / 3600  # m/s
+    spread = 2 * v_tan * 10.368e9 / 3e8  # Hz
+
+    return {
+        "lib_lon": round(lon0, 2),
+        "lib_lat": round(lat0, 2),
+        "lib_rate": round(lib_rate, 4),
+        "doppler_spread_hz": round(spread, 0),
+    }
+
+
 def enrich_moon_pass(lat: float, lon: float, alt_m: float,
                      pass_data: dict) -> dict:
-    """Enrichit un dict passage avec distance, illum, phase, AZ, decl, moon-sun.
+    """Enrichit un dict passage avec distance, illum, phase, AZ, decl, moon-sun,
+    libration et Doppler spread.
 
     Utilise Skyfield + JPL DE440s (precision sub-km).
     """
@@ -423,5 +508,12 @@ def enrich_moon_pass(lat: float, lon: float, alt_m: float,
     alt_s_d, az_s_d, _ = app_sun.altaz()
     pass_data["moon_sun"] = _angular_sep_deg(
         az_m_d.degrees, alt_m_d.degrees, az_s_d.degrees, alt_s_d.degrees)
+
+    # Libration et Doppler spread au moment de l'EL max
+    lib = compute_libration(lat, lon, alt_m, t_max)
+    pass_data["lib_lat"] = lib["lib_lat"]
+    pass_data["lib_lon"] = lib["lib_lon"]
+    pass_data["lib_rate"] = lib["lib_rate"]
+    pass_data["doppler_spread"] = lib["doppler_spread_hz"]
 
     return pass_data

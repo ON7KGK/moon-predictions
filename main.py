@@ -156,6 +156,39 @@ TIP_QUALITY = (
     "spread ni de la libration."
 )
 
+TIP_LIBRATION = (
+    "TAUX DE LIBRATION LUNAIRE (deg/h)\n"
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+    "Vitesse de variation de la position apparente\n"
+    "du sous-point terrestre sur la surface lunaire.\n\n"
+    "IMPACT SUR L'EME (surtout > 1 GHz) :\n"
+    "  < 0.10 deg/h : EXCELLENT — signal propre et concentré\n"
+    "  0.10-0.25 deg/h : BON — faible étalement Doppler\n"
+    "  0.25-0.40 deg/h : MOYEN — Doppler spread notable\n"
+    "  > 0.40 deg/h : MAUVAIS — signal très étalé\n\n"
+    "À 10 GHz, un taux de libration élevé étale le signal\n"
+    "réfléchi par la Lune sur une bande de fréquence plus\n"
+    "large (Doppler spread), réduisant le pic de signal\n"
+    "et rendant la détection plus difficile.\n\n"
+    "À 144 MHz/432 MHz, l'effet est négligeable car la\n"
+    "surface lunaire est « lisse » à ces longueurs d'onde."
+)
+
+TIP_DOPPLER = (
+    "DOPPLER SPREAD EME (Hz)\n"
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+    "Étalement en fréquence du signal réfléchi par la Lune\n"
+    "dû au mouvement apparent de la surface (libration).\n\n"
+    "Calculé à la fréquence sélectionnée :\n"
+    "  Spread = 2 × v_tangentielle × f / c\n\n"
+    "Plus le spread est faible, plus le pic de signal\n"
+    "est concentré et facile à détecter.\n\n"
+    "Valeurs typiques à 10 GHz :\n"
+    "  < 50 Hz  : excellent\n"
+    "  50-150 Hz : bon\n"
+    "  > 150 Hz  : difficile"
+)
+
 TIP_PHASE_CHK = (
     "Afficher la phase lunaire (purement visuel,\n"
     "pas d'effet sur l'EME radio)"
@@ -248,13 +281,32 @@ def _eme_color(value, green_max, orange_max, invert=False):
     return QColor("#ff4444")
 
 
-def _quality_score(max_el, duration_min, ploss, moon_sun=180.0):
-    """Indice de qualité EME 0-10."""
+def _quality_score(max_el, duration_min, ploss, moon_sun=180.0,
+                   lib_rate=0.0, freq_hz=10368e6):
+    """Indice de qualité EME 0-10, adapté à la fréquence.
+
+    Pondération VHF/UHF (< 1 GHz) :
+      EL 30%, Durée 25%, Path loss 25%, Moon-Sun 20%
+
+    Pondération microwave (>= 1 GHz) :
+      Libration 30%, Path loss 25%, EL 20%, Moon-Sun 15%, Durée 10%
+    """
     el_score = min(max_el / 9.0, 10.0)
     dur_score = min(duration_min / 60.0, 10.0)
     pl_score = max(10.0 - ploss * 4.0, 0.0)
     ms_score = min(moon_sun / 18.0, 10.0)
-    return el_score * 0.30 + dur_score * 0.25 + pl_score * 0.25 + ms_score * 0.20
+
+    # Libration score : 0 deg/h = 10 (excellent), 0.5 deg/h = 0 (mauvais)
+    lib_score = max(10.0 - lib_rate * 20.0, 0.0)
+
+    if freq_hz >= 1e9:
+        # Microwave (1.2 GHz+) : libration est critique
+        return (lib_score * 0.30 + pl_score * 0.25 + el_score * 0.20
+                + ms_score * 0.15 + dur_score * 0.10)
+    else:
+        # VHF/UHF : libration a peu d'effet
+        return (el_score * 0.30 + dur_score * 0.25
+                + pl_score * 0.25 + ms_score * 0.20)
 
 
 def _quality_squares(score):
@@ -427,62 +479,83 @@ class MoonPredictionsWindow(QMainWindow):
         self.labelMoonNow.setStyleSheet("color: #88aaee;")
         stationLayout.addWidget(self.labelMoonNow)
 
+        _btn_discrete = (
+            "QPushButton { color: #888; border: 1px solid #444; "
+            "padding: 4px 10px; }"
+            "QPushButton:hover { color: #ccc; border-color: #666; }"
+        )
+        self.btnHelp = QPushButton("Aide")
+        self.btnHelp.setStyleSheet(_btn_discrete)
+        self.btnHelp.clicked.connect(self._showHelp)
+        stationLayout.addWidget(self.btnHelp)
+
+        self.btnAbout = QPushButton("About")
+        self.btnAbout.setStyleSheet(_btn_discrete)
+        self.btnAbout.clicked.connect(self._showAbout)
+        stationLayout.addWidget(self.btnAbout)
+
         layout.addWidget(stationGroup)
 
-        # ── Filtres ──
-        filterBar = QHBoxLayout()
-        filterBar.setSpacing(12)
+        # ── Filtres — Ligne 1 : sliders + fréquence ──
+        filterLine1 = QHBoxLayout()
+        filterLine1.setSpacing(12)
 
-        filterBar.addWidget(QLabel("EL min :"))
+        filterLine1.addWidget(QLabel("EL min :"))
         self.sliderMinEl = QSlider(Qt.Orientation.Horizontal)
         self.sliderMinEl.setRange(0, 45)
-        self.sliderMinEl.setMaximumWidth(150)
+        self.sliderMinEl.setMinimumWidth(100)
         self.sliderMinEl.valueChanged.connect(self._onFilterChanged)
-        filterBar.addWidget(self.sliderMinEl)
+        filterLine1.addWidget(self.sliderMinEl)
         self.labelMinEl = QLabel("0\u00b0")
         self.labelMinEl.setMinimumWidth(35)
-        filterBar.addWidget(self.labelMinEl)
+        filterLine1.addWidget(self.labelMinEl)
 
-        filterBar.addSpacing(15)
-        filterBar.addWidget(QLabel("Score min :"))
+        filterLine1.addSpacing(15)
+        filterLine1.addWidget(QLabel("Score min :"))
         self.sliderMinScore = QSlider(Qt.Orientation.Horizontal)
         self.sliderMinScore.setRange(0, 80)
-        self.sliderMinScore.setMaximumWidth(120)
+        self.sliderMinScore.setMinimumWidth(80)
         self.sliderMinScore.setToolTip(TIP_QUALITY_FILTER)
         self.sliderMinScore.valueChanged.connect(self._onFilterChanged)
-        filterBar.addWidget(self.sliderMinScore)
+        filterLine1.addWidget(self.sliderMinScore)
         self.labelMinScore = QLabel("0.0")
         self.labelMinScore.setMinimumWidth(30)
-        filterBar.addWidget(self.labelMinScore)
+        filterLine1.addWidget(self.labelMinScore)
 
-        filterBar.addSpacing(15)
-        filterBar.addWidget(QLabel("Fréquence :"))
+        filterLine1.addSpacing(15)
+        filterLine1.addWidget(QLabel("Fréquence :"))
         self.comboFreq = QComboBox()
         for label, hz in _EME_FREQS:
             self.comboFreq.addItem(label, hz)
-        self.comboFreq.setCurrentIndex(6)  # 10 GHz par défaut
+        self.comboFreq.setCurrentIndex(6)
         self.comboFreq.currentIndexChanged.connect(self._onFilterChanged)
-        filterBar.addWidget(self.comboFreq)
+        filterLine1.addWidget(self.comboFreq)
 
-        filterBar.addSpacing(15)
+        filterLine1.addStretch()
+        layout.addLayout(filterLine1)
+
+        # ── Filtres — Ligne 2 : checkboxes + police + lien + période ──
+        filterLine2 = QHBoxLayout()
+        filterLine2.setSpacing(12)
+
         self.chkPhase = QCheckBox("Phase")
         self.chkPhase.setChecked(True)
         self.chkPhase.setToolTip(TIP_PHASE_CHK)
         self.chkPhase.stateChanged.connect(self._onFilterChanged)
-        filterBar.addWidget(self.chkPhase)
+        filterLine2.addWidget(self.chkPhase)
 
-        filterBar.addSpacing(15)
+        filterLine2.addSpacing(10)
         self.chkLocalTime = QCheckBox("Heure locale")
         self.chkLocalTime.setToolTip(TIP_LOCAL_TIME)
         self.chkLocalTime.stateChanged.connect(self._onFilterChanged)
-        filterBar.addWidget(self.chkLocalTime)
+        filterLine2.addWidget(self.chkLocalTime)
         self.labelTz = QLabel("")
         self.labelTz.setStyleSheet("color: #888;")
-        filterBar.addWidget(self.labelTz)
+        filterLine2.addWidget(self.labelTz)
         self._updateTzLabel()
 
-        filterBar.addSpacing(15)
-        filterBar.addWidget(QLabel("Police :"))
+        filterLine2.addSpacing(15)
+        filterLine2.addWidget(QLabel("Police :"))
         self.spinFontSize = QSpinBox()
         self.spinFontSize.setRange(8, 18)
         self.spinFontSize.setValue(10)
@@ -490,9 +563,9 @@ class MoonPredictionsWindow(QMainWindow):
         self.spinFontSize.setToolTip(TIP_FONT_SIZE)
         self.spinFontSize.setMaximumWidth(80)
         self.spinFontSize.valueChanged.connect(self._onFontSizeChanged)
-        filterBar.addWidget(self.spinFontSize)
+        filterLine2.addWidget(self.spinFontSize)
 
-        filterBar.addStretch()
+        filterLine2.addStretch()
 
         # Lien EME Observer (SA5IKN)
         self.linkSked = QLabel(
@@ -504,32 +577,20 @@ class MoonPredictionsWindow(QMainWindow):
             "Outil en ligne de planification de QSO EME\n"
             "par SA5IKN — skeds, visibilité mutuelle, etc."
         )
-        filterBar.addWidget(self.linkSked)
+        filterLine2.addWidget(self.linkSked)
 
-        # Période
+        filterLine2.addSpacing(15)
         self.btn1_30 = QPushButton("1-30 j")
         self.btn1_30.setCheckable(True)
         self.btn1_30.setChecked(True)
         self.btn1_30.clicked.connect(lambda: self._onPeriodChanged(0))
-        filterBar.addWidget(self.btn1_30)
+        filterLine2.addWidget(self.btn1_30)
         self.btn31_60 = QPushButton("31-60 j")
         self.btn31_60.setCheckable(True)
         self.btn31_60.clicked.connect(lambda: self._onPeriodChanged(1))
-        filterBar.addWidget(self.btn31_60)
+        filterLine2.addWidget(self.btn31_60)
 
-        # Wrapper scrollable pour la barre de filtres (pas de coupure en fenêtre réduite)
-        filterWidget = QWidget()
-        filterWidget.setLayout(filterBar)
-        filterScroll = QScrollArea()
-        filterScroll.setWidget(filterWidget)
-        filterScroll.setWidgetResizable(True)
-        filterScroll.setMaximumHeight(45)
-        filterScroll.setHorizontalScrollBarPolicy(
-            Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        filterScroll.setVerticalScrollBarPolicy(
-            Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        filterScroll.setStyleSheet("QScrollArea { border: none; }")
-        layout.addWidget(filterScroll)
+        layout.addLayout(filterLine2)
 
         # ── Info ──
         self.labelInfo = QLabel("Entrez votre locator et cliquez sur Calculer.")
@@ -568,16 +629,6 @@ class MoonPredictionsWindow(QMainWindow):
         self.btnExportPdf.clicked.connect(self._exportPdf)
         footerBar.addWidget(self.btnExportPdf)
 
-        footerBar.addSpacing(15)
-        self.btnAbout = QPushButton("About")
-        self.btnAbout.setStyleSheet(
-            "QPushButton { color: #888; border: 1px solid #444; "
-            "padding: 4px 10px; }"
-            "QPushButton:hover { color: #ccc; border-color: #666; }"
-        )
-        self.btnAbout.clicked.connect(self._showAbout)
-        footerBar.addWidget(self.btnAbout)
-
         layout.addLayout(footerBar)
 
     # ════════════════════════════════════════════
@@ -595,6 +646,10 @@ class MoonPredictionsWindow(QMainWindow):
             self._settings.value("local_time", False, type=bool))
         self.chkPhase.setChecked(
             self._settings.value("show_phase", True, type=bool))
+        self.sliderMinEl.setValue(
+            self._settings.value("slider_min_el", 0, type=int))
+        self.sliderMinScore.setValue(
+            self._settings.value("slider_min_score", 0, type=int))
         self.spinFontSize.setValue(
             self._settings.value("font_size", 10, type=int))
         self.comboFreq.setCurrentIndex(
@@ -620,16 +675,18 @@ class MoonPredictionsWindow(QMainWindow):
             "local_time", self.chkLocalTime.isChecked())
         self._settings.setValue(
             "show_phase", self.chkPhase.isChecked())
+        self._settings.setValue("slider_min_el", self.sliderMinEl.value())
+        self._settings.setValue("slider_min_score", self.sliderMinScore.value())
         self._settings.setValue("font_size", self.spinFontSize.value())
         self._settings.setValue("freq_idx", self.comboFreq.currentIndex())
         self._settings.sync()
 
     def _onSaveClicked(self):
         self._saveSettings()
-        # Feedback visuel temporaire
-        original = self.btnSave.text()
-        self.btnSave.setText("\u2713  Sauvegarde\u0301")
-        QTimer.singleShot(1500, lambda: self.btnSave.setText(original))
+        # Feedback visuel temporaire (texte fixe pour le retour)
+        self.btnSave.setText("\u2713  Sauvegard\u00e9")
+        QTimer.singleShot(1500,
+            lambda: self.btnSave.setText("\U0001f4be  Sauvegarder"))
 
     def _applyFontSize(self):
         """Applique la taille de police à TOUT l'interface."""
@@ -648,7 +705,8 @@ class MoonPredictionsWindow(QMainWindow):
         for w in (self.editCallsign, self.editLocator, self.spinAltitude,
                   self.comboFreq, self.spinFontSize,
                   self.btnCompute, self.btnSave, self.btnExportTxt,
-                  self.btnExportPdf, self.btnAbout, self.btn1_30, self.btn31_60,
+                  self.btnExportPdf, self.btnHelp, self.btnAbout,
+                  self.btn1_30, self.btn31_60,
                   self.chkPhase, self.chkLocalTime,
                   self.labelMoonNow, self.labelInfo, self.labelLegend,
                   self.labelFooter, self.labelTz, self.labelMinEl,
@@ -759,9 +817,15 @@ class MoonPredictionsWindow(QMainWindow):
                 continue
             d["ploss"] = (40.0 * math.log10(d["dist_km"] / 356500.0)
                           if d["dist_km"] > 0 else 0)
+            # Doppler spread à la fréquence sélectionnée
+            freq = self.comboFreq.currentData() or 10368e6
+            base_spread = d.get("doppler_spread", 0)
+            d["doppler_spread_freq"] = round(
+                base_spread * freq / 10.368e9, 0) if base_spread else 0
             d["score"] = _quality_score(
                 d["max_el"], d["duration_min"], d["ploss"],
-                d.get("moon_sun", 180))
+                d.get("moon_sun", 180),
+                d.get("lib_rate", 0), freq)
             self._passes_raw.append(d)
 
         station = f"{callsign} " if callsign else ""
@@ -820,6 +884,8 @@ class MoonPredictionsWindow(QMainWindow):
             "Extra PL",
             f"Total PL ({freq_label})",
             "Moon-Sun",
+            "Libration",
+            f"Spread ({freq_label})",
             "Qualité",
         ]
         if show_phase:
@@ -840,11 +906,13 @@ class MoonPredictionsWindow(QMainWindow):
         _set_tip(10, TIP_EXTRA_PL)     # Extra PL
         _set_tip(11, TIP_TOTAL_PL)     # Total PL
         _set_tip(12, TIP_MOON_SUN)     # Moon-Sun
-        _set_tip(13, TIP_QUALITY)      # Qualité
+        _set_tip(13, TIP_LIBRATION)    # Libration
+        _set_tip(14, TIP_DOPPLER)      # Doppler spread
+        _set_tip(15, TIP_QUALITY)      # Qualité
 
         hdr = self.table.horizontalHeader()
         hdr.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        hdr.setSectionResizeMode(13, QHeaderView.ResizeMode.Stretch)
+        hdr.setSectionResizeMode(15, QHeaderView.ResizeMode.Stretch)
 
         for row, d in enumerate(filtered):
             rise_dt = d["rise_time"] + tz_offset
@@ -899,6 +967,22 @@ class MoonPredictionsWindow(QMainWindow):
             else: ms_color = QColor("#44ff44")
             self.table.setItem(row, col, _make_item(
                 f"{ms_angle:.0f}\u00b0", ms_color)); col += 1
+
+            # Libration rate
+            lib_r = d.get("lib_rate", 0)
+            if lib_r < 0.10: lib_col = QColor("#44ff44")
+            elif lib_r < 0.25: lib_col = QColor("#ffaa00")
+            else: lib_col = QColor("#ff4444")
+            self.table.setItem(row, col, _make_item(
+                f"{lib_r:.2f}\u00b0/h", lib_col)); col += 1
+
+            # Doppler spread (à la fréquence sélectionnée)
+            spr = d.get("doppler_spread", 0) * freq / 10.368e9
+            if spr < 50: spr_col = QColor("#44ff44")
+            elif spr < 150: spr_col = QColor("#ffaa00")
+            else: spr_col = QColor("#ff4444")
+            self.table.setItem(row, col, _make_item(
+                f"{spr:.0f} Hz", spr_col)); col += 1
 
             sq = _quality_squares(score)
             qc = _quality_color(score)
@@ -964,6 +1048,84 @@ class MoonPredictionsWindow(QMainWindow):
             ])
         return rows
 
+    def _showHelp(self):
+        """Fenêtre d'aide utilisateur."""
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Aide — Moon Predictions")
+        dlg.setMinimumSize(600, 520)
+        dlg.setStyleSheet(
+            "QDialog { background-color: #1a2530; color: #cccccc; }"
+            "QLabel { color: #cccccc; }"
+        )
+        icon_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "moon.ico")
+        if os.path.exists(icon_path):
+            dlg.setWindowIcon(QIcon(icon_path))
+
+        lay = QVBoxLayout(dlg)
+
+        help_text = QLabel(
+            "<h2 style='color: #FFD700;'>Comment utiliser Moon Predictions</h2>"
+
+            "<h3 style='color: #66aaff;'>1. Configuration de la station</h3>"
+            "<p>Renseignez votre <b>indicatif</b> (optionnel), votre <b>QRA locator</b> "
+            "(6 ou 8 caractères, ex: JO20CL) et votre <b>altitude</b> en mètres. "
+            "Cliquez <b>Sauvegarder</b> pour conserver ces informations.</p>"
+
+            "<h3 style='color: #66aaff;'>2. Calcul des passages</h3>"
+            "<p>Cliquez <b>Calculer</b> pour afficher les passages de la Lune "
+            "au-dessus de l'horizon sur <b>30 jours</b>. "
+            "Utilisez les boutons <b>1-30 j</b> / <b>31-60 j</b> pour naviguer.</p>"
+
+            "<h3 style='color: #66aaff;'>3. Filtres</h3>"
+            "<p>Ajustez les curseurs <b>EL min</b> et <b>Score min</b> pour "
+            "ne garder que les meilleurs passages. Les filtres s'appliquent "
+            "en temps réel sans recalcul.</p>"
+
+            "<h3 style='color: #66aaff;'>4. Comprendre la table</h3>"
+            "<ul>"
+            "<li><b>EL max</b> : élévation maximale de la Lune pendant le passage</li>"
+            "<li><b>Distance</b> : distance Terre-Lune (périgée ~356 500 km = meilleur signal)</li>"
+            "<li><b>Extra PL</b> : perte supplémentaire vs périgée (0 dB = optimal)</li>"
+            "<li><b>Moon-Sun</b> : angle Lune-Soleil (> 15° = pas de bruit solaire)</li>"
+            "<li><b>Libration</b> : taux de libration — <span style='color:#44ff44;'>vert</span> = "
+            "signal propre, <span style='color:#ff4444;'>rouge</span> = signal étalé. "
+            "<b>Critique à 10 GHz et au-dessus !</b></li>"
+            "<li><b>Spread</b> : étalement Doppler du signal réfléchi en Hz</li>"
+            "<li><b>Qualité</b> : score global 0-10 combinant tous les facteurs</li>"
+            "</ul>"
+
+            "<h3 style='color: #66aaff;'>5. Score de qualité</h3>"
+            "<p>Le score s'adapte à la <b>fréquence</b> sélectionnée :<br>"
+            "- En <b>VHF/UHF</b> (< 1 GHz) : élévation et durée dominent<br>"
+            "- En <b>micro-ondes</b> (≥ 1 GHz) : la <b>libration</b> devient le facteur "
+            "le plus important (30% du score)</p>"
+
+            "<h3 style='color: #66aaff;'>6. Code couleur</h3>"
+            "<p><span style='color:#44ff44;'>■</span> Excellent — "
+            "<span style='color:#ffaa00;'>■</span> Moyen — "
+            "<span style='color:#ff4444;'>■</span> Faible</p>"
+
+            "<h3 style='color: #66aaff;'>7. Export</h3>"
+            "<p>Exportez vos prévisions en <b>TXT</b> (texte brut) ou <b>PDF</b> "
+            "(tableau formaté en paysage) pour les partager ou les imprimer.</p>"
+
+            "<p style='color: #888; margin-top: 15px;'>"
+            "Survolez les en-têtes de colonnes avec la souris pour des "
+            "explications détaillées sur chaque paramètre.</p>"
+        )
+        help_text.setWordWrap(True)
+        help_text.setOpenExternalLinks(True)
+        lay.addWidget(help_text)
+
+        lay.addStretch()
+        btnClose = QPushButton("Fermer")
+        btnClose.clicked.connect(dlg.close)
+        btnClose.setStyleSheet("QPushButton { padding: 6px 20px; }")
+        lay.addWidget(btnClose, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        dlg.exec()
+
     def _showAbout(self):
         """Fenêtre À propos."""
         dlg = QDialog(self)
@@ -1006,10 +1168,7 @@ class MoonPredictionsWindow(QMainWindow):
             "<b>Icône :</b> Arkinasi — Flaticon</p>"
             "<hr style='border-color: #334;'>"
             "<p style='text-align: center;'>"
-            "<b>Licence :</b> MIT — Open Source<br>"
-            "<a href='https://github.com/ON7KGK/moon-predictions'"
-            " style='color: #6699ff;'>"
-            "github.com/ON7KGK/moon-predictions</a></p>"
+            "<b>Licence :</b> GNU GPL v3 — Open Source</p>"
         )
         info.setOpenExternalLinks(True)
         info.setWordWrap(True)
@@ -1172,6 +1331,15 @@ class MoonPredictionsWindow(QMainWindow):
 
 
 def main():
+    # Windows : identifier l'app pour que la barre des tâches
+    # utilise notre icône (pas celle de Python)
+    try:
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+            "ON7KGK.MoonPredictions.1.0")
+    except Exception:
+        pass
+
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
 
