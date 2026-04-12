@@ -574,6 +574,15 @@ class MoonPredictionsWindow(QMainWindow):
         self.spinFontSize.valueChanged.connect(self._onFontSizeChanged)
         filterLine2.addWidget(self.spinFontSize)
 
+        filterLine2.addSpacing(15)
+        self.btnExportTxt = QPushButton("Export TXT")
+        self.btnExportTxt.clicked.connect(self._exportTxt)
+        filterLine2.addWidget(self.btnExportTxt)
+
+        self.btnExportPdf = QPushButton("Export PDF")
+        self.btnExportPdf.clicked.connect(self._exportPdf)
+        filterLine2.addWidget(self.btnExportPdf)
+
         filterLine2.addStretch()
 
         # Lien EME Observer (SA5IKN)
@@ -595,27 +604,13 @@ class MoonPredictionsWindow(QMainWindow):
         self.labelInfo.setStyleSheet("color: #aaaacc;")
         layout.addWidget(self.labelInfo)
 
-        # ── Légende + Export ──
-        legendBar = QHBoxLayout()
+        # ── Légende ──
         self.labelLegend = QLabel(
             "<span style='color:#44ff44;'>\u25a0</span> Excellent  "
             "<span style='color:#ffaa00;'>\u25a0</span> Moyen  "
             "<span style='color:#ff4444;'>\u25a0</span> Faible"
         )
-        legendBar.addWidget(self.labelLegend)
-        legendBar.addStretch()
-
-        self.btnExportTxt = QPushButton("Export TXT")
-        self.btnExportTxt.setMaximumHeight(24)
-        self.btnExportTxt.clicked.connect(self._exportTxt)
-        legendBar.addWidget(self.btnExportTxt)
-
-        self.btnExportPdf = QPushButton("Export PDF")
-        self.btnExportPdf.setMaximumHeight(24)
-        self.btnExportPdf.clicked.connect(self._exportPdf)
-        legendBar.addWidget(self.btnExportPdf)
-
-        layout.addLayout(legendBar)
+        layout.addWidget(self.labelLegend)
 
         # ── Table ──
         self.table = QTableWidget()
