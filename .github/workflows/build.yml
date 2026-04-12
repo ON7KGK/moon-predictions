@@ -70,7 +70,6 @@ jobs:
             --include-package=skyfield `
             --include-package-data=skyfield `
             --windows-console-mode=disable `
-            --windows-icon-from-ico=moon.ico `
             --output-filename=MoonPredictions.exe `
             --output-dir=build `
             --jobs=2 `
