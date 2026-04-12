@@ -563,7 +563,7 @@ class MoonPredictionsWindow(QMainWindow):
         self.spinFontSize.setValue(10)
         self.spinFontSize.setSuffix(" pt")
         self.spinFontSize.setToolTip(TIP_FONT_SIZE)
-        self.spinFontSize.setMaximumWidth(80)
+        self.spinFontSize.setMinimumWidth(70)
         self.spinFontSize.valueChanged.connect(self._onFontSizeChanged)
         filterLine2.addWidget(self.spinFontSize)
 
@@ -703,9 +703,12 @@ class MoonPredictionsWindow(QMainWindow):
         # Hauteur des lignes ajustée à la taille de police
         self.table.verticalHeader().setDefaultSectionSize(int(size * 1.9) + 4)
 
-        # Re-layout : forcer le recalcul des colonnes et la mise à jour visuelle
-        self.table.resizeColumnsToContents()
-        self.updateGeometry()
+        # Re-layout : forcer le recalcul des colonnes
+        # ResizeToContents seul ne tient pas toujours compte des headers
+        for c in range(self.table.columnCount()):
+            hdr_width = self.table.horizontalHeader().sectionSizeHint(c)
+            content_width = self.table.sizeHintForColumn(c)
+            self.table.setColumnWidth(c, max(hdr_width, content_width) + 10)
 
     def _onFontSizeChanged(self):
         self._applyFontSize()
@@ -991,8 +994,9 @@ class MoonPredictionsWindow(QMainWindow):
         _set_tip(15, TIP_QUALITY)      # Qualité
 
         hdr = self.table.horizontalHeader()
-        hdr.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        hdr.setSectionResizeMode(15, QHeaderView.ResizeMode.Stretch)
+        # Interactive permet le resize manuel, on ajuste après remplissage
+        hdr.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        hdr.setStretchLastSection(True)
 
         # ── Ligne "MAINTENANT" (row 0, fond distinct) ──
         row_offset = 0
@@ -1099,6 +1103,12 @@ class MoonPredictionsWindow(QMainWindow):
         else:
             self.labelFooter.setText(
                 f"Calcul : {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
+
+        # Ajuster largeur des colonnes (header + contenu)
+        for c in range(self.table.columnCount() - 1):  # -1 car dernière = stretch
+            hdr_w = self.table.horizontalHeader().sectionSizeHint(c)
+            cnt_w = self.table.sizeHintForColumn(c)
+            self.table.setColumnWidth(c, max(hdr_w, cnt_w) + 8)
 
     # ════════════════════════════════════════════
     # Export
