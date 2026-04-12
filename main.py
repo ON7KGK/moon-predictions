@@ -381,12 +381,23 @@ class MoonPredictionsWindow(QMainWindow):
                 margin-top: 6px;
                 padding-top: 10px;
             }
-            QLineEdit, QSpinBox, QComboBox {
+            QLineEdit, QComboBox {
                 background-color: #2a3742;
                 border: 1px solid #445;
                 border-radius: 3px;
                 padding: 4px 6px;
                 color: #ffffff;
+            }
+            QSpinBox {
+                background-color: #2a3742;
+                border: 1px solid #445;
+                border-radius: 3px;
+                padding: 2px 24px 2px 6px;
+                color: #ffffff;
+                min-width: 40px;
+            }
+            QSpinBox::up-button, QSpinBox::down-button {
+                width: 20px;
             }
             QPushButton {
                 background-color: #2E3D47;
