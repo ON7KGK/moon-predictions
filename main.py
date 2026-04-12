@@ -70,149 +70,6 @@ _PL_ORANGE = 2.0
 # Tooltips (français)
 # ════════════════════════════════════════════
 
-TIP_DECL = (
-    "DÉCLINAISON LUNAIRE\n"
-    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-    "Angle de la Lune par rapport au plan équatorial céleste.\n\n"
-    "  Positive (+) = Lune au nord de l'équateur\n"
-    "  Négative (−) = Lune au sud de l'équateur\n\n"
-    "Influence la hauteur maximale de la Lune :\n"
-    "  Décl. élevée + latitude nord → EL max plus haute\n"
-    "  Varie de −28.6° à +28.6° sur un cycle de 18.6 ans."
-)
-
-TIP_DISTANCE = (
-    "DISTANCE TERRE-LUNE (km)\n"
-    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-    "Distance topocentrique au moment de l'élévation maximale.\n\n"
-    "  Périgée (min.) : ~356 500 km\n"
-    "  Apogée (max.)  : ~406 700 km\n"
-    "  Moyenne         : ~384 400 km\n\n"
-    "PRÉCISION DU MODÈLE\n"
-    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-    "Calculs Skyfield + JPL DE440s (éphémérides NASA,\n"
-    "précision sub-km). Distance topocentrique identique\n"
-    "au calcul de WSJT-X."
-)
-
-TIP_EXTRA_PL = (
-    "EXTRA PATH LOSS — Perte supplémentaire vs périgée\n"
-    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-    "Perte additionnelle par rapport au périgée (356 500 km) :\n\n"
-    "  Extra PL = 40 × log₁₀(d / 356 500)\n\n"
-    "  +0.0 dB = périgée (conditions optimales)\n"
-    "  +5.8 dB = apogée (conditions défavorables)\n\n"
-    "Le facteur 40 (et non 20) vient du trajet aller-retour\n"
-    "et de la dépendance en d⁴ dans l'équation radar."
-)
-
-TIP_TOTAL_PL = (
-    "TOTAL PATH LOSS — Atténuation EME complète\n"
-    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-    "Total = Path loss au périgée + Extra Path Loss\n\n"
-    "  Path loss au périgée (selon fréquence choisie)\n"
-    "  + Extra Path Loss (fonction de la distance)\n"
-    "  = Atténuation totale aller-retour Terre-Lune-Terre\n\n"
-    "Changez la fréquence dans la liste déroulante\n"
-    "au-dessus de la table pour recalculer."
-)
-
-TIP_MOON_SUN = (
-    "ANGLE LUNE-SOLEIL\n"
-    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-    "Séparation angulaire entre la Lune et le Soleil.\n\n"
-    "  180° = opposition (pleine lune, pas de bruit solaire)\n"
-    "  0°   = conjonction (nouvelle lune, bruit solaire max)\n\n"
-    "IMPACT SUR L'EME :\n"
-    "  > 15° : aucune dégradation\n"
-    "  5-15° : dégradation possible du rapport S/N\n"
-    "  < 5°  : bruit solaire important, EME très difficile\n\n"
-    "Le Soleil est la source de bruit radio la plus forte\n"
-    "du ciel. Quand il est proche de la Lune, le bruit\n"
-    "de fond augmente et dégrade la réception EME."
-)
-
-TIP_QUALITY = (
-    "INDICE DE QUALITÉ EME (0 à 10)\n"
-    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-    "Score composite qui combine quatre facteurs :\n\n"
-    "  Élévation maximale  (30% du score)\n"
-    "    90° = 10 pts — Lune au zénith, trajet minimal\n"
-    "    0°  =  0 pts — Lune à l'horizon\n\n"
-    "  Durée du passage    (25% du score)\n"
-    "    10h+ = 10 pts — Long passage, plus de temps EME\n"
-    "    0h  =  0 pts\n\n"
-    "  Extra Path Loss     (25% du score)\n"
-    "    0.0 dB = 10 pts — Périgée, signal maximum\n"
-    "    2.5 dB =  0 pts — Apogée, signal affaibli\n\n"
-    "  Angle Moon-Sun      (20% du score)\n"
-    "    180° = 10 pts — Lune opposée au Soleil\n"
-    "    0°   =  0 pts — Bruit solaire maximum\n\n"
-    "ÉCHELLE :\n"
-    "  ■■■■■■■■■■ 10  Excellent (vert)\n"
-    "  ■■■■■■■□□□  7  Bon\n"
-    "  ■■■■□□□□□□  4  Moyen (orange)\n"
-    "  ■■□□□□□□□□  2  Médiocre (rouge)\n\n"
-    "Le score s'adapte à la fréquence :\n"
-    "  < 1 GHz : libration ignorée (peu d'effet en VHF/UHF)\n"
-    "  ≥ 1 GHz : libration = 30% du score (facteur dominant)"
-)
-
-TIP_LIBRATION = (
-    "TAUX DE LIBRATION LUNAIRE (deg/h)\n"
-    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-    "Vitesse de variation de la position apparente\n"
-    "du sous-point terrestre sur la surface lunaire.\n\n"
-    "IMPACT SUR L'EME (surtout > 1 GHz) :\n"
-    "  < 0.10 deg/h : EXCELLENT — signal propre et concentré\n"
-    "  0.10-0.25 deg/h : BON — faible étalement Doppler\n"
-    "  0.25-0.40 deg/h : MOYEN — Doppler spread notable\n"
-    "  > 0.40 deg/h : MAUVAIS — signal très étalé\n\n"
-    "À 10 GHz, un taux de libration élevé étale le signal\n"
-    "réfléchi par la Lune sur une bande de fréquence plus\n"
-    "large (Doppler spread), réduisant le pic de signal\n"
-    "et rendant la détection plus difficile.\n\n"
-    "À 144 MHz/432 MHz, l'effet est négligeable car la\n"
-    "surface lunaire est « lisse » à ces longueurs d'onde."
-)
-
-TIP_DOPPLER = (
-    "DOPPLER SPREAD EME (Hz)\n"
-    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-    "Étalement en fréquence du signal réfléchi par la Lune\n"
-    "dû au mouvement apparent de la surface (libration).\n\n"
-    "Calculé à la fréquence sélectionnée :\n"
-    "  Spread = 2 × v_tangentielle × f / c\n\n"
-    "Plus le spread est faible, plus le pic de signal\n"
-    "est concentré et facile à détecter.\n\n"
-    "Valeurs typiques à 10 GHz :\n"
-    "  < 50 Hz  : excellent\n"
-    "  50-150 Hz : bon\n"
-    "  > 150 Hz  : difficile"
-)
-
-TIP_PHASE_CHK = (
-    "Afficher la phase lunaire (purement visuel,\n"
-    "pas d'effet sur l'EME radio)"
-)
-
-TIP_LOCAL_TIME = "Afficher en heure locale au lieu d'UTC"
-
-TIP_QUALITY_FILTER = (
-    "Filtrer les passages par indice de qualité EME\n"
-    "minimum (0 à 8)"
-)
-
-TIP_FONT_SIZE = (
-    "Taille de la police de la table et du texte.\n"
-    "Sauvegardée automatiquement."
-)
-
-TIP_SAVE = (
-    "Sauvegarder l'indicatif, le locator, l'altitude\n"
-    "et les préférences. La sauvegarde est également\n"
-    "automatique lors du calcul et à la fermeture."
-)
 
 
 # ════════════════════════════════════════════
@@ -470,7 +327,7 @@ class MoonPredictionsWindow(QMainWindow):
         stationLayout.addWidget(self.btnCompute)
 
         self.btnSave = QPushButton(tr("btn_save"))
-        self.btnSave.setToolTip(TIP_SAVE)
+        self.btnSave.setToolTip(tr("tip_save"))
         self.btnSave.clicked.connect(self._onSaveClicked)
         stationLayout.addWidget(self.btnSave)
 
@@ -514,7 +371,7 @@ class MoonPredictionsWindow(QMainWindow):
         self.sliderMinScore = QSlider(Qt.Orientation.Horizontal)
         self.sliderMinScore.setRange(0, 80)
         self.sliderMinScore.setMinimumWidth(80)
-        self.sliderMinScore.setToolTip(TIP_QUALITY_FILTER)
+        self.sliderMinScore.setToolTip(tr("tip_quality_filter"))
         self.sliderMinScore.valueChanged.connect(self._onFilterChanged)
         filterLine1.addWidget(self.sliderMinScore)
         self.labelMinScore = QLabel("0.0")
@@ -550,13 +407,13 @@ class MoonPredictionsWindow(QMainWindow):
 
         self.chkPhase = QCheckBox(tr("lbl_phase"))
         self.chkPhase.setChecked(True)
-        self.chkPhase.setToolTip(TIP_PHASE_CHK)
+        self.chkPhase.setToolTip(tr("tip_phase_chk"))
         self.chkPhase.stateChanged.connect(self._onFilterChanged)
         filterLine2.addWidget(self.chkPhase)
 
         filterLine2.addSpacing(10)
         self.chkLocalTime = QCheckBox(tr("lbl_local_time"))
-        self.chkLocalTime.setToolTip(TIP_LOCAL_TIME)
+        self.chkLocalTime.setToolTip(tr("tip_local_time"))
         self.chkLocalTime.stateChanged.connect(self._onFilterChanged)
         filterLine2.addWidget(self.chkLocalTime)
         self.labelTz = QLabel("")
@@ -570,7 +427,7 @@ class MoonPredictionsWindow(QMainWindow):
         self.spinFontSize.setRange(8, 18)
         self.spinFontSize.setValue(10)
         self.spinFontSize.setSuffix(" pt")
-        self.spinFontSize.setToolTip(TIP_FONT_SIZE)
+        self.spinFontSize.setToolTip(tr("tip_font_size"))
         self.spinFontSize.valueChanged.connect(self._onFontSizeChanged)
         filterLine2.addWidget(self.spinFontSize)
 
@@ -1019,33 +876,22 @@ class MoonPredictionsWindow(QMainWindow):
             if item:
                 item.setToolTip(tip)
 
-        _set_tip(0, "Date du passage (jour de la semaine + date)")
-        _set_tip(1, "Heure de lever de la Lune au-dessus de l'horizon")
-        _set_tip(2, "Heure de coucher de la Lune sous l'horizon")
-        _set_tip(3, "Durée totale du passage au-dessus de l'horizon\n"
-                    "Vert ≥ 5h, orange ≥ 2h, rouge < 2h")
-        _set_tip(4, "ÉLÉVATION MAXIMALE\n"
-                    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-                    "Hauteur maximale de la Lune dans le ciel\n"
-                    "pendant ce passage.\n\n"
-                    "  Vert  ≥ 20° : trajet atmosphérique court,\n"
-                    "                 peu de perte\n"
-                    "  Orange ≥ 10° : acceptable\n"
-                    "  Rouge  < 10° : beaucoup de perte atmosphérique,\n"
-                    "                  bruit de sol élevé\n\n"
-                    "À 10 GHz, l'absorption atmosphérique augmente\n"
-                    "rapidement sous 10° d'élévation.")
-        _set_tip(5, "Heure à laquelle la Lune atteint son élévation maximale")
-        _set_tip(6, "Azimut de la Lune à son lever (0°=Nord, 90°=Est)")
-        _set_tip(7, "Azimut de la Lune à son coucher")
-        _set_tip(8, TIP_DECL)          # Décl.
-        _set_tip(9, TIP_DISTANCE)      # Distance
-        _set_tip(10, TIP_EXTRA_PL)     # Extra PL
-        _set_tip(11, TIP_TOTAL_PL)     # Total PL
-        _set_tip(12, TIP_MOON_SUN)     # Moon-Sun
-        _set_tip(13, TIP_LIBRATION)    # Libration
-        _set_tip(14, TIP_DOPPLER)      # Doppler spread
-        _set_tip(15, TIP_QUALITY)      # Qualité
+        _set_tip(0, tr("tip_date"))
+        _set_tip(1, tr("tip_rise"))
+        _set_tip(2, tr("tip_set"))
+        _set_tip(3, tr("tip_duration"))
+        _set_tip(4, tr("tip_el_max"))
+        _set_tip(5, tr("tip_el_max_time"))
+        _set_tip(6, tr("tip_az_rise"))
+        _set_tip(7, tr("tip_az_set"))
+        _set_tip(8, tr("tip_decl"))
+        _set_tip(9, tr("tip_distance"))
+        _set_tip(10, tr("tip_extra_pl"))
+        _set_tip(11, tr("tip_total_pl"))
+        _set_tip(12, tr("tip_moon_sun"))
+        _set_tip(13, tr("tip_libration"))
+        _set_tip(14, tr("tip_doppler"))
+        _set_tip(15, tr("tip_quality"))
 
         hdr = self.table.horizontalHeader()
         # Interactive permet le resize manuel, on ajuste après remplissage
