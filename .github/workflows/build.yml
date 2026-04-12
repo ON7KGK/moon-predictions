@@ -87,7 +87,7 @@ jobs:
       # /DPRODUCT_VERSION override la valeur "1.0.0" dans installer.nsi
       - name: Build NSIS installer
         run: |
-          makensis /DPRODUCT_VERSION=${{ env.VERSION }} installer.nsi
+          & "${env:ProgramFiles(x86)}\NSIS\makensis.exe" /DPRODUCT_VERSION=${{ env.VERSION }} installer.nsi
 
       # ── Vérification ──────────────────────────────────────────
       - name: Verify installer exists
