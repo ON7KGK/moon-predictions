@@ -1,0 +1,20 @@
+# Build Nuitka
+build/
+*.dist/
+*.build/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Ephémérides (téléchargées automatiquement)
+data/de440s.bsp
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
