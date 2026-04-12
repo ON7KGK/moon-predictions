@@ -378,15 +378,8 @@ class MoonPredictionsWindow(QMainWindow):
                 background-color: #1e2a36;
                 border: 1px solid #334;
                 border-radius: 6px;
-                margin-top: 10px;
-                padding-top: 14px;
-                font-weight: bold;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 6px;
-                color: #aaaacc;
+                margin-top: 6px;
+                padding-top: 10px;
             }
             QLineEdit, QSpinBox, QComboBox {
                 background-color: #2a3742;
@@ -435,7 +428,7 @@ class MoonPredictionsWindow(QMainWindow):
         layout.setSpacing(8)
 
         # ── Bandeau station ──
-        stationGroup = QGroupBox("Station")
+        stationGroup = QGroupBox()
         stationLayout = QHBoxLayout(stationGroup)
 
         stationLayout.addWidget(QLabel("Indicatif :"))
@@ -691,26 +684,11 @@ class MoonPredictionsWindow(QMainWindow):
         """Applique la taille de police à TOUT l'interface."""
         size = self.spinFontSize.value()
 
-        # Police de base (UI générale) — Qt default family
+        # Police de base — appliquée à l'application entière
+        # pour que TOUS les widgets (y compris les labels anonymes) suivent
         ui_font = QFont()
         ui_font.setPointSize(size)
-        # Appliquer au widget central → cascade à tous les enfants
-        central = self.centralWidget()
-        if central:
-            central.setFont(ui_font)
-
-        # Forcer la police sur chaque sous-widget (certains ne cascadent pas
-        # bien si le stylesheet a overridé — par sécurité)
-        for w in (self.editCallsign, self.editLocator, self.spinAltitude,
-                  self.comboFreq, self.spinFontSize,
-                  self.btnCompute, self.btnSave, self.btnExportTxt,
-                  self.btnExportPdf, self.btnHelp, self.btnAbout,
-                  self.btn1_30, self.btn31_60,
-                  self.chkPhase, self.chkLocalTime,
-                  self.labelInfo, self.labelLegend,
-                  self.labelFooter, self.labelTz, self.labelMinEl,
-                  self.labelMinScore, self.linkSked):
-            w.setFont(ui_font)
+        QApplication.instance().setFont(ui_font)
 
         # Table et header : police monospace cross-platform
         # Windows=Consolas, Mac=Menlo, Linux=DejaVu Sans Mono
