@@ -599,18 +599,19 @@ class MoonPredictionsWindow(QMainWindow):
 
         layout.addLayout(filterLine2)
 
-        # ── Info ──
+        # ── Info + Légende (même ligne) ──
+        infoBar = QHBoxLayout()
         self.labelInfo = QLabel("Entrez votre locator et cliquez sur Calculer.")
         self.labelInfo.setStyleSheet("color: #aaaacc;")
-        layout.addWidget(self.labelInfo)
-
-        # ── Légende ──
+        infoBar.addWidget(self.labelInfo)
+        infoBar.addStretch()
         self.labelLegend = QLabel(
             "<span style='color:#44ff44;'>\u25a0</span> Excellent  "
             "<span style='color:#ffaa00;'>\u25a0</span> Moyen  "
             "<span style='color:#ff4444;'>\u25a0</span> Faible"
         )
-        layout.addWidget(self.labelLegend)
+        infoBar.addWidget(self.labelLegend)
+        layout.addLayout(infoBar)
 
         # ── Table ──
         self.table = QTableWidget()
