@@ -64,8 +64,11 @@ Section "Moon Predictions (requis)" SecMain
   SetOutPath "$INSTDIR"
   SetOverwrite ifnewer
 
-  ; Copier tout le contenu du dossier Nuitka --onedir
+  ; Copier tout le contenu du dossier Nuitka standalone
   File /r "build\main.dist\*.*"
+
+  ; Icône (pour la barre des tâches et la fenêtre)
+  File "moon.ico"
 
   ; Créer le désinstalleur
   WriteUninstaller "$INSTDIR\uninstall.exe"

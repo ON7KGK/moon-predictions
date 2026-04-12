@@ -61,7 +61,18 @@ jobs:
           restore-keys: |
             nuitka-win-py312-
 
-      # ── Build Nuitka --onedir ──────────────────────────────────
+      # ── Patch APP_VERSION dans main.py depuis le tag ──────────
+      - name: Patch version
+        shell: bash
+        run: |
+          VERSION="${{ env.VERSION }}"
+          DATE=$(date -u +%Y-%m-%d)
+          sed -i "s/^APP_VERSION = .*/APP_VERSION = \"$VERSION\"/" main.py
+          sed -i "s/^APP_DATE = .*/APP_DATE = \"$DATE\"/" main.py
+          echo "Patched APP_VERSION=$VERSION APP_DATE=$DATE"
+          grep "^APP_VERSION\|^APP_DATE" main.py
+
+      # ── Build Nuitka standalone ────────────────────────────────
       - name: Build with Nuitka
         run: |
           python -m nuitka `
