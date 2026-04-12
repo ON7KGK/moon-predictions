@@ -9,7 +9,9 @@
 ; ════════════════════════════════════════════════════════════════
 
 !define PRODUCT_NAME        "Moon Predictions"
-!define PRODUCT_VERSION     "1.0.0"
+!ifndef PRODUCT_VERSION
+  !define PRODUCT_VERSION   "1.0.0"
+!endif
 !define PRODUCT_PUBLISHER   "ON7KGK"
 !define PRODUCT_WEB_SITE    "https://github.com/ON7KGK"
 !define PRODUCT_EXE         "MoonPredictions.exe"
