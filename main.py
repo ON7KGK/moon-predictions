@@ -992,6 +992,25 @@ class MoonPredictionsWindow(QMainWindow):
             if item:
                 item.setToolTip(tip)
 
+        _set_tip(0, "Date du passage (jour de la semaine + date)")
+        _set_tip(1, "Heure de lever de la Lune au-dessus de l'horizon")
+        _set_tip(2, "Heure de coucher de la Lune sous l'horizon")
+        _set_tip(3, "Durée totale du passage au-dessus de l'horizon\n"
+                    "Vert ≥ 5h, orange ≥ 2h, rouge < 2h")
+        _set_tip(4, "ÉLÉVATION MAXIMALE\n"
+                    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                    "Hauteur maximale de la Lune dans le ciel\n"
+                    "pendant ce passage.\n\n"
+                    "  Vert  ≥ 20° : trajet atmosphérique court,\n"
+                    "                 peu de perte\n"
+                    "  Orange ≥ 10° : acceptable\n"
+                    "  Rouge  < 10° : beaucoup de perte atmosphérique,\n"
+                    "                  bruit de sol élevé\n\n"
+                    "À 10 GHz, l'absorption atmosphérique augmente\n"
+                    "rapidement sous 10° d'élévation.")
+        _set_tip(5, "Heure à laquelle la Lune atteint son élévation maximale")
+        _set_tip(6, "Azimut de la Lune à son lever (0°=Nord, 90°=Est)")
+        _set_tip(7, "Azimut de la Lune à son coucher")
         _set_tip(8, TIP_DECL)          # Décl.
         _set_tip(9, TIP_DISTANCE)      # Distance
         _set_tip(10, TIP_EXTRA_PL)     # Extra PL
