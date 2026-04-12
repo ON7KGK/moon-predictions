@@ -65,13 +65,16 @@ jobs:
       - name: Build with Nuitka
         run: |
           python -m nuitka `
-            --onedir `
+            --standalone `
+            --enable-plugin=pyqt6 `
+            --include-package=skyfield `
+            --include-package-data=skyfield `
+            --include-data-dir=data=data `
             --windows-console-mode=disable `
             --windows-icon-from-ico=moon.ico `
             --output-filename=MoonPredictions.exe `
             --output-dir=build `
             --jobs=2 `
-            --nuitka-cache-dir="${{ github.workspace }}/.nuitka-cache" `
             --nofollow-import-to=tkinter `
             --assume-yes-for-downloads `
             main.py
