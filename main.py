@@ -892,48 +892,65 @@ class MoonPredictionsWindow(QMainWindow):
         score = _quality_score(max(el, 0), abs(dur_min) if rise and sett else 0,
                                ploss, ms_angle, lib_rate, freq)
 
-        # Couleurs
-        hi = QColor("#55ccff")
-        dist_col = _eme_color(dist, _DIST_GREEN, _DIST_ORANGE, invert=True)
-        pl_col = _eme_color(ploss, _PL_GREEN, _PL_ORANGE, invert=True)
-        el_col = _eme_color(el, _EL_GREEN, _EL_ORANGE) if el > 0 else QColor("#ff4444")
+        # Lune visible ou sous horizon ?
+        visible = el > 0
 
-        if lib_rate < 0.10: lib_col = QColor("#44ff44")
-        elif lib_rate < 0.25: lib_col = QColor("#ffaa00")
-        else: lib_col = QColor("#ff4444")
-
-        if spread < 50: spr_col = QColor("#44ff44")
-        elif spread < 150: spr_col = QColor("#ffaa00")
-        else: spr_col = QColor("#ff4444")
-
-        if ms_angle < 5: ms_col = QColor("#ff4444")
-        elif ms_angle < 15: ms_col = QColor("#ffaa00")
-        else: ms_col = QColor("#44ff44")
-
-        sq = _quality_squares(score)
-        qc = _quality_color(score)
+        if visible:
+            # Lune visible — couleurs normales, fond bleu foncé
+            hi = QColor("#55ccff")
+            now_bg = QColor("#1a2a3a")
+            dist_col = _eme_color(dist, _DIST_GREEN, _DIST_ORANGE, invert=True)
+            pl_col = _eme_color(ploss, _PL_GREEN, _PL_ORANGE, invert=True)
+            el_col = _eme_color(el, _EL_GREEN, _EL_ORANGE)
+            if lib_rate < 0.10: lib_col = QColor("#44ff44")
+            elif lib_rate < 0.25: lib_col = QColor("#ffaa00")
+            else: lib_col = QColor("#ff4444")
+            if spread < 50: spr_col = QColor("#44ff44")
+            elif spread < 150: spr_col = QColor("#ffaa00")
+            else: spr_col = QColor("#ff4444")
+            if ms_angle < 5: ms_col = QColor("#ff4444")
+            elif ms_angle < 15: ms_col = QColor("#ffaa00")
+            else: ms_col = QColor("#44ff44")
+            sq = _quality_squares(score)
+            qc = _quality_color(score)
+            el_txt = f"{el:+.1f}\u00b0 VISIBLE"
+        else:
+            # Lune sous horizon — tout grisé
+            hi = QColor("#666666")
+            now_bg = QColor("#1a1a1a")
+            dist_col = hi
+            pl_col = hi
+            el_col = QColor("#ff4444")
+            lib_col = hi
+            spr_col = hi
+            ms_col = hi
+            sq = ""
+            qc = hi
+            el_txt = f"{el:+.1f}\u00b0 sous horizon"
 
         cells = [
-            ("\u25cf MAINTENANT", hi),
+            ("\u25cf MAINTENANT" if visible else "\u25cb MAINTENANT", hi),
             (rise_txt, hi),
             (set_txt, hi),
-            (dur_txt, dur_col),
-            (f"{el:+.1f}\u00b0", el_col),
+            (dur_txt, hi if not visible else dur_col),
+            (el_txt, el_col),
             (datetime.now(timezone.utc).strftime("%H:%M UTC"), hi),
             (f"{az:.0f}\u00b0", hi),
-            ("---", None),
-            (f"{decl:+.1f}\u00b0", None),
+            ("---", hi),
+            (f"{decl:+.1f}\u00b0", hi),
             (f"{dist:.0f} km", dist_col),
             (f"+{ploss:.1f} dB", pl_col),
             (f"{total_pl:.1f} dB", pl_col),
             (f"{ms_angle:.0f}\u00b0", ms_col),
             (f"{lib_rate:.2f}\u00b0/h", lib_col),
             (f"{spread:.0f} Hz", spr_col),
-            (f"{sq} {score:.1f}", qc),
+            (f"{sq} {score:.1f}" if visible else "---", qc),
         ]
         if show_phase:
             cells.append((f"{phase} ({illum:.0f}%)", hi))
 
+        # Stocker le fond pour _refreshTable
+        self._nowRowBg = now_bg
         return cells
 
     def _refreshTable(self):
@@ -1028,11 +1045,10 @@ class MoonPredictionsWindow(QMainWindow):
         # ── Ligne "MAINTENANT" (row 0, fond distinct) ──
         row_offset = 0
         if now_row:
-            now_bg = QColor("#1a2a3a")
-            now_txt = QColor("#55ccff")
+            bg = getattr(self, '_nowRowBg', QColor("#1a2a3a"))
             for c, (text, color) in enumerate(now_row):
-                item = _make_item(text, color or now_txt)
-                item.setBackground(now_bg)
+                item = _make_item(text, color or QColor("#666666"))
+                item.setBackground(bg)
                 self.table.setItem(0, c, item)
             row_offset = 1
 
