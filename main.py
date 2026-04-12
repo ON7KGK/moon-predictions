@@ -612,6 +612,7 @@ class MoonPredictionsWindow(QMainWindow):
         self.table.setEditTriggers(
             QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setAlternatingRowColors(False)
+        self.table.verticalHeader().setVisible(False)  # pas de numéros de lignes
         layout.addWidget(self.table)
 
         # ── Footer ──
@@ -855,6 +856,66 @@ class MoonPredictionsWindow(QMainWindow):
     # Affichage table
     # ════════════════════════════════════════════
 
+    def _buildNowRow(self, freq, pl_perigee, show_phase):
+        """Construit la ligne 'MAINTENANT' avec la position actuelle de la Lune.
+
+        Returns list de tuples (text, QColor|None) pour chaque colonne.
+        """
+        from moon_calc import compute_moon, compute_libration, ts
+
+        moon = compute_moon(self._lat, self._lon, self._alt_m)
+        lib = compute_libration(self._lat, self._lon, self._alt_m, ts.now())
+
+        az = moon["az"]
+        el = moon["el"]
+        dist = moon["dist_km"]
+        illum = moon["illumination"]
+        phase = moon["phase_name"]
+        ploss = 40.0 * math.log10(dist / 356500.0) if dist > 0 else 0
+        total_pl = pl_perigee + ploss
+        lib_rate = lib["lib_rate"]
+        spread = lib["doppler_spread_hz"] * freq / 10.368e9
+
+        # Couleurs
+        hi = QColor("#55ccff")  # bleu clair pour la ligne "maintenant"
+
+        dist_col = _eme_color(dist, _DIST_GREEN, _DIST_ORANGE, invert=True)
+        pl_col = _eme_color(ploss, _PL_GREEN, _PL_ORANGE, invert=True)
+
+        if lib_rate < 0.10: lib_col = QColor("#44ff44")
+        elif lib_rate < 0.25: lib_col = QColor("#ffaa00")
+        else: lib_col = QColor("#ff4444")
+
+        if spread < 50: spr_col = QColor("#44ff44")
+        elif spread < 150: spr_col = QColor("#ffaa00")
+        else: spr_col = QColor("#ff4444")
+
+        visible = "VISIBLE" if el > 0 else "sous horizon"
+        el_col = QColor("#44ff44") if el > 0 else QColor("#ff4444")
+
+        cells = [
+            ("\u25cf MAINTENANT", hi),           # Date
+            ("---", None),                        # Lever
+            ("---", None),                        # Coucher
+            ("---", None),                        # Durée
+            (f"{el:+.1f}\u00b0 ({visible})", el_col),  # EL (= position actuelle)
+            (datetime.now(timezone.utc).strftime("%H:%M UTC"), None),  # Heure
+            (f"{az:.0f}\u00b0", None),            # AZ (= position actuelle)
+            ("---", None),                        # AZ coucher
+            ("---", None),                        # Décl.
+            (f"{dist:.0f} km", dist_col),         # Distance
+            (f"+{ploss:.1f} dB", pl_col),         # Extra PL
+            (f"{total_pl:.1f} dB", pl_col),       # Total PL
+            ("---", None),                        # Moon-Sun
+            (f"{lib_rate:.2f}\u00b0/h", lib_col), # Libration
+            (f"{spread:.0f} Hz", spr_col),        # Spread
+            (f"\u263d {illum:.0f}%", hi),          # Qualité (on met l'illumination ici)
+        ]
+        if show_phase:
+            cells.append((phase, hi))
+
+        return cells
+
     def _refreshTable(self):
         min_el = self.sliderMinEl.value()
         min_score = self.sliderMinScore.value() / 10.0
@@ -893,7 +954,17 @@ class MoonPredictionsWindow(QMainWindow):
 
         self.table.setColumnCount(len(cols))
         self.table.setHorizontalHeaderLabels(cols)
-        self.table.setRowCount(len(filtered))
+
+        # Ligne "MAINTENANT" en row 0 si les données existent
+        now_row = None
+        if self._lat != 0 or self._lon != 0:
+            try:
+                now_row = self._buildNowRow(freq, pl_perigee, show_phase)
+            except Exception:
+                now_row = None
+
+        total_rows = (1 if now_row else 0) + len(filtered)
+        self.table.setRowCount(total_rows)
 
         # Tooltips sur les headers (comme dans l'app principale)
         def _set_tip(col_idx, tip):
@@ -914,7 +985,19 @@ class MoonPredictionsWindow(QMainWindow):
         hdr.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         hdr.setSectionResizeMode(15, QHeaderView.ResizeMode.Stretch)
 
-        for row, d in enumerate(filtered):
+        # ── Ligne "MAINTENANT" (row 0, fond distinct) ──
+        row_offset = 0
+        if now_row:
+            now_bg = QColor("#1a2a3a")
+            now_txt = QColor("#55ccff")
+            for c, (text, color) in enumerate(now_row):
+                item = _make_item(text, color or now_txt)
+                item.setBackground(now_bg)
+                self.table.setItem(0, c, item)
+            row_offset = 1
+
+        for idx, d in enumerate(filtered):
+            row = idx + row_offset
             rise_dt = d["rise_time"] + tz_offset
             set_dt = d["set_time"] + tz_offset
             max_el_dt = d["max_el_time"] + tz_offset
