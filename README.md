@@ -36,12 +36,12 @@ python main.py
 
 ## Utilisation
 
-1. Entrer son **indicatif** (optionnel) et son **locator Maidenhead** (4, 6 ou 8 caractères)
+1. Entrer son **indicatif** (optionnel) et son **QRA locator** (6 ou 8 caractères minimum)
 2. Indiquer l'**altitude** (mètres au-dessus du niveau de la mer)
 3. Choisir la **fréquence EME** (10 GHz par défaut)
 4. Cliquer **Calculer**
 5. Filtrer / trier les passages selon ses critères
-6. Exporter en CSV ou TXT pour partage ou archivage
+6. Exporter en **TXT** ou **PDF** pour partage ou archivage
 
 ## Code de couleur
 
