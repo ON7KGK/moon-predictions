@@ -152,8 +152,9 @@ TIP_QUALITY = (
     "  ■■■■■■■□□□  7  Bon\n"
     "  ■■■■□□□□□□  4  Moyen (orange)\n"
     "  ■■□□□□□□□□  2  Médiocre (rouge)\n\n"
-    "Note : cet indice ne tient pas compte du Doppler\n"
-    "spread ni de la libration."
+    "Le score s'adapte à la fréquence :\n"
+    "  < 1 GHz : libration ignorée (peu d'effet en VHF/UHF)\n"
+    "  ≥ 1 GHz : libration = 30% du score (facteur dominant)"
 )
 
 TIP_LIBRATION = (
@@ -474,10 +475,7 @@ class MoonPredictionsWindow(QMainWindow):
 
         stationLayout.addStretch()
 
-        # Position actuelle Lune (info)
-        self.labelMoonNow = QLabel("")
-        self.labelMoonNow.setStyleSheet("color: #88aaee;")
-        stationLayout.addWidget(self.labelMoonNow)
+        stationLayout.addStretch()
 
         _btn_discrete = (
             "QPushButton { color: #888; border: 1px solid #444; "
@@ -709,7 +707,7 @@ class MoonPredictionsWindow(QMainWindow):
                   self.btnExportPdf, self.btnHelp, self.btnAbout,
                   self.btn1_30, self.btn31_60,
                   self.chkPhase, self.chkLocalTime,
-                  self.labelMoonNow, self.labelInfo, self.labelLegend,
+                  self.labelInfo, self.labelLegend,
                   self.labelFooter, self.labelTz, self.labelMinEl,
                   self.labelMinScore, self.linkSked):
             w.setFont(ui_font)
@@ -783,17 +781,6 @@ class MoonPredictionsWindow(QMainWindow):
         callsign = self.editCallsign.text().strip()
 
         # Position actuelle de la Lune (info)
-        try:
-            moon_now = compute_moon(lat, lon, self._alt_m)
-            visible = "visible" if moon_now['el'] > 0 else "sous horizon"
-            self.labelMoonNow.setText(
-                f"\u263d Lune : AZ {moon_now['az']:.0f}\u00b0  "
-                f"EL {moon_now['el']:+.0f}\u00b0  ({visible})  "
-                f"\u2014  {moon_now['phase_name']} ({moon_now['illumination']:.0f}%)"
-            )
-        except Exception as e:
-            self.labelMoonNow.setText(f"Erreur : {e}")
-
         offset_hours = self._periodIndex * 30 * 24
         period_label = "1-30" if self._periodIndex == 0 else "31-60"
         self.labelInfo.setText(f"Calcul en cours (jours {period_label})...")
@@ -861,9 +848,11 @@ class MoonPredictionsWindow(QMainWindow):
 
         Returns list de tuples (text, QColor|None) pour chaque colonne.
         """
-        from moon_calc import compute_moon, compute_libration, ts
+        from moon_calc import (compute_moon, compute_sun, compute_libration,
+                               ts, _angular_sep_deg)
 
         moon = compute_moon(self._lat, self._lon, self._alt_m)
+        sun = compute_sun(self._lat, self._lon, self._alt_m)
         lib = compute_libration(self._lat, self._lon, self._alt_m, ts.now())
 
         az = moon["az"]
@@ -876,11 +865,47 @@ class MoonPredictionsWindow(QMainWindow):
         lib_rate = lib["lib_rate"]
         spread = lib["doppler_spread_hz"] * freq / 10.368e9
 
-        # Couleurs
-        hi = QColor("#55ccff")  # bleu clair pour la ligne "maintenant"
+        # Prochain lever/coucher
+        rise = moon.get("next_rise")
+        sett = moon.get("next_set")
+        use_local = self.chkLocalTime.isChecked()
+        tz_offset = _utc_offset() if use_local else timedelta(0)
 
+        rise_txt = (rise + tz_offset).strftime("%H:%M") if rise else "---"
+        set_txt = (sett + tz_offset).strftime("%H:%M") if sett else "---"
+
+        # Durée du passage actuel (si visible) ou prochain passage
+        if rise and sett:
+            dur_min = (sett - rise).total_seconds() / 60.0
+            dur_h = int(abs(dur_min) // 60)
+            dur_m = int(abs(dur_min) % 60)
+            dur_txt = f"{dur_h}h{dur_m:02d}"
+            dur_col = _eme_color(abs(dur_min), _DUR_GREEN, _DUR_ORANGE)
+        else:
+            dur_txt = "---"
+            dur_col = None
+
+        # Déclinaison actuelle
+        from moon_calc import eph, wgs84
+        location = wgs84.latlon(self._lat, self._lon, elevation_m=self._alt_m)
+        observer = eph['earth'] + location
+        t = ts.now()
+        app_moon = observer.at(t).observe(eph['moon']).apparent()
+        _, dec, _ = app_moon.radec()
+        decl = dec.degrees
+
+        # Angle Moon-Sun
+        ms_angle = _angular_sep_deg(az, el, sun["az"], sun["el"])
+
+        # Score qualité
+        score = _quality_score(max(el, 0), abs(dur_min) if rise and sett else 0,
+                               ploss, ms_angle, lib_rate, freq)
+
+        # Couleurs
+        hi = QColor("#55ccff")
         dist_col = _eme_color(dist, _DIST_GREEN, _DIST_ORANGE, invert=True)
         pl_col = _eme_color(ploss, _PL_GREEN, _PL_ORANGE, invert=True)
+        el_col = _eme_color(el, _EL_GREEN, _EL_ORANGE) if el > 0 else QColor("#ff4444")
 
         if lib_rate < 0.10: lib_col = QColor("#44ff44")
         elif lib_rate < 0.25: lib_col = QColor("#ffaa00")
@@ -890,29 +915,33 @@ class MoonPredictionsWindow(QMainWindow):
         elif spread < 150: spr_col = QColor("#ffaa00")
         else: spr_col = QColor("#ff4444")
 
-        visible = "VISIBLE" if el > 0 else "sous horizon"
-        el_col = QColor("#44ff44") if el > 0 else QColor("#ff4444")
+        if ms_angle < 5: ms_col = QColor("#ff4444")
+        elif ms_angle < 15: ms_col = QColor("#ffaa00")
+        else: ms_col = QColor("#44ff44")
+
+        sq = _quality_squares(score)
+        qc = _quality_color(score)
 
         cells = [
-            ("\u25cf MAINTENANT", hi),           # Date
-            ("---", None),                        # Lever
-            ("---", None),                        # Coucher
-            ("---", None),                        # Durée
-            (f"{el:+.1f}\u00b0 ({visible})", el_col),  # EL (= position actuelle)
-            (datetime.now(timezone.utc).strftime("%H:%M UTC"), None),  # Heure
-            (f"{az:.0f}\u00b0", None),            # AZ (= position actuelle)
-            ("---", None),                        # AZ coucher
-            ("---", None),                        # Décl.
-            (f"{dist:.0f} km", dist_col),         # Distance
-            (f"+{ploss:.1f} dB", pl_col),         # Extra PL
-            (f"{total_pl:.1f} dB", pl_col),       # Total PL
-            ("---", None),                        # Moon-Sun
-            (f"{lib_rate:.2f}\u00b0/h", lib_col), # Libration
-            (f"{spread:.0f} Hz", spr_col),        # Spread
-            (f"\u263d {illum:.0f}%", hi),          # Qualité (on met l'illumination ici)
+            ("\u25cf MAINTENANT", hi),
+            (rise_txt, hi),
+            (set_txt, hi),
+            (dur_txt, dur_col),
+            (f"{el:+.1f}\u00b0", el_col),
+            (datetime.now(timezone.utc).strftime("%H:%M UTC"), hi),
+            (f"{az:.0f}\u00b0", hi),
+            ("---", None),
+            (f"{decl:+.1f}\u00b0", None),
+            (f"{dist:.0f} km", dist_col),
+            (f"+{ploss:.1f} dB", pl_col),
+            (f"{total_pl:.1f} dB", pl_col),
+            (f"{ms_angle:.0f}\u00b0", ms_col),
+            (f"{lib_rate:.2f}\u00b0/h", lib_col),
+            (f"{spread:.0f} Hz", spr_col),
+            (f"{sq} {score:.1f}", qc),
         ]
         if show_phase:
-            cells.append((phase, hi))
+            cells.append((f"{phase} ({illum:.0f}%)", hi))
 
         return cells
 
