@@ -529,6 +529,17 @@ class MoonPredictionsWindow(QMainWindow):
         self.comboFreq.currentIndexChanged.connect(self._onFilterChanged)
         filterLine1.addWidget(self.comboFreq)
 
+        filterLine1.addSpacing(15)
+        self.btn1_30 = QPushButton("1-30 j")
+        self.btn1_30.setCheckable(True)
+        self.btn1_30.setChecked(True)
+        self.btn1_30.clicked.connect(lambda: self._onPeriodChanged(0))
+        filterLine1.addWidget(self.btn1_30)
+        self.btn31_60 = QPushButton("31-60 j")
+        self.btn31_60.setCheckable(True)
+        self.btn31_60.clicked.connect(lambda: self._onPeriodChanged(1))
+        filterLine1.addWidget(self.btn31_60)
+
         filterLine1.addStretch()
         layout.addLayout(filterLine1)
 
@@ -577,17 +588,6 @@ class MoonPredictionsWindow(QMainWindow):
         )
         filterLine2.addWidget(self.linkSked)
 
-        filterLine2.addSpacing(15)
-        self.btn1_30 = QPushButton("1-30 j")
-        self.btn1_30.setCheckable(True)
-        self.btn1_30.setChecked(True)
-        self.btn1_30.clicked.connect(lambda: self._onPeriodChanged(0))
-        filterLine2.addWidget(self.btn1_30)
-        self.btn31_60 = QPushButton("31-60 j")
-        self.btn31_60.setCheckable(True)
-        self.btn31_60.clicked.connect(lambda: self._onPeriodChanged(1))
-        filterLine2.addWidget(self.btn31_60)
-
         layout.addLayout(filterLine2)
 
         # ── Info ──
@@ -595,13 +595,27 @@ class MoonPredictionsWindow(QMainWindow):
         self.labelInfo.setStyleSheet("color: #aaaacc;")
         layout.addWidget(self.labelInfo)
 
-        # ── Légende ──
+        # ── Légende + Export ──
+        legendBar = QHBoxLayout()
         self.labelLegend = QLabel(
             "<span style='color:#44ff44;'>\u25a0</span> Excellent  "
             "<span style='color:#ffaa00;'>\u25a0</span> Moyen  "
             "<span style='color:#ff4444;'>\u25a0</span> Faible"
         )
-        layout.addWidget(self.labelLegend)
+        legendBar.addWidget(self.labelLegend)
+        legendBar.addStretch()
+
+        self.btnExportTxt = QPushButton("Export TXT")
+        self.btnExportTxt.setMaximumHeight(24)
+        self.btnExportTxt.clicked.connect(self._exportTxt)
+        legendBar.addWidget(self.btnExportTxt)
+
+        self.btnExportPdf = QPushButton("Export PDF")
+        self.btnExportPdf.setMaximumHeight(24)
+        self.btnExportPdf.clicked.connect(self._exportPdf)
+        legendBar.addWidget(self.btnExportPdf)
+
+        layout.addLayout(legendBar)
 
         # ── Table ──
         self.table = QTableWidget()
@@ -618,15 +632,6 @@ class MoonPredictionsWindow(QMainWindow):
         self.labelFooter = QLabel("")
         self.labelFooter.setStyleSheet("color: #888;")
         footerBar.addWidget(self.labelFooter)
-        footerBar.addStretch()
-
-        self.btnExportTxt = QPushButton("Export TXT")
-        self.btnExportTxt.clicked.connect(self._exportTxt)
-        footerBar.addWidget(self.btnExportTxt)
-
-        self.btnExportPdf = QPushButton("Export PDF")
-        self.btnExportPdf.clicked.connect(self._exportPdf)
-        footerBar.addWidget(self.btnExportPdf)
 
         layout.addLayout(footerBar)
 
