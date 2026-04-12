@@ -1113,10 +1113,7 @@ class MoonPredictionsWindow(QMainWindow):
                 f" | {shown}/{total} affichés")
 
         self.labelFooter.setText(
-            f"Réf. périgée : 356 500 km | "
-            f"Score = f(EL, durée, distance, Moon-Sun) | "
-            f"Calcul : {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')} | "
-            f"Icon: Arkinasi - Flaticon"
+            f"Calcul : {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"
         )
 
     # ════════════════════════════════════════════
