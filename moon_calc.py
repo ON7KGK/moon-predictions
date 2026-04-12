@@ -83,23 +83,24 @@ def locator_to_latlon(locator: str) -> tuple[float, float]:
 # ════════════════════════════════════════════
 
 def _moon_phase_name(phase_deg: float, illum_pct: float) -> str:
-    """Nom de la phase lunaire en francais (8 phases).
-
-    phase_deg : angle 0=Nouvelle, 90=PQ, 180=Pleine, 270=DQ.
-    """
+    """Nom de la phase lunaire (8 phases) — traduit via i18n."""
+    try:
+        from i18n import tr
+    except ImportError:
+        tr = lambda k, **kw: k
     if illum_pct < 2:
-        return "Nouvelle Lune"
+        return tr("phase_new")
     if illum_pct > 98:
-        return "Pleine Lune"
+        return tr("phase_full")
     if 48 < illum_pct < 52:
-        return "Premier Quartier" if phase_deg < 180 else "Dernier Quartier"
+        return tr("phase_fq") if phase_deg < 180 else tr("phase_lq")
     if phase_deg < 90:
-        return "Premier Croissant"
+        return tr("phase_wax_cres")
     if phase_deg < 180:
-        return "Gibbeuse Croissante"
+        return tr("phase_wax_gibb")
     if phase_deg < 270:
-        return "Gibbeuse Décroissante"
-    return "Dernier Croissant"
+        return tr("phase_wan_gibb")
+    return tr("phase_wan_cres")
 
 
 def _next_rise_set(body, location, t0, days=2.0):
@@ -362,20 +363,24 @@ def get_moon_passes(lat: float, lon: float, alt_m: float = 0,
 
 
 def _short_phase_name(phase_deg: float, illum_pct: float) -> str:
-    """Nom court de la phase lunaire en francais pour la table."""
+    """Nom court de la phase lunaire — traduit via i18n."""
+    try:
+        from i18n import tr
+    except ImportError:
+        tr = lambda k, **kw: k
     if illum_pct < 2:
-        return "Nouvelle"
+        return tr("phase_s_new")
     if illum_pct > 98:
-        return "Pleine"
+        return tr("phase_s_full")
     if 48 < illum_pct < 52:
-        return "Prem.Q." if phase_deg < 180 else "Dern.Q."
+        return tr("phase_s_fq") if phase_deg < 180 else tr("phase_s_lq")
     if phase_deg < 90:
-        return "Croiss."
+        return tr("phase_s_wax_cres")
     if phase_deg < 180:
-        return "Gibb.C."
+        return tr("phase_s_wax_gibb")
     if phase_deg < 270:
-        return "Gibb.D."
-    return "Dern.Cr."
+        return tr("phase_s_wan_gibb")
+    return tr("phase_s_wan_cres")
 
 
 def _libration_at(observer, t_sky):

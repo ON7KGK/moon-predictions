@@ -31,6 +31,7 @@ from PyQt6.QtPrintSupport import QPrinter
 from moon_calc import (
     locator_to_latlon, get_moon_passes, enrich_moon_pass, compute_moon
 )
+from i18n import tr, set_language, get_language
 
 APP_VERSION = "1.0.0"
 APP_DATE = "2026-04-12"
@@ -249,19 +250,18 @@ def _make_monospace_font(size: int) -> QFont:
 # Localisation dates (français, sans dépendance locale)
 # ════════════════════════════════════════════
 
-_FR_DAYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
-_FR_MONTHS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin",
-              "Juil", "Août", "Sep", "Oct", "Nov", "Déc"]
+def _loc_date(dt):
+    """Formatte une date localisée : 'Lun 01 Jan'."""
+    day = tr(f"day_{dt.weekday()}")
+    mon = tr(f"mon_{dt.month}")
+    return f"{day} {dt.day:02d} {mon}"
 
 
-def _fr_date(dt):
-    """Formatte une date en français : 'Lun 01 Jan'."""
-    return f"{_FR_DAYS[dt.weekday()]} {dt.day:02d} {_FR_MONTHS[dt.month - 1]}"
-
-
-def _fr_date_long(dt):
-    """Formatte une date longue en français : 'Lun 01 Jan 2026'."""
-    return f"{_FR_DAYS[dt.weekday()]} {dt.day:02d} {_FR_MONTHS[dt.month - 1]} {dt.year}"
+def _loc_date_long(dt):
+    """Formatte une date longue localisée : 'Lun 01 Jan 2026'."""
+    day = tr(f"day_{dt.weekday()}")
+    mon = tr(f"mon_{dt.month}")
+    return f"{day} {dt.day:02d} {mon} {dt.year}"
 
 
 def _eme_path_loss_perigee(freq_hz: float) -> float:
@@ -442,26 +442,26 @@ class MoonPredictionsWindow(QMainWindow):
         stationGroup = QGroupBox()
         stationLayout = QHBoxLayout(stationGroup)
 
-        stationLayout.addWidget(QLabel("Indicatif :"))
+        stationLayout.addWidget(QLabel(tr("lbl_callsign")))
         self.editCallsign = QLineEdit()
         self.editCallsign.setPlaceholderText("ON7KGK")
         stationLayout.addWidget(self.editCallsign)
 
         stationLayout.addSpacing(15)
-        stationLayout.addWidget(QLabel("Locator :"))
+        stationLayout.addWidget(QLabel(tr("lbl_locator")))
         self.editLocator = QLineEdit()
         self.editLocator.setPlaceholderText("JO20BM85")
         stationLayout.addWidget(self.editLocator)
 
         stationLayout.addSpacing(15)
-        stationLayout.addWidget(QLabel("Altitude :"))
+        stationLayout.addWidget(QLabel(tr("lbl_altitude")))
         self.spinAltitude = QSpinBox()
         self.spinAltitude.setRange(0, 9000)
         self.spinAltitude.setSuffix(" m")
         stationLayout.addWidget(self.spinAltitude)
 
         stationLayout.addSpacing(15)
-        self.btnCompute = QPushButton("\u25b6  Calculer")
+        self.btnCompute = QPushButton(tr("btn_compute"))
         self.btnCompute.setStyleSheet(
             "QPushButton { background-color: #2a5a3a; font-weight: bold; }"
             "QPushButton:hover { background-color: #3a7a4a; }"
@@ -469,7 +469,7 @@ class MoonPredictionsWindow(QMainWindow):
         self.btnCompute.clicked.connect(self._compute)
         stationLayout.addWidget(self.btnCompute)
 
-        self.btnSave = QPushButton("\U0001f4be  Sauvegarder")
+        self.btnSave = QPushButton(tr("btn_save"))
         self.btnSave.setToolTip(TIP_SAVE)
         self.btnSave.clicked.connect(self._onSaveClicked)
         stationLayout.addWidget(self.btnSave)
@@ -483,12 +483,12 @@ class MoonPredictionsWindow(QMainWindow):
             "padding: 4px 10px; }"
             "QPushButton:hover { color: #ccc; border-color: #666; }"
         )
-        self.btnHelp = QPushButton("Aide")
+        self.btnHelp = QPushButton(tr("btn_help"))
         self.btnHelp.setStyleSheet(_btn_discrete)
         self.btnHelp.clicked.connect(self._showHelp)
         stationLayout.addWidget(self.btnHelp)
 
-        self.btnAbout = QPushButton("About")
+        self.btnAbout = QPushButton(tr("btn_about"))
         self.btnAbout.setStyleSheet(_btn_discrete)
         self.btnAbout.clicked.connect(self._showAbout)
         stationLayout.addWidget(self.btnAbout)
@@ -499,7 +499,7 @@ class MoonPredictionsWindow(QMainWindow):
         filterLine1 = QHBoxLayout()
         filterLine1.setSpacing(12)
 
-        filterLine1.addWidget(QLabel("EL min :"))
+        filterLine1.addWidget(QLabel(tr("lbl_el_min")))
         self.sliderMinEl = QSlider(Qt.Orientation.Horizontal)
         self.sliderMinEl.setRange(0, 45)
         self.sliderMinEl.setMinimumWidth(100)
@@ -510,7 +510,7 @@ class MoonPredictionsWindow(QMainWindow):
         filterLine1.addWidget(self.labelMinEl)
 
         filterLine1.addSpacing(15)
-        filterLine1.addWidget(QLabel("Score min :"))
+        filterLine1.addWidget(QLabel(tr("lbl_score_min")))
         self.sliderMinScore = QSlider(Qt.Orientation.Horizontal)
         self.sliderMinScore.setRange(0, 80)
         self.sliderMinScore.setMinimumWidth(80)
@@ -522,7 +522,7 @@ class MoonPredictionsWindow(QMainWindow):
         filterLine1.addWidget(self.labelMinScore)
 
         filterLine1.addSpacing(15)
-        filterLine1.addWidget(QLabel("Fréquence :"))
+        filterLine1.addWidget(QLabel(tr("lbl_frequency")))
         self.comboFreq = QComboBox()
         for label, hz in _EME_FREQS:
             self.comboFreq.addItem(label, hz)
@@ -548,14 +548,14 @@ class MoonPredictionsWindow(QMainWindow):
         filterLine2 = QHBoxLayout()
         filterLine2.setSpacing(12)
 
-        self.chkPhase = QCheckBox("Phase")
+        self.chkPhase = QCheckBox(tr("lbl_phase"))
         self.chkPhase.setChecked(True)
         self.chkPhase.setToolTip(TIP_PHASE_CHK)
         self.chkPhase.stateChanged.connect(self._onFilterChanged)
         filterLine2.addWidget(self.chkPhase)
 
         filterLine2.addSpacing(10)
-        self.chkLocalTime = QCheckBox("Heure locale")
+        self.chkLocalTime = QCheckBox(tr("lbl_local_time"))
         self.chkLocalTime.setToolTip(TIP_LOCAL_TIME)
         self.chkLocalTime.stateChanged.connect(self._onFilterChanged)
         filterLine2.addWidget(self.chkLocalTime)
@@ -565,7 +565,7 @@ class MoonPredictionsWindow(QMainWindow):
         self._updateTzLabel()
 
         filterLine2.addSpacing(15)
-        filterLine2.addWidget(QLabel("Police :"))
+        filterLine2.addWidget(QLabel(tr("lbl_font_size")))
         self.spinFontSize = QSpinBox()
         self.spinFontSize.setRange(8, 18)
         self.spinFontSize.setValue(10)
@@ -575,13 +575,22 @@ class MoonPredictionsWindow(QMainWindow):
         filterLine2.addWidget(self.spinFontSize)
 
         filterLine2.addSpacing(15)
-        self.btnExportTxt = QPushButton("Export TXT")
+        self.btnExportTxt = QPushButton(tr("btn_export_txt"))
         self.btnExportTxt.clicked.connect(self._exportTxt)
         filterLine2.addWidget(self.btnExportTxt)
 
-        self.btnExportPdf = QPushButton("Export PDF")
+        self.btnExportPdf = QPushButton(tr("btn_export_pdf"))
         self.btnExportPdf.clicked.connect(self._exportPdf)
         filterLine2.addWidget(self.btnExportPdf)
+
+        filterLine2.addSpacing(15)
+        filterLine2.addWidget(QLabel(tr("lbl_language")))
+        self.comboLang = QComboBox()
+        self.comboLang.addItem("Fran\u00e7ais", "fr")
+        self.comboLang.addItem("Nederlands", "nl")
+        self.comboLang.addItem("English", "en")
+        self.comboLang.currentIndexChanged.connect(self._onLanguageChanged)
+        filterLine2.addWidget(self.comboLang)
 
         filterLine2.addStretch()
 
@@ -601,14 +610,14 @@ class MoonPredictionsWindow(QMainWindow):
 
         # ── Info + Légende (même ligne) ──
         infoBar = QHBoxLayout()
-        self.labelInfo = QLabel("Entrez votre locator et cliquez sur Calculer.")
+        self.labelInfo = QLabel(tr("info_enter_locator"))
         self.labelInfo.setStyleSheet("color: #aaaacc;")
         infoBar.addWidget(self.labelInfo)
         infoBar.addStretch()
         self.labelLegend = QLabel(
-            "<span style='color:#44ff44;'>\u25a0</span> Excellent  "
-            "<span style='color:#ffaa00;'>\u25a0</span> Moyen  "
-            "<span style='color:#ff4444;'>\u25a0</span> Faible"
+            f"<span style='color:#44ff44;'>\u25a0</span> {tr('legend_excellent')}  "
+            f"<span style='color:#ffaa00;'>\u25a0</span> {tr('legend_medium')}  "
+            f"<span style='color:#ff4444;'>\u25a0</span> {tr('legend_poor')}"
         )
         infoBar.addWidget(self.labelLegend)
         layout.addLayout(infoBar)
@@ -654,6 +663,10 @@ class MoonPredictionsWindow(QMainWindow):
             self._settings.value("font_size", 10, type=int))
         self.comboFreq.setCurrentIndex(
             self._settings.value("freq_idx", 6, type=int))
+        # Langue
+        lang = self._settings.value("language", "fr", type=str)
+        idx = {"fr": 0, "nl": 1, "en": 2}.get(lang, 0)
+        self.comboLang.setCurrentIndex(idx)
         self._applyFontSize()
 
     def showEvent(self, event):
@@ -679,14 +692,15 @@ class MoonPredictionsWindow(QMainWindow):
         self._settings.setValue("slider_min_score", self.sliderMinScore.value())
         self._settings.setValue("font_size", self.spinFontSize.value())
         self._settings.setValue("freq_idx", self.comboFreq.currentIndex())
+        self._settings.setValue("language", self.comboLang.currentData() or "fr")
         self._settings.sync()
 
     def _onSaveClicked(self):
         self._saveSettings()
         # Feedback visuel temporaire (texte fixe pour le retour)
-        self.btnSave.setText("\u2713  Sauvegard\u00e9")
+        self.btnSave.setText(tr("btn_saved"))
         QTimer.singleShot(1500,
-            lambda: self.btnSave.setText("\U0001f4be  Sauvegarder"))
+            lambda: self.btnSave.setText(tr("btn_save")))
 
     def _applyFontSize(self):
         """Applique la taille de police à TOUT l'interface."""
@@ -718,6 +732,15 @@ class MoonPredictionsWindow(QMainWindow):
             content_width = self.table.sizeHintForColumn(c)
             self.table.setColumnWidth(c, max(hdr_width, content_width) + 10)
 
+    def _onLanguageChanged(self):
+        lang = self.comboLang.currentData()
+        if lang:
+            set_language(lang)
+            self._settings.setValue("language", lang)
+            self._settings.sync()
+            QMessageBox.information(
+                self, "Moon Predictions", tr("msg_lang_restart"))
+
     def _onFontSizeChanged(self):
         self._applyFontSize()
         self._settings.setValue("font_size", self.spinFontSize.value())
@@ -741,30 +764,19 @@ class MoonPredictionsWindow(QMainWindow):
     def _compute(self):
         locator = self.editLocator.text().strip()
         if not locator:
-            QMessageBox.warning(
-                self, "Locator manquant",
-                "Entrez votre locator Maidenhead (6 ou 8 caractères).\n"
-                "Exemple : JO20BM85"
-            )
+            QMessageBox.warning(self, tr("msg_locator_missing_title"),
+                                tr("msg_locator_missing"))
             return
         if len(locator) < 6:
-            QMessageBox.warning(
-                self, "Locator trop court",
-                "Le locator doit avoir au minimum 6 caractères.\n\n"
-                "Un locator à 4 caractères (ex: JO20) couvre une zone de\n"
-                "~200×110 km, ce qui entraîne des erreurs de plusieurs\n"
-                "minutes sur les heures de lever/coucher de la Lune.\n\n"
-                "Utilisez votre locator à 6 caractères (précision ~5 km)\n"
-                "ou 8 caractères (précision ~800 m).\n\n"
-                "Exemple : JO20BM ou JO20BM85"
-            )
+            QMessageBox.warning(self, tr("msg_locator_short_title"),
+                                tr("msg_locator_short"))
             return
 
         try:
             lat, lon = locator_to_latlon(locator)
         except ValueError as e:
-            QMessageBox.warning(
-                self, "Locator invalide", f"Erreur : {e}")
+            QMessageBox.warning(self, tr("msg_locator_invalid_title"),
+                                f"{tr('msg_error')} : {e}")
             return
 
         self._lat, self._lon = lat, lon
@@ -774,7 +786,7 @@ class MoonPredictionsWindow(QMainWindow):
         # Position actuelle de la Lune (info)
         offset_hours = self._periodIndex * 30 * 24
         period_label = "1-30" if self._periodIndex == 0 else "31-60"
-        self.labelInfo.setText(f"Calcul en cours (jours {period_label})...")
+        self.labelInfo.setText(tr("info_computing", period=period_label))
         self.table.setRowCount(0)
         QApplication.processEvents()
 
@@ -808,10 +820,9 @@ class MoonPredictionsWindow(QMainWindow):
             self._passes_raw.append(d)
 
         station = f"{callsign} " if callsign else ""
-        self.labelInfo.setText(
-            f"{station}({locator}, {self._alt_m}m) \u2014 "
-            f"{len(self._passes_raw)} passage(s) sur {period_label} jours"
-        )
+        self.labelInfo.setText(tr("info_result",
+            station=station, locator=locator, alt=self._alt_m,
+            count=len(self._passes_raw), period=period_label))
 
         self._saveSettings()
         self._refreshTable()
@@ -913,9 +924,8 @@ class MoonPredictionsWindow(QMainWindow):
             else: ms_col = QColor("#44ff44")
             sq = _quality_squares(score)
             qc = _quality_color(score)
-            el_txt = f"{el:+.1f}\u00b0 VISIBLE"
+            el_txt = f"{el:+.1f}\u00b0 {tr('now_visible')}"
         else:
-            # Lune sous horizon — tout grisé
             hi = QColor("#666666")
             now_bg = QColor("#1a1a1a")
             dist_col = hi
@@ -926,10 +936,10 @@ class MoonPredictionsWindow(QMainWindow):
             ms_col = hi
             sq = ""
             qc = hi
-            el_txt = f"{el:+.1f}\u00b0 sous horizon"
+            el_txt = f"{el:+.1f}\u00b0 {tr('now_below')}"
 
         cells = [
-            ("\u25cf MAINTENANT" if visible else "\u25cb MAINTENANT", hi),
+            (tr("now_label") if visible else tr("now_label_off"), hi),
             (rise_txt, hi),
             (set_txt, hi),
             (dur_txt, hi if not visible else dur_col),
@@ -969,25 +979,25 @@ class MoonPredictionsWindow(QMainWindow):
         freq_label = self.comboFreq.currentText()
 
         cols = [
-            "Date",
-            f"Lever{tz_suffix}",
-            f"Coucher{tz_suffix}",
-            "Durée",
-            "EL max",
-            f"Heure EL max{tz_suffix}",
-            "AZ lever",
-            "AZ couch.",
-            "Décl.",
-            "Distance",
-            "Extra PL",
-            f"Total PL ({freq_label})",
-            "Moon-Sun",
-            "Libration",
-            f"Spread ({freq_label})",
-            "Qualité",
+            tr("col_date"),
+            f"{tr('col_rise')}{tz_suffix}",
+            f"{tr('col_set')}{tz_suffix}",
+            tr("col_duration"),
+            tr("col_el_max"),
+            f"{tr('col_el_max_time')}{tz_suffix}",
+            tr("col_az_rise"),
+            tr("col_az_set"),
+            tr("col_decl"),
+            tr("col_distance"),
+            tr("col_extra_pl"),
+            tr("col_total_pl", freq=freq_label),
+            tr("col_moon_sun"),
+            tr("col_libration"),
+            tr("col_spread", freq=freq_label),
+            tr("col_quality"),
         ]
         if show_phase:
-            cols.append("Phase")
+            cols.append(tr("col_phase"))
 
         self.table.setColumnCount(len(cols))
         self.table.setHorizontalHeaderLabels(cols)
@@ -1067,7 +1077,7 @@ class MoonPredictionsWindow(QMainWindow):
 
             col = 0
             self.table.setItem(row, col, _make_item(
-                _fr_date(rise_dt))); col += 1
+                _loc_date(rise_dt))); col += 1
             self.table.setItem(row, col, _make_item(
                 rise_dt.strftime("%H:%M"))); col += 1
             self.table.setItem(row, col, _make_item(
@@ -1176,7 +1186,7 @@ class MoonPredictionsWindow(QMainWindow):
             dur_m = int(d["duration_min"] % 60)
             total_pl = pl_perigee + d["ploss"]
             rows.append([
-                _fr_date_long(rise_dt),
+                _loc_date_long(rise_dt),
                 rise_dt.strftime("%H:%M"),
                 set_dt.strftime("%H:%M"),
                 f"{dur_h}h{dur_m:02d}",
@@ -1197,7 +1207,7 @@ class MoonPredictionsWindow(QMainWindow):
     def _showHelp(self):
         """Fenêtre d'aide utilisateur."""
         dlg = QDialog(self)
-        dlg.setWindowTitle("Aide — Moon Predictions")
+        dlg.setWindowTitle(tr("help_title"))
         dlg.setMinimumSize(600, 520)
         dlg.setStyleSheet(
             "QDialog { background-color: #1a2530; color: #cccccc; }"
@@ -1210,62 +1220,13 @@ class MoonPredictionsWindow(QMainWindow):
 
         lay = QVBoxLayout(dlg)
 
-        help_text = QLabel(
-            "<h2 style='color: #FFD700;'>Comment utiliser Moon Predictions</h2>"
-
-            "<h3 style='color: #66aaff;'>1. Configuration de la station</h3>"
-            "<p>Renseignez votre <b>indicatif</b> (optionnel), votre <b>QRA locator</b> "
-            "(6 ou 8 caractères, ex: JO20CL) et votre <b>altitude</b> en mètres. "
-            "Cliquez <b>Sauvegarder</b> pour conserver ces informations.</p>"
-
-            "<h3 style='color: #66aaff;'>2. Calcul des passages</h3>"
-            "<p>Cliquez <b>Calculer</b> pour afficher les passages de la Lune "
-            "au-dessus de l'horizon sur <b>30 jours</b>. "
-            "Utilisez les boutons <b>1-30 j</b> / <b>31-60 j</b> pour naviguer.</p>"
-
-            "<h3 style='color: #66aaff;'>3. Filtres</h3>"
-            "<p>Ajustez les curseurs <b>EL min</b> et <b>Score min</b> pour "
-            "ne garder que les meilleurs passages. Les filtres s'appliquent "
-            "en temps réel sans recalcul.</p>"
-
-            "<h3 style='color: #66aaff;'>4. Comprendre la table</h3>"
-            "<ul>"
-            "<li><b>EL max</b> : élévation maximale de la Lune pendant le passage</li>"
-            "<li><b>Distance</b> : distance Terre-Lune (périgée ~356 500 km = meilleur signal)</li>"
-            "<li><b>Extra PL</b> : perte supplémentaire vs périgée (0 dB = optimal)</li>"
-            "<li><b>Moon-Sun</b> : angle Lune-Soleil (> 15° = pas de bruit solaire)</li>"
-            "<li><b>Libration</b> : taux de libration — <span style='color:#44ff44;'>vert</span> = "
-            "signal propre, <span style='color:#ff4444;'>rouge</span> = signal étalé. "
-            "<b>Critique à 10 GHz et au-dessus !</b></li>"
-            "<li><b>Spread</b> : étalement Doppler du signal réfléchi en Hz</li>"
-            "<li><b>Qualité</b> : score global 0-10 combinant tous les facteurs</li>"
-            "</ul>"
-
-            "<h3 style='color: #66aaff;'>5. Score de qualité</h3>"
-            "<p>Le score s'adapte à la <b>fréquence</b> sélectionnée :<br>"
-            "- En <b>VHF/UHF</b> (< 1 GHz) : élévation et durée dominent<br>"
-            "- En <b>micro-ondes</b> (≥ 1 GHz) : la <b>libration</b> devient le facteur "
-            "le plus important (30% du score)</p>"
-
-            "<h3 style='color: #66aaff;'>6. Code couleur</h3>"
-            "<p><span style='color:#44ff44;'>■</span> Excellent — "
-            "<span style='color:#ffaa00;'>■</span> Moyen — "
-            "<span style='color:#ff4444;'>■</span> Faible</p>"
-
-            "<h3 style='color: #66aaff;'>7. Export</h3>"
-            "<p>Exportez vos prévisions en <b>TXT</b> (texte brut) ou <b>PDF</b> "
-            "(tableau formaté en paysage) pour les partager ou les imprimer.</p>"
-
-            "<p style='color: #888; margin-top: 15px;'>"
-            "Survolez les en-têtes de colonnes avec la souris pour des "
-            "explications détaillées sur chaque paramètre.</p>"
-        )
+        help_text = QLabel(tr("help_content"))
         help_text.setWordWrap(True)
         help_text.setOpenExternalLinks(True)
         lay.addWidget(help_text)
 
         lay.addStretch()
-        btnClose = QPushButton("Fermer")
+        btnClose = QPushButton(tr("btn_close"))
         btnClose.clicked.connect(dlg.close)
         btnClose.setStyleSheet("QPushButton { padding: 6px 20px; }")
         lay.addWidget(btnClose, alignment=Qt.AlignmentFlag.AlignCenter)
@@ -1275,7 +1236,7 @@ class MoonPredictionsWindow(QMainWindow):
     def _showAbout(self):
         """Fenêtre À propos."""
         dlg = QDialog(self)
-        dlg.setWindowTitle("About Moon Predictions")
+        dlg.setWindowTitle(tr("about_title"))
         dlg.setFixedSize(480, 360)
         dlg.setStyleSheet(
             "QDialog { background-color: #1a2530; color: #cccccc; }"
@@ -1285,14 +1246,13 @@ class MoonPredictionsWindow(QMainWindow):
         lay = QVBoxLayout(dlg)
         lay.setSpacing(12)
 
-        # Icône + titre
         icon_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "icon.ico")
+            os.path.dirname(os.path.abspath(__file__)), "moon.ico")
         if os.path.exists(icon_path):
             dlg.setWindowIcon(QIcon(icon_path))
 
-        title = QLabel(f"<h2 style='color: #FFD700;'>"
-                       f"\u263d Moon Predictions</h2>")
+        title = QLabel("<h2 style='color: #FFD700;'>"
+                       "\u263d Moon Predictions</h2>")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         lay.addWidget(title)
 
@@ -1303,18 +1263,15 @@ class MoonPredictionsWindow(QMainWindow):
         lay.addWidget(version)
 
         info = QLabel(
-            "<p style='text-align: center;'>"
-            "Prévision des passages lunaires pour les<br>"
-            "radioamateurs pratiquant l'EME (Earth-Moon-Earth).</p>"
+            f"<p style='text-align: center;'>{tr('about_desc')}</p>"
             "<hr style='border-color: #334;'>"
-            "<p style='text-align: center;'>"
-            "<b>Auteur :</b> ON7KGK — Michaël<br>"
-            "<b>Développement :</b> Claude Code (Anthropic)<br>"
-            "<b>Éphémérides :</b> NASA JPL DE440s via Skyfield<br>"
-            "<b>Icône :</b> Arkinasi — Flaticon</p>"
+            f"<p style='text-align: center;'>"
+            f"{tr('about_author')} ON7KGK — Micha\u00ebl<br>"
+            f"{tr('about_dev')} Claude Code (Anthropic)<br>"
+            f"{tr('about_ephem')} NASA JPL DE440s via Skyfield<br>"
+            f"{tr('about_icon')} Arkinasi — Flaticon</p>"
             "<hr style='border-color: #334;'>"
-            "<p style='text-align: center;'>"
-            "<b>Licence :</b> GNU GPL v3 — Open Source</p>"
+            f"<p style='text-align: center;'>{tr('about_license')}</p>"
         )
         info.setOpenExternalLinks(True)
         info.setWordWrap(True)
@@ -1323,7 +1280,7 @@ class MoonPredictionsWindow(QMainWindow):
 
         lay.addStretch()
 
-        btnClose = QPushButton("Fermer")
+        btnClose = QPushButton(tr("btn_close"))
         btnClose.clicked.connect(dlg.close)
         btnClose.setStyleSheet(
             "QPushButton { padding: 6px 20px; }"
@@ -1488,6 +1445,11 @@ def main():
 
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
+
+    # Charger la langue AVANT la création de la fenêtre
+    settings = QSettings("ON7KGK", "MoonPredictions")
+    lang = settings.value("language", "fr", type=str)
+    set_language(lang)
 
     # Icône application (barre des tâches Windows)
     icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "moon.ico")
