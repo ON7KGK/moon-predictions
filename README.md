@@ -71,4 +71,25 @@ Les calculs utilisent **Skyfield** avec les éphémérides **JPL DE440s** :
 - **Éphémérides** : NASA JPL DE440s via [Skyfield](https://rhodesmill.org/skyfield/)
 - **Icône** : [Crescent icons created by Arkinasi - Flaticon](https://www.flaticon.com/free-icons/crescent)
 
-Licence : MIT
+Licence : GPL-3.0
+
+---
+
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://signpath.io),
+certificate by [SignPath Foundation](https://signpath.org).
+
+**Team roles:**
+- Committers and Approvers: [ON7KGK](https://github.com/ON7KGK)
+
+**Privacy:**  
+This program will not transfer any information to other networked systems
+unless specifically requested by the user or the person installing or
+operating it. Ephemeris data (JPL DE440s) is downloaded automatically
+on first run from NASA servers; no personal data is transmitted.
+
+**Third-party components:**  
+This software uses [Skyfield](https://rhodesmill.org/skyfield/) (MIT),
+[PyQt6](https://www.riverbankcomputing.com/software/pyqt/) (GPL-3.0),
+and [NumPy](https://numpy.org/) (BSD-3).

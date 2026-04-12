@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <!--
+    SignPath reçoit un ZIP (créé par actions/upload-artifact).
+    Ce ZIP contient l'installeur NSIS : MoonPredictions-Setup-X.Y.Z.exe
+    On signe cet exécutable avec Authenticode.
+  -->
+  <zip-file>
+    <pe-file-set>
+      <include path="**/*.exe" min-matches="1" max-matches="1" />
+      <for-each>
+        <authenticode-sign />
+      </for-each>
+    </pe-file-set>
+  </zip-file>
+</artifact-configuration>

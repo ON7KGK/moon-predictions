@@ -2,6 +2,7 @@
 build/
 *.dist/
 *.build/
+.nuitka-cache/
 
 # Python
 __pycache__/
