@@ -433,14 +433,12 @@ class MoonPredictionsWindow(QMainWindow):
 
         stationLayout.addWidget(QLabel("Indicatif :"))
         self.editCallsign = QLineEdit()
-        self.editCallsign.setMaximumWidth(120)
         self.editCallsign.setPlaceholderText("ON7KGK")
         stationLayout.addWidget(self.editCallsign)
 
         stationLayout.addSpacing(15)
         stationLayout.addWidget(QLabel("Locator :"))
         self.editLocator = QLineEdit()
-        self.editLocator.setMaximumWidth(120)
         self.editLocator.setPlaceholderText("JO20BM85")
         stationLayout.addWidget(self.editLocator)
 
@@ -449,7 +447,6 @@ class MoonPredictionsWindow(QMainWindow):
         self.spinAltitude = QSpinBox()
         self.spinAltitude.setRange(0, 9000)
         self.spinAltitude.setSuffix(" m")
-        self.spinAltitude.setMaximumWidth(100)
         stationLayout.addWidget(self.spinAltitude)
 
         stationLayout.addSpacing(15)
@@ -563,7 +560,6 @@ class MoonPredictionsWindow(QMainWindow):
         self.spinFontSize.setValue(10)
         self.spinFontSize.setSuffix(" pt")
         self.spinFontSize.setToolTip(TIP_FONT_SIZE)
-        self.spinFontSize.setMinimumWidth(70)
         self.spinFontSize.valueChanged.connect(self._onFontSizeChanged)
         filterLine2.addWidget(self.spinFontSize)
 
