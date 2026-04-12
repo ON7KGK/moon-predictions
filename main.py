@@ -684,11 +684,13 @@ class MoonPredictionsWindow(QMainWindow):
         """Applique la taille de police à TOUT l'interface."""
         size = self.spinFontSize.value()
 
-        # Police de base — appliquée à l'application entière
-        # pour que TOUS les widgets (y compris les labels anonymes) suivent
+        # Police de base — appliquée à la fenêtre + forcée sur tous les enfants
         ui_font = QFont()
         ui_font.setPointSize(size)
-        QApplication.instance().setFont(ui_font)
+        self.setFont(ui_font)
+        # Forcer sur CHAQUE widget enfant (le stylesheet peut bloquer la cascade)
+        for child in self.findChildren(QWidget):
+            child.setFont(ui_font)
 
         # Table et header : police monospace cross-platform
         # Windows=Consolas, Mac=Menlo, Linux=DejaVu Sans Mono
