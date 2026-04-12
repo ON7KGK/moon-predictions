@@ -520,10 +520,12 @@ class MoonPredictionsWindow(QMainWindow):
             self._settings.value("font_size", 10, type=int))
         self.comboFreq.setCurrentIndex(
             self._settings.value("freq_idx", 6, type=int))
-        # Langue
+        # Langue (bloquer le signal pour éviter le popup au chargement)
         lang = self._settings.value("language", "fr", type=str)
         idx = {"fr": 0, "nl": 1, "en": 2}.get(lang, 0)
+        self.comboLang.blockSignals(True)
         self.comboLang.setCurrentIndex(idx)
+        self.comboLang.blockSignals(False)
         self._applyFontSize()
 
     def showEvent(self, event):
