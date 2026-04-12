@@ -83,23 +83,23 @@ def locator_to_latlon(locator: str) -> tuple[float, float]:
 # ════════════════════════════════════════════
 
 def _moon_phase_name(phase_deg: float, illum_pct: float) -> str:
-    """Nom de la phase lunaire (8 phases).
+    """Nom de la phase lunaire en francais (8 phases).
 
-    phase_deg : angle 0=New, 90=FQ, 180=Full, 270=LQ.
+    phase_deg : angle 0=Nouvelle, 90=PQ, 180=Pleine, 270=DQ.
     """
     if illum_pct < 2:
-        return "New Moon"
+        return "Nouvelle Lune"
     if illum_pct > 98:
-        return "Full Moon"
+        return "Pleine Lune"
     if 48 < illum_pct < 52:
-        return "First Quarter" if phase_deg < 180 else "Last Quarter"
+        return "Premier Quartier" if phase_deg < 180 else "Dernier Quartier"
     if phase_deg < 90:
-        return "Waxing Crescent"
+        return "Premier Croissant"
     if phase_deg < 180:
-        return "Waxing Gibbous"
+        return "Gibbeuse Croissante"
     if phase_deg < 270:
-        return "Waning Gibbous"
-    return "Waning Crescent"
+        return "Gibbeuse Décroissante"
+    return "Dernier Croissant"
 
 
 def _next_rise_set(body, location, t0, days=2.0):
@@ -362,20 +362,20 @@ def get_moon_passes(lat: float, lon: float, alt_m: float = 0,
 
 
 def _short_phase_name(phase_deg: float, illum_pct: float) -> str:
-    """Nom court de la phase lunaire pour la table des predictions."""
+    """Nom court de la phase lunaire en francais pour la table."""
     if illum_pct < 2:
-        return "New"
+        return "Nouvelle"
     if illum_pct > 98:
-        return "Full"
+        return "Pleine"
     if 48 < illum_pct < 52:
-        return "1st Q." if phase_deg < 180 else "Last Q."
+        return "Prem.Q." if phase_deg < 180 else "Dern.Q."
     if phase_deg < 90:
-        return "Cresc."
+        return "Croiss."
     if phase_deg < 180:
-        return "Gibb."
+        return "Gibb.C."
     if phase_deg < 270:
-        return "Wan.Gi."
-    return "Wan.Cr."
+        return "Gibb.D."
+    return "Dern.Cr."
 
 
 def _libration_at(observer, t_sky):
