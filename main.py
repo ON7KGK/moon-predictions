@@ -67,8 +67,74 @@ _PL_ORANGE = 2.0
 
 
 # ════════════════════════════════════════════
-# Tooltips (français)
+# Thèmes clair / sombre
 # ════════════════════════════════════════════
+
+_THEMES = {
+    "dark": {
+        # Fond principal et groupes
+        "bg_main": "#19232D", "bg_group": "#1e2a36", "bg_input": "#2a3742",
+        "fg_text": "#cccccc", "fg_input": "#ffffff", "fg_dim": "#888888",
+        # Boutons
+        "btn_bg": "#2E3D47", "btn_hover": "#3A4D59", "btn_checked": "#4a6080",
+        "btn_border": "#555", "btn_discrete_fg": "#888", "btn_discrete_border": "#444",
+        "btn_discrete_hover_fg": "#ccc", "btn_discrete_hover_border": "#666",
+        "compute_bg": "#2a5a3a", "compute_hover": "#3a7a4a",
+        # Table
+        "bg_table": "#19232D", "gridline": "#333", "selection_bg": "#334",
+        "bg_header": "#243039", "fg_header": "#aaaacc",
+        # Slider
+        "slider_groove": "#333", "slider_handle": "#6688cc",
+        # EME data colors (vives sur fond sombre)
+        "eme_green": "#44ff44", "eme_orange": "#ffaa00", "eme_red": "#ff4444",
+        # Ligne MAINTENANT
+        "now_visible_hi": "#55ccff", "now_visible_bg": "#1a2a3a",
+        "now_invisible_hi": "#666666", "now_invisible_bg": "#1a1a1a",
+        # Info / légende
+        "fg_info": "#aaaacc", "link_color": "#6699ff",
+        # Dialogues
+        "dlg_bg": "#1a2530", "dlg_fg": "#cccccc",
+        "about_title_color": "#FFD700", "about_version_color": "#66aaff",
+        "dlg_hr": "#334",
+    },
+    "light": {
+        # Fond gris clair (pas blanc pur — lisibilité couleurs EME)
+        "bg_main": "#F0F1F4", "bg_group": "#E4E6EB", "bg_input": "#FFFFFF",
+        "fg_text": "#1a1a1a", "fg_input": "#000000", "fg_dim": "#666666",
+        # Boutons
+        "btn_bg": "#D8DCE2", "btn_hover": "#C8CDD5", "btn_checked": "#A0B0CC",
+        "btn_border": "#AAAAAA", "btn_discrete_fg": "#666", "btn_discrete_border": "#BBB",
+        "btn_discrete_hover_fg": "#222", "btn_discrete_hover_border": "#888",
+        "compute_bg": "#3A8A4A", "compute_hover": "#2E7A3E",
+        # Table
+        "bg_table": "#F0F1F4", "gridline": "#CCCCCC", "selection_bg": "#C0D0E8",
+        "bg_header": "#D0D4DC", "fg_header": "#333355",
+        # Slider
+        "slider_groove": "#BBBBBB", "slider_handle": "#5577BB",
+        # EME data colors (assombries pour fond clair)
+        "eme_green": "#1B8C1B", "eme_orange": "#CC7700", "eme_red": "#CC2222",
+        # Ligne MAINTENANT
+        "now_visible_hi": "#0066AA", "now_visible_bg": "#D8E8F4",
+        "now_invisible_hi": "#888888", "now_invisible_bg": "#E0E0E0",
+        # Info / légende
+        "fg_info": "#444466", "link_color": "#2255AA",
+        # Dialogues
+        "dlg_bg": "#EAECF0", "dlg_fg": "#1a1a1a",
+        "about_title_color": "#B8860B", "about_version_color": "#2255AA",
+        "dlg_hr": "#BBBBBB",
+    },
+}
+
+_current_theme = "dark"
+
+
+def _theme() -> dict:
+    return _THEMES[_current_theme]
+
+
+def _set_theme(name: str):
+    global _current_theme
+    _current_theme = name
 
 
 
@@ -130,13 +196,14 @@ def _eme_path_loss_perigee(freq_hz: float) -> float:
 
 
 def _eme_color(value, green_max, orange_max, invert=False):
+    t = _theme()
     if invert:
-        if value <= green_max: return QColor("#44ff44")
-        if value <= orange_max: return QColor("#ffaa00")
-        return QColor("#ff4444")
-    if value >= green_max: return QColor("#44ff44")
-    if value >= orange_max: return QColor("#ffaa00")
-    return QColor("#ff4444")
+        if value <= green_max: return QColor(t["eme_green"])
+        if value <= orange_max: return QColor(t["eme_orange"])
+        return QColor(t["eme_red"])
+    if value >= green_max: return QColor(t["eme_green"])
+    if value >= orange_max: return QColor(t["eme_orange"])
+    return QColor(t["eme_red"])
 
 
 def _quality_score(max_el, duration_min, ploss, moon_sun=180.0,
@@ -173,9 +240,10 @@ def _quality_squares(score):
 
 
 def _quality_color(score):
-    if score >= 7: return QColor("#44ff44")
-    if score >= 4: return QColor("#ffaa00")
-    return QColor("#ff4444")
+    t = _theme()
+    if score >= 7: return QColor(t["eme_green"])
+    if score >= 4: return QColor(t["eme_orange"])
+    return QColor(t["eme_red"])
 
 
 def _utc_offset() -> timedelta:
@@ -222,73 +290,125 @@ class MoonPredictionsWindow(QMainWindow):
         self._loadSettings()
 
     # ════════════════════════════════════════════
-    # UI
+    # Thème
     # ════════════════════════════════════════════
 
-    def _buildUI(self):
-        # Stylesheet : couleurs uniquement, AUCUN font-size
-        # Les tailles de police sont contrôlées par setFont() dans _applyFontSize
-        self.setStyleSheet("""
-            QMainWindow { background-color: #19232D; color: #cccccc; }
-            QWidget { color: #cccccc; }
-            QGroupBox {
-                background-color: #1e2a36;
-                border: 1px solid #334;
+    def _applyTheme(self):
+        """Applique le stylesheet du thème actif à toute la fenêtre."""
+        t = _theme()
+        self.setStyleSheet(f"""
+            QMainWindow {{ background-color: {t['bg_main']}; color: {t['fg_text']}; }}
+            QWidget {{ color: {t['fg_text']}; }}
+            QGroupBox {{
+                background-color: {t['bg_group']};
+                border: 1px solid {t['gridline']};
                 border-radius: 6px;
                 margin-top: 6px;
                 padding-top: 10px;
-            }
-            QLineEdit, QComboBox {
-                background-color: #2a3742;
-                border: 1px solid #445;
+            }}
+            QLineEdit, QComboBox {{
+                background-color: {t['bg_input']};
+                border: 1px solid {t['btn_border']};
                 border-radius: 3px;
                 padding: 4px 6px;
-                color: #ffffff;
-            }
-            QSpinBox {
-                background-color: #2a3742;
-                border: 1px solid #445;
+                color: {t['fg_input']};
+            }}
+            QSpinBox {{
+                background-color: {t['bg_input']};
+                border: 1px solid {t['btn_border']};
                 border-radius: 3px;
                 padding: 2px 24px 2px 6px;
-                color: #ffffff;
+                color: {t['fg_input']};
                 min-width: 40px;
-            }
-            QSpinBox::up-button, QSpinBox::down-button {
+            }}
+            QSpinBox::up-button, QSpinBox::down-button {{
                 width: 20px;
-            }
-            QPushButton {
-                background-color: #2E3D47;
-                border: 1px solid #555;
+            }}
+            QPushButton {{
+                background-color: {t['btn_bg']};
+                border: 1px solid {t['btn_border']};
                 border-radius: 3px;
                 padding: 6px 14px;
-            }
-            QPushButton:hover { background-color: #3A4D59; }
-            QPushButton:checked { background-color: #4a6080; }
-            QTableWidget {
-                background-color: #19232D;
-                gridline-color: #333;
-                selection-background-color: #334;
-            }
-            QHeaderView::section {
-                background-color: #243039;
-                color: #aaaacc;
-                border: 1px solid #333;
+            }}
+            QPushButton:hover {{ background-color: {t['btn_hover']}; }}
+            QPushButton:checked {{ background-color: {t['btn_checked']}; }}
+            QTableWidget {{
+                background-color: {t['bg_table']};
+                gridline-color: {t['gridline']};
+                selection-background-color: {t['selection_bg']};
+            }}
+            QHeaderView::section {{
+                background-color: {t['bg_header']};
+                color: {t['fg_header']};
+                border: 1px solid {t['gridline']};
                 padding: 4px;
                 font-weight: bold;
-            }
-            QSlider::groove:horizontal {
-                background: #333;
+            }}
+            QSlider::groove:horizontal {{
+                background: {t['slider_groove']};
                 height: 6px;
                 border-radius: 3px;
-            }
-            QSlider::handle:horizontal {
-                background: #6688cc;
+            }}
+            QSlider::handle:horizontal {{
+                background: {t['slider_handle']};
                 width: 16px;
                 height: 16px;
                 margin: -5px 0;
                 border-radius: 8px;
-            }
+            }}
         """)
+        # Bouton Calculer — style spécifique
+        self.btnCompute.setStyleSheet(
+            f"QPushButton {{ background-color: {t['compute_bg']}; font-weight: bold; "
+            f"color: #ffffff; }}"
+            f"QPushButton:hover {{ background-color: {t['compute_hover']}; }}"
+        )
+        # Boutons discrets (Aide, About)
+        _btn_discrete = (
+            f"QPushButton {{ color: {t['btn_discrete_fg']}; "
+            f"border: 1px solid {t['btn_discrete_border']}; padding: 4px 10px; }}"
+            f"QPushButton:hover {{ color: {t['btn_discrete_hover_fg']}; "
+            f"border-color: {t['btn_discrete_hover_border']}; }}"
+        )
+        self.btnHelp.setStyleSheet(_btn_discrete)
+        self.btnAbout.setStyleSheet(_btn_discrete)
+        # Labels à style spécifique
+        self.labelTz.setStyleSheet(f"color: {t['fg_dim']};")
+        self.labelInfo.setStyleSheet(f"color: {t['fg_info']};")
+        self.labelFooter.setStyleSheet(f"color: {t['fg_dim']};")
+        # Légende couleurs
+        self.labelLegend.setText(
+            f"<span style='color:{t['eme_green']};'>\u25a0</span> {tr('legend_excellent')}  "
+            f"<span style='color:{t['eme_orange']};'>\u25a0</span> {tr('legend_medium')}  "
+            f"<span style='color:{t['eme_red']};'>\u25a0</span> {tr('legend_poor')}"
+        )
+        # Lien EME Observer
+        self.linkSked.setText(
+            f"<a href='https://dxer.site/eme-observer/' "
+            f"style='color: {t['link_color']}; text-decoration: none;'>"
+            f"EME Observer (SA5IKN)</a>"
+        )
+        # Icône bouton thème
+        if hasattr(self, 'btnTheme'):
+            self.btnTheme.setText(
+                "\u2600" if _current_theme == "dark" else "\u263d")
+        # Rafraîchir la table si des données existent
+        if self._passes_raw:
+            self._refreshTable()
+
+    def _onThemeToggle(self):
+        new = "light" if _current_theme == "dark" else "dark"
+        _set_theme(new)
+        self._applyTheme()
+        self._applyFontSize()
+        self._settings.setValue("theme", new)
+        self._settings.sync()
+
+    # ════════════════════════════════════════════
+    # UI
+    # ════════════════════════════════════════════
+
+    def _buildUI(self):
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -319,10 +439,6 @@ class MoonPredictionsWindow(QMainWindow):
 
         stationLayout.addSpacing(15)
         self.btnCompute = QPushButton(tr("btn_compute"))
-        self.btnCompute.setStyleSheet(
-            "QPushButton { background-color: #2a5a3a; font-weight: bold; }"
-            "QPushButton:hover { background-color: #3a7a4a; }"
-        )
         self.btnCompute.clicked.connect(self._compute)
         stationLayout.addWidget(self.btnCompute)
 
@@ -333,20 +449,17 @@ class MoonPredictionsWindow(QMainWindow):
 
         stationLayout.addStretch()
 
-        stationLayout.addStretch()
+        self.btnTheme = QPushButton()
+        self.btnTheme.setToolTip(tr("tip_theme"))
+        self.btnTheme.setFixedWidth(36)
+        self.btnTheme.clicked.connect(self._onThemeToggle)
+        stationLayout.addWidget(self.btnTheme)
 
-        _btn_discrete = (
-            "QPushButton { color: #888; border: 1px solid #444; "
-            "padding: 4px 10px; }"
-            "QPushButton:hover { color: #ccc; border-color: #666; }"
-        )
         self.btnHelp = QPushButton(tr("btn_help"))
-        self.btnHelp.setStyleSheet(_btn_discrete)
         self.btnHelp.clicked.connect(self._showHelp)
         stationLayout.addWidget(self.btnHelp)
 
         self.btnAbout = QPushButton(tr("btn_about"))
-        self.btnAbout.setStyleSheet(_btn_discrete)
         self.btnAbout.clicked.connect(self._showAbout)
         stationLayout.addWidget(self.btnAbout)
 
@@ -417,7 +530,6 @@ class MoonPredictionsWindow(QMainWindow):
         self.chkLocalTime.stateChanged.connect(self._onFilterChanged)
         filterLine2.addWidget(self.chkLocalTime)
         self.labelTz = QLabel("")
-        self.labelTz.setStyleSheet("color: #888;")
         filterLine2.addWidget(self.labelTz)
         self._updateTzLabel()
 
@@ -452,15 +564,9 @@ class MoonPredictionsWindow(QMainWindow):
         filterLine2.addStretch()
 
         # Lien EME Observer (SA5IKN)
-        self.linkSked = QLabel(
-            "<a href='https://dxer.site/eme-observer/' "
-            "style='color: #6699ff; text-decoration: none;'>"
-            "EME Observer (SA5IKN)</a>")
+        self.linkSked = QLabel()
         self.linkSked.setOpenExternalLinks(True)
-        self.linkSked.setToolTip(
-            "Outil en ligne de planification de QSO EME\n"
-            "par SA5IKN — skeds, visibilité mutuelle, etc."
-        )
+        self.linkSked.setToolTip(tr("tip_sked"))
         filterLine2.addWidget(self.linkSked)
 
         layout.addLayout(filterLine2)
@@ -468,14 +574,9 @@ class MoonPredictionsWindow(QMainWindow):
         # ── Info + Légende (même ligne) ──
         infoBar = QHBoxLayout()
         self.labelInfo = QLabel(tr("info_enter_locator"))
-        self.labelInfo.setStyleSheet("color: #aaaacc;")
         infoBar.addWidget(self.labelInfo)
         infoBar.addStretch()
-        self.labelLegend = QLabel(
-            f"<span style='color:#44ff44;'>\u25a0</span> {tr('legend_excellent')}  "
-            f"<span style='color:#ffaa00;'>\u25a0</span> {tr('legend_medium')}  "
-            f"<span style='color:#ff4444;'>\u25a0</span> {tr('legend_poor')}"
-        )
+        self.labelLegend = QLabel()
         infoBar.addWidget(self.labelLegend)
         layout.addLayout(infoBar)
 
@@ -492,7 +593,6 @@ class MoonPredictionsWindow(QMainWindow):
         # ── Footer ──
         footerBar = QHBoxLayout()
         self.labelFooter = QLabel("")
-        self.labelFooter.setStyleSheet("color: #888;")
         footerBar.addWidget(self.labelFooter)
 
         layout.addLayout(footerBar)
@@ -526,6 +626,10 @@ class MoonPredictionsWindow(QMainWindow):
         self.comboLang.blockSignals(True)
         self.comboLang.setCurrentIndex(idx)
         self.comboLang.blockSignals(False)
+        # Thème (charger AVANT applyFontSize et applyTheme)
+        theme = self._settings.value("theme", "dark", type=str)
+        _set_theme(theme if theme in _THEMES else "dark")
+        self._applyTheme()
         self._applyFontSize()
 
     def showEvent(self, event):
@@ -655,7 +759,7 @@ class MoonPredictionsWindow(QMainWindow):
                 hours=30 * 24, start_offset_hours=offset_hours)
         except Exception as e:
             QMessageBox.critical(
-                self, "Erreur calcul", f"Skyfield : {e}")
+                self, tr("msg_error_calc"), f"Skyfield : {e}")
             return
 
         self._passes_raw = []
@@ -765,31 +869,32 @@ class MoonPredictionsWindow(QMainWindow):
         # Lune visible ou sous horizon ?
         visible = el > 0
 
+        t_colors = _theme()
         if visible:
-            # Lune visible — couleurs normales, fond bleu foncé
-            hi = QColor("#55ccff")
-            now_bg = QColor("#1a2a3a")
+            # Lune visible — couleurs normales, fond distinct
+            hi = QColor(t_colors["now_visible_hi"])
+            now_bg = QColor(t_colors["now_visible_bg"])
             dist_col = _eme_color(dist, _DIST_GREEN, _DIST_ORANGE, invert=True)
             pl_col = _eme_color(ploss, _PL_GREEN, _PL_ORANGE, invert=True)
             el_col = _eme_color(el, _EL_GREEN, _EL_ORANGE)
-            if lib_rate < 0.10: lib_col = QColor("#44ff44")
-            elif lib_rate < 0.25: lib_col = QColor("#ffaa00")
-            else: lib_col = QColor("#ff4444")
-            if spread < 50: spr_col = QColor("#44ff44")
-            elif spread < 150: spr_col = QColor("#ffaa00")
-            else: spr_col = QColor("#ff4444")
-            if ms_angle < 5: ms_col = QColor("#ff4444")
-            elif ms_angle < 15: ms_col = QColor("#ffaa00")
-            else: ms_col = QColor("#44ff44")
+            if lib_rate < 0.10: lib_col = QColor(t_colors["eme_green"])
+            elif lib_rate < 0.25: lib_col = QColor(t_colors["eme_orange"])
+            else: lib_col = QColor(t_colors["eme_red"])
+            if spread < 50: spr_col = QColor(t_colors["eme_green"])
+            elif spread < 150: spr_col = QColor(t_colors["eme_orange"])
+            else: spr_col = QColor(t_colors["eme_red"])
+            if ms_angle < 5: ms_col = QColor(t_colors["eme_red"])
+            elif ms_angle < 15: ms_col = QColor(t_colors["eme_orange"])
+            else: ms_col = QColor(t_colors["eme_green"])
             sq = _quality_squares(score)
             qc = _quality_color(score)
             el_txt = f"{el:+.1f}\u00b0 {tr('now_visible')}"
         else:
-            hi = QColor("#666666")
-            now_bg = QColor("#1a1a1a")
+            hi = QColor(t_colors["now_invisible_hi"])
+            now_bg = QColor(t_colors["now_invisible_bg"])
             dist_col = hi
             pl_col = hi
-            el_col = QColor("#ff4444")
+            el_col = QColor(t_colors["eme_red"])
             lib_col = hi
             spr_col = hi
             ms_col = hi
@@ -903,9 +1008,10 @@ class MoonPredictionsWindow(QMainWindow):
         # ── Ligne "MAINTENANT" (row 0, fond distinct) ──
         row_offset = 0
         if now_row:
-            bg = getattr(self, '_nowRowBg', QColor("#1a2a3a"))
+            bg = getattr(self, '_nowRowBg',
+                         QColor(_theme()["now_visible_bg"]))
             for c, (text, color) in enumerate(now_row):
-                item = _make_item(text, color or QColor("#666666"))
+                item = _make_item(text, color or QColor(_theme()["fg_dim"]))
                 item.setBackground(bg)
                 self.table.setItem(0, c, item)
             row_offset = 1
@@ -959,25 +1065,26 @@ class MoonPredictionsWindow(QMainWindow):
                            invert=True))); col += 1
 
             ms_angle = d.get("moon_sun", 180)
-            if ms_angle < 5: ms_color = QColor("#ff4444")
-            elif ms_angle < 15: ms_color = QColor("#ffaa00")
-            else: ms_color = QColor("#44ff44")
+            tc = _theme()
+            if ms_angle < 5: ms_color = QColor(tc["eme_red"])
+            elif ms_angle < 15: ms_color = QColor(tc["eme_orange"])
+            else: ms_color = QColor(tc["eme_green"])
             self.table.setItem(row, col, _make_item(
                 f"{ms_angle:.0f}\u00b0", ms_color)); col += 1
 
             # Libration rate
             lib_r = d.get("lib_rate", 0)
-            if lib_r < 0.10: lib_col = QColor("#44ff44")
-            elif lib_r < 0.25: lib_col = QColor("#ffaa00")
-            else: lib_col = QColor("#ff4444")
+            if lib_r < 0.10: lib_col = QColor(tc["eme_green"])
+            elif lib_r < 0.25: lib_col = QColor(tc["eme_orange"])
+            else: lib_col = QColor(tc["eme_red"])
             self.table.setItem(row, col, _make_item(
                 f"{lib_r:.2f}\u00b0/h", lib_col)); col += 1
 
             # Doppler spread (à la fréquence sélectionnée)
             spr = d.get("doppler_spread", 0) * freq / 10.368e9
-            if spr < 50: spr_col = QColor("#44ff44")
-            elif spr < 150: spr_col = QColor("#ffaa00")
-            else: spr_col = QColor("#ff4444")
+            if spr < 50: spr_col = QColor(tc["eme_green"])
+            elif spr < 150: spr_col = QColor(tc["eme_orange"])
+            else: spr_col = QColor(tc["eme_red"])
             self.table.setItem(row, col, _make_item(
                 f"{spr:.0f} Hz", spr_col)); col += 1
 
@@ -995,15 +1102,18 @@ class MoonPredictionsWindow(QMainWindow):
         if shown < total:
             self.labelInfo.setText(
                 self.labelInfo.text().split(" |")[0] +
-                f" | {shown}/{total} affichés")
+                f" | {tr('info_filtered', shown=shown, total=total)}")
 
         if use_local:
             self.labelFooter.setText(
-                f"Calcul : {datetime.now().strftime('%Y-%m-%d %H:%M')}"
-                f" {self.labelTz.text()}")
+                tr("footer_calc",
+                   time=f"{datetime.now().strftime('%Y-%m-%d %H:%M')}"
+                        f" {self.labelTz.text()}"))
         else:
             self.labelFooter.setText(
-                f"Calcul : {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
+                tr("footer_calc",
+                   time=datetime.now(timezone.utc).strftime(
+                       '%Y-%m-%d %H:%M UTC')))
 
         # Ajuster largeur des colonnes (header + contenu)
         for c in range(self.table.columnCount() - 1):  # -1 car dernière = stretch
@@ -1054,12 +1164,13 @@ class MoonPredictionsWindow(QMainWindow):
 
     def _showHelp(self):
         """Fenêtre d'aide utilisateur."""
+        t = _theme()
         dlg = QDialog(self)
         dlg.setWindowTitle(tr("help_title"))
         dlg.setMinimumSize(600, 520)
         dlg.setStyleSheet(
-            "QDialog { background-color: #1a2530; color: #cccccc; }"
-            "QLabel { color: #cccccc; }"
+            f"QDialog {{ background-color: {t['dlg_bg']}; color: {t['dlg_fg']}; }}"
+            f"QLabel {{ color: {t['dlg_fg']}; }}"
         )
         icon_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "moon.ico")
@@ -1083,12 +1194,13 @@ class MoonPredictionsWindow(QMainWindow):
 
     def _showAbout(self):
         """Fenêtre À propos."""
+        t = _theme()
         dlg = QDialog(self)
         dlg.setWindowTitle(tr("about_title"))
         dlg.setFixedSize(480, 360)
         dlg.setStyleSheet(
-            "QDialog { background-color: #1a2530; color: #cccccc; }"
-            "QLabel { color: #cccccc; }"
+            f"QDialog {{ background-color: {t['dlg_bg']}; color: {t['dlg_fg']}; }}"
+            f"QLabel {{ color: {t['dlg_fg']}; }}"
         )
 
         lay = QVBoxLayout(dlg)
@@ -1099,26 +1211,26 @@ class MoonPredictionsWindow(QMainWindow):
         if os.path.exists(icon_path):
             dlg.setWindowIcon(QIcon(icon_path))
 
-        title = QLabel("<h2 style='color: #FFD700;'>"
+        title = QLabel(f"<h2 style='color: {t['about_title_color']};'>"
                        "\u263d Moon Predictions</h2>")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         lay.addWidget(title)
 
         version = QLabel(
-            f"<p style='font-size: 14pt; color: #66aaff;'>"
+            f"<p style='font-size: 14pt; color: {t['about_version_color']};'>"
             f"Version {APP_VERSION} — {APP_DATE}</p>")
         version.setAlignment(Qt.AlignmentFlag.AlignCenter)
         lay.addWidget(version)
 
         info = QLabel(
             f"<p style='text-align: center;'>{tr('about_desc')}</p>"
-            "<hr style='border-color: #334;'>"
+            f"<hr style='border-color: {t['dlg_hr']};'>"
             f"<p style='text-align: center;'>"
             f"{tr('about_author')} ON7KGK — Micha\u00ebl<br>"
             f"{tr('about_dev')} Claude Code (Anthropic)<br>"
             f"{tr('about_ephem')} NASA JPL DE440s via Skyfield<br>"
             f"{tr('about_icon')} Arkinasi — Flaticon</p>"
-            "<hr style='border-color: #334;'>"
+            f"<hr style='border-color: {t['dlg_hr']};'>"
             f"<p style='text-align: center;'>{tr('about_license')}</p>"
         )
         info.setOpenExternalLinks(True)
@@ -1140,7 +1252,7 @@ class MoonPredictionsWindow(QMainWindow):
     def _exportPdf(self):
         """Export vers PDF via QTextDocument + QPrinter."""
         if not self._passes_raw:
-            QMessageBox.information(self, "Export", "Aucune donnée.")
+            QMessageBox.information(self, "Export", tr("msg_no_data"))
             return
         path, _ = QFileDialog.getSaveFileName(
             self, "Export PDF", "moon_predictions.pdf",
@@ -1164,13 +1276,16 @@ class MoonPredictionsWindow(QMainWindow):
         )
 
         headers = [
-            "Date", "Lever", "Coucher", "Durée", "EL max",
-            "H. EL max", "AZ lever", "AZ couch.", "Décl.",
-            "Distance", "Extra PL", f"Total PL ({freq_label})",
-            "Moon-Sun", "Qualité",
+            tr("exp_col_date"), tr("exp_col_rise"), tr("exp_col_set"),
+            tr("exp_col_duration"), tr("exp_col_el_max"),
+            tr("exp_col_el_max_time"), tr("exp_col_az_rise"),
+            tr("exp_col_az_set"), tr("exp_col_decl"),
+            tr("exp_col_distance"), tr("exp_col_extra_pl"),
+            tr("exp_col_total_pl", freq=freq_label),
+            tr("exp_col_moon_sun"), tr("exp_col_quality"),
         ]
         if show_phase:
-            headers.append("Phase")
+            headers.append(tr("exp_col_phase"))
 
         rows = self._getExportRows()
         if not show_phase:
@@ -1181,8 +1296,8 @@ class MoonPredictionsWindow(QMainWindow):
             "<html><head><style>"
             "body { font-family: Consolas, monospace; font-size: 9pt; }"
             "table { border-collapse: collapse; width: 100%; }"
-            "th { background-color: #243039; color: #000; "
-            "     border: 1px solid #555; padding: 4px; font-size: 8pt; }"
+            "th { background-color: #D0D4DC; color: #1a1a1a; "
+            "     border: 1px solid #999; padding: 4px; font-size: 8pt; }"
             "td { border: 1px solid #555; padding: 3px; "
             "     text-align: center; font-size: 8pt; }"
             "tr:nth-child(even) { background-color: #f0f0f8; }"
@@ -1193,27 +1308,30 @@ class MoonPredictionsWindow(QMainWindow):
         )
         station = f"{callsign} " if callsign else ""
         html += f"<h2>Moon Predictions — {station}({locator}, {self._alt_m}m)</h2>"
+        calc_time = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
         html += (
-            f"<p class='info'>Période : jours {period_label} — "
-            f"Fréquence : {freq_label} — "
-            f"Calcul : {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"
+            f"<p class='info'>{tr('exp_period', period=period_label)} — "
+            f"{tr('exp_frequency', freq=freq_label)} — "
+            f"{tr('footer_calc', time=calc_time)}"
             f"</p>"
         )
         # Ligne filtres
         filter_parts = []
         if min_el > 0:
-            filter_parts.append(f"EL min ≥ {min_el}°")
+            filter_parts.append(f"EL min \u2265 {min_el}\u00b0")
         else:
-            filter_parts.append("EL min : aucun")
+            filter_parts.append(tr("exp_el_min_none"))
         if min_score > 0:
-            filter_parts.append(f"Score min ≥ {min_score:.1f}/10")
+            filter_parts.append(f"Score min \u2265 {min_score:.1f}/10")
         else:
-            filter_parts.append("Score min : aucun")
-        filter_parts.append(f"Phase : {'oui' if show_phase else 'non'}")
+            filter_parts.append(tr("exp_score_min_none"))
+        filter_parts.append(
+            tr("exp_phase_yes") if show_phase else tr("exp_phase_no"))
+        pl = "s" if filtered_passes > 1 else ""
         html += (
-            f"<p class='info'>Filtres : {' — '.join(filter_parts)} "
-            f"({filtered_passes}/{total_passes} passage{'s' if filtered_passes > 1 else ''} "
-            f"affiché{'s' if filtered_passes > 1 else ''})</p>"
+            f"<p class='info'>{tr('exp_filters')} : "
+            f"{' \u2014 '.join(filter_parts)} "
+            f"({tr('exp_passes_shown', n=filtered_passes, total=total_passes, s=pl, es=pl, en=pl)})</p>"
         )
         html += "<table><tr>"
         for h in headers:
@@ -1225,11 +1343,7 @@ class MoonPredictionsWindow(QMainWindow):
                 html += f"<td>{cell}</td>"
             html += "</tr>"
         html += "</table>"
-        html += (
-            "<p class='footer'>Réf. périgée : 356 500 km | "
-            "Score = f(élévation, durée, distance, moon-sun) | "
-            "Calculs : Skyfield + JPL DE440s</p>"
-        )
+        html += f"<p class='footer'>{tr('exp_footer')}</p>"
         html += "</body></html>"
 
         try:
@@ -1240,29 +1354,32 @@ class MoonPredictionsWindow(QMainWindow):
 
             doc = QTextDocument()
             doc.setHtml(html)
+            doc.setPageSize(printer.pageRect(QPrinter.Unit.Point).size())
             doc.print(printer)
 
-            QMessageBox.information(self, "Export", f"Sauvegardé : {path}")
+            # Ouvrir le PDF dans l'application par défaut
+            os.startfile(path)
+
         except Exception as e:
-            QMessageBox.critical(self, "Erreur PDF", str(e))
+            QMessageBox.critical(self, tr("msg_error"), str(e))
 
     def _exportTxt(self):
         if not self._passes_raw:
-            QMessageBox.information(self, "Export", "Aucune donnée.")
+            QMessageBox.information(self, "Export", tr("msg_no_data"))
             return
         path, _ = QFileDialog.getSaveFileName(
             self, "Export TXT", "moon_predictions.txt",
-            "Texte (*.txt)")
+            tr("exp_file_filter_txt"))
         if not path:
             return
         callsign = self.editCallsign.text().strip()
         locator = self.editLocator.text().strip()
+        calc_time = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
         try:
             with open(path, "w", encoding="utf-8") as f:
                 f.write(f"Moon Predictions  -  {callsign} {locator}  "
                         f"alt {self._alt_m}m\n")
-                f.write(f"Genere : "
-                        f"{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}\n")
+                f.write(f"{tr('exp_generated', time=calc_time)}\n")
                 f.write("=" * 100 + "\n")
                 for row in self._getExportRows():
                     f.write(
@@ -1276,9 +1393,9 @@ class MoonPredictionsWindow(QMainWindow):
                         f"M-S {row[12]:>3}deg | "
                         f"Q{row[13]:>4} | {row[14]}\n"
                     )
-            QMessageBox.information(self, "Export", f"Sauvegardé : {path}")
+            QMessageBox.information(self, "Export", tr("msg_saved", path=path))
         except Exception as e:
-            QMessageBox.critical(self, "Erreur", str(e))
+            QMessageBox.critical(self, tr("msg_error"), str(e))
 
 
 def main():

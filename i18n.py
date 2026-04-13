@@ -44,7 +44,7 @@ _STRINGS = {
     },
     "info_result": {
         "fr": "{station}({locator}, {alt}m) \u2014 {count} passage(s) sur {period} jours",
-        "nl": "{station}({locator}, {alt}m) \u2014 {count} passage(s) over {period} dagen",
+        "nl": "{station}({locator}, {alt}m) \u2014 {count} doorgang(en) over {period} dagen",
         "en": "{station}({locator}, {alt}m) \u2014 {count} pass(es) over {period} days",
     },
     "info_filtered": {
@@ -213,7 +213,13 @@ _STRINGS = {
             "le plus important (30% du score)</p>"
             "<h3 style='color: #66aaff;'>6. Export</h3>"
             "<p>Exportez vos pr\u00e9visions en <b>TXT</b> ou <b>PDF</b> "
-            "pour les partager ou les imprimer.</p>"
+            "pour les partager ou les imprimer. "
+            "Le PDF s'ouvre automatiquement apr\u00e8s g\u00e9n\u00e9ration.</p>"
+            "<h3 style='color: #66aaff;'>7. Th\u00e8me clair / sombre</h3>"
+            "<p>Cliquez sur le bouton <b>\u2600 / \u263d</b> (en haut \u00e0 droite) "
+            "pour basculer entre le th\u00e8me <b>sombre</b> et le th\u00e8me <b>clair</b>. "
+            "Les couleurs EME (vert/orange/rouge) sont adapt\u00e9es \u00e0 chaque th\u00e8me "
+            "pour rester bien lisibles. Le choix est sauvegard\u00e9 automatiquement.</p>"
             "<p style='color: #888;'>Survolez les en-t\u00eates de colonnes "
             "pour des explications d\u00e9taill\u00e9es.</p>"
         ),
@@ -243,8 +249,19 @@ _STRINGS = {
             "<li><b>Spread</b>: Doppler-spreiding van het gereflecteerde signaal in Hz</li>"
             "<li><b>Kwaliteit</b>: globale score 0-10</li>"
             "</ul>"
-            "<h3 style='color: #66aaff;'>5. Export</h3>"
-            "<p>Exporteer uw voorspellingen als <b>TXT</b> of <b>PDF</b>.</p>"
+            "<h3 style='color: #66aaff;'>5. Kwaliteitsscore</h3>"
+            "<p>De score past zich aan de geselecteerde <b>frequentie</b> aan:<br>"
+            "- In <b>VHF/UHF</b> (&lt; 1 GHz): elevatie en duur domineren<br>"
+            "- In <b>microgolven</b> (\u2265 1 GHz): <b>libratie</b> wordt de "
+            "belangrijkste factor (30% van de score)</p>"
+            "<h3 style='color: #66aaff;'>6. Export</h3>"
+            "<p>Exporteer uw voorspellingen als <b>TXT</b> of <b>PDF</b>. "
+            "De PDF wordt automatisch geopend na generatie.</p>"
+            "<h3 style='color: #66aaff;'>7. Licht / donker thema</h3>"
+            "<p>Klik op de <b>\u2600 / \u263d</b> knop (rechtsboven) "
+            "om te wisselen tussen het <b>donkere</b> en het <b>lichte</b> thema. "
+            "De EME-kleuren (groen/oranje/rood) zijn aangepast per thema "
+            "voor goede leesbaarheid. Uw keuze wordt automatisch opgeslagen.</p>"
             "<p style='color: #888;'>Beweeg over de kolomkoppen voor uitleg.</p>"
         ),
         "en": (
@@ -273,8 +290,19 @@ _STRINGS = {
             "<li><b>Spread</b>: Doppler spread of reflected signal in Hz</li>"
             "<li><b>Quality</b>: overall score 0-10</li>"
             "</ul>"
-            "<h3 style='color: #66aaff;'>5. Export</h3>"
-            "<p>Export your predictions as <b>TXT</b> or <b>PDF</b>.</p>"
+            "<h3 style='color: #66aaff;'>5. Quality score</h3>"
+            "<p>The score adapts to the selected <b>frequency</b>:<br>"
+            "- In <b>VHF/UHF</b> (&lt; 1 GHz): elevation and duration dominate<br>"
+            "- In <b>microwave</b> (\u2265 1 GHz): <b>libration</b> becomes the "
+            "most important factor (30% of the score)</p>"
+            "<h3 style='color: #66aaff;'>6. Export</h3>"
+            "<p>Export your predictions as <b>TXT</b> or <b>PDF</b>. "
+            "The PDF opens automatically after generation.</p>"
+            "<h3 style='color: #66aaff;'>7. Light / dark theme</h3>"
+            "<p>Click the <b>\u2600 / \u263d</b> button (top right) "
+            "to switch between the <b>dark</b> and <b>light</b> theme. "
+            "EME colors (green/orange/red) are adapted per theme "
+            "for readability. Your choice is saved automatically.</p>"
             "<p style='color: #888;'>Hover column headers for detailed explanations.</p>"
         ),
     },
@@ -455,6 +483,76 @@ _STRINGS = {
         "fr": "Sauvegarder l'indicatif, le locator, l'altitude\net les pr\u00e9f\u00e9rences.",
         "nl": "Roepnaam, locator, hoogte en voorkeuren opslaan.",
         "en": "Save callsign, locator, altitude and preferences.",
+    },
+    # ── Export PDF / TXT ──
+    "exp_period": {
+        "fr": "Période : jours {period}",
+        "nl": "Periode : dagen {period}",
+        "en": "Period: days {period}",
+    },
+    "exp_frequency": {
+        "fr": "Fréquence : {freq}",
+        "nl": "Frequentie : {freq}",
+        "en": "Frequency: {freq}",
+    },
+    "exp_filters": {
+        "fr": "Filtres",
+        "nl": "Filters",
+        "en": "Filters",
+    },
+    "exp_el_min_none": {
+        "fr": "EL min : aucun",
+        "nl": "EL min : geen",
+        "en": "EL min: none",
+    },
+    "exp_score_min_none": {
+        "fr": "Score min : aucun",
+        "nl": "Score min : geen",
+        "en": "Score min: none",
+    },
+    "exp_phase_yes": {"fr": "Phase : oui", "nl": "Fase : ja", "en": "Phase: yes"},
+    "exp_phase_no": {"fr": "Phase : non", "nl": "Fase : nee", "en": "Phase: no"},
+    "exp_passes_shown": {
+        "fr": "{n}/{total} passage{s} affiché{s}",
+        "nl": "{n}/{total} doorgang{en} weergegeven",
+        "en": "{n}/{total} pass{es} shown",
+    },
+    "exp_footer": {
+        "fr": "Réf. périgée : 356 500 km | Score = f(élévation, durée, distance, moon-sun) | Calculs : Skyfield + JPL DE440s",
+        "nl": "Ref. perigeum : 356 500 km | Score = f(elevatie, duur, afstand, maan-zon) | Berekening : Skyfield + JPL DE440s",
+        "en": "Ref. perigee: 356,500 km | Score = f(elevation, duration, distance, moon-sun) | Calculations: Skyfield + JPL DE440s",
+    },
+    "exp_generated": {
+        "fr": "Généré : {time}",
+        "nl": "Gegenereerd : {time}",
+        "en": "Generated: {time}",
+    },
+    "exp_col_date": {"fr": "Date", "nl": "Datum", "en": "Date"},
+    "exp_col_rise": {"fr": "Lever", "nl": "Opkomst", "en": "Rise"},
+    "exp_col_set": {"fr": "Coucher", "nl": "Ondergang", "en": "Set"},
+    "exp_col_duration": {"fr": "Durée", "nl": "Duur", "en": "Duration"},
+    "exp_col_el_max": {"fr": "EL max", "nl": "EL max", "en": "EL max"},
+    "exp_col_el_max_time": {"fr": "H. EL max", "nl": "Tijd EL max", "en": "EL max time"},
+    "exp_col_az_rise": {"fr": "AZ lever", "nl": "AZ opkomst", "en": "AZ rise"},
+    "exp_col_az_set": {"fr": "AZ couch.", "nl": "AZ onderg.", "en": "AZ set"},
+    "exp_col_decl": {"fr": "Décl.", "nl": "Decl.", "en": "Decl."},
+    "exp_col_distance": {"fr": "Distance", "nl": "Afstand", "en": "Distance"},
+    "exp_col_extra_pl": {"fr": "Extra PL", "nl": "Extra PL", "en": "Extra PL"},
+    "exp_col_total_pl": {"fr": "Total PL ({freq})", "nl": "Totaal PL ({freq})", "en": "Total PL ({freq})"},
+    "exp_col_moon_sun": {"fr": "Moon-Sun", "nl": "Maan-Zon", "en": "Moon-Sun"},
+    "exp_col_quality": {"fr": "Qualité", "nl": "Kwaliteit", "en": "Quality"},
+    "exp_col_phase": {"fr": "Phase", "nl": "Fase", "en": "Phase"},
+    "exp_file_filter_txt": {"fr": "Texte (*.txt)", "nl": "Tekst (*.txt)", "en": "Text (*.txt)"},
+
+    "tip_theme": {
+        "fr": "Basculer thème clair / sombre",
+        "nl": "Wissel licht / donker thema",
+        "en": "Toggle light / dark theme",
+    },
+    "tip_sked": {
+        "fr": "Outil en ligne de planification de QSO EME\npar SA5IKN — skeds, visibilité mutuelle, etc.",
+        "nl": "Online EME QSO planningtool\ndoor SA5IKN — skeds, wederzijdse zichtbaarheid, enz.",
+        "en": "Online EME QSO planning tool\nby SA5IKN — skeds, mutual visibility, etc.",
     },
 }
 
