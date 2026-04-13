@@ -283,7 +283,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install nuitka zstandard ordered-set
+          pip install nuitka zstandard ordered-set imageio pillow
 
       - name: Cache Nuitka compilation
         uses: actions/cache@v4
@@ -300,6 +300,14 @@ jobs:
           sed -i '' "s/^APP_VERSION = .*/APP_VERSION = \"$VERSION\"/" main.py
           sed -i '' "s/^APP_DATE = .*/APP_DATE = \"$DATE\"/" main.py
 
+      - name: Convert icon to ICNS
+        run: |
+          python -c "
+          from PIL import Image
+          img = Image.open('moon.ico')
+          img.save('moon.icns')
+          "
+
       - name: Build with Nuitka
         run: |
           python -m nuitka \
@@ -308,7 +316,7 @@ jobs:
             --include-package=skyfield \
             --include-package-data=skyfield \
             --macos-create-app-bundle \
-            --macos-app-icon=moon.ico \
+            --macos-app-icon=moon.icns \
             --macos-app-name="Moon Predictions" \
             --output-filename=MoonPredictions \
             --output-dir=build \
