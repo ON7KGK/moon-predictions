@@ -33,8 +33,8 @@ from moon_calc import (
 )
 from i18n import tr, set_language, get_language
 
-APP_VERSION = "1.2.0"
-APP_DATE = "2026-04-12"
+APP_VERSION = "1.3.0"
+APP_DATE = "2026-04-13"
 
 
 # ════════════════════════════════════════════

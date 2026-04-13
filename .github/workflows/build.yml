@@ -251,111 +251,17 @@ jobs:
           retention-days: 5
 
   # ════════════════════════════════════════════════════════════════
-  # macOS — Nuitka standalone + .app bundle in .zip
+  # macOS — désactivé : Nuitka ne supporte pas PyQt6 sur macOS
+  # Nécessite migration vers PySide6 (API compatible)
+  # TODO: réactiver quand PySide6 sera intégré
   # ════════════════════════════════════════════════════════════════
-  build-macos:
-    runs-on: macos-latest
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set version
-        id: version
-        shell: bash
-        run: |
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            VERSION="${GITHUB_REF#refs/tags/v}"
-          else
-            VERSION="${{ github.event.inputs.version }}"
-          fi
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install Python dependencies
-        run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install nuitka zstandard ordered-set imageio pillow
-
-      - name: Cache Nuitka compilation
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}/.nuitka-cache
-          key: nuitka-macos-py312-${{ hashFiles('**/*.py', 'requirements.txt') }}
-          restore-keys: |
-            nuitka-macos-py312-
-
-      - name: Patch version
-        run: |
-          VERSION="${{ env.VERSION }}"
-          DATE=$(date -u +%Y-%m-%d)
-          sed -i '' "s/^APP_VERSION = .*/APP_VERSION = \"$VERSION\"/" main.py
-          sed -i '' "s/^APP_DATE = .*/APP_DATE = \"$DATE\"/" main.py
-
-      - name: Convert icon to ICNS
-        run: |
-          python -c "
-          from PIL import Image
-          img = Image.open('moon.ico')
-          img.save('moon.icns')
-          "
-
-      - name: Build with Nuitka
-        run: |
-          python -m nuitka \
-            --standalone \
-            --enable-plugin=pyqt6 \
-            --include-package=skyfield \
-            --include-package-data=skyfield \
-            --macos-create-app-bundle \
-            --macos-app-icon=moon.icns \
-            --macos-app-name="Moon Predictions" \
-            --output-filename=MoonPredictions \
-            --output-dir=build \
-            --jobs=3 \
-            --nofollow-import-to=tkinter \
-            --assume-yes-for-downloads \
-            main.py
-        env:
-          NUITKA_CACHE_DIR: ${{ github.workspace }}/.nuitka-cache
-
-      - name: Package zip
-        run: |
-          VERSION="${{ env.VERSION }}"
-          cd build
-          zip -r "../MoonPredictions-${VERSION}-macos.zip" main.app
-          cd ..
-          ls -lh "MoonPredictions-${VERSION}-macos.zip"
-
-      - name: Generate SHA256
-        run: |
-          VERSION="${{ env.VERSION }}"
-          shasum -a 256 "MoonPredictions-${VERSION}-macos.zip" > SHA256SUMS-macos.txt
-          cat SHA256SUMS-macos.txt
-
-      - name: Upload release assets
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-macos
-          path: |
-            MoonPredictions-${{ env.VERSION }}-macos.zip
-            SHA256SUMS-macos.txt
-          retention-days: 5
 
   # ════════════════════════════════════════════════════════════════
-  # Release — rassemble les 3 plateformes
+  # Release — rassemble Windows + Linux
   # ════════════════════════════════════════════════════════════════
   release:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [build-windows, build-linux, build-macos]
+    needs: [build-windows, build-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -390,7 +296,6 @@ jobs:
             |---|---|
             | Windows | `MoonPredictions-Setup-${{ env.VERSION }}.exe` |
             | Linux x64 | `MoonPredictions-${{ env.VERSION }}-linux-x64.tar.gz` |
-            | macOS | `MoonPredictions-${{ env.VERSION }}-macos.zip` |
 
             ### Première utilisation
             Au premier lancement, Skyfield télécharge automatiquement les éphémérides
@@ -402,17 +307,13 @@ jobs:
 
             ### Linux
             ```bash
-            tar xzf MoonPredictions-*-linux-x64.tar.gz -C MoonPredictions
+            mkdir MoonPredictions && tar xzf MoonPredictions-*-linux-x64.tar.gz -C MoonPredictions
             ./MoonPredictions/MoonPredictions
             ```
-
-            ### macOS
-            Décompresser le .zip et glisser Moon Predictions.app dans Applications.
 
           files: |
             artifacts/release-windows/MoonPredictions-Setup-${{ env.VERSION }}.exe
             artifacts/release-linux/MoonPredictions-${{ env.VERSION }}-linux-x64.tar.gz
-            artifacts/release-macos/MoonPredictions-${{ env.VERSION }}-macos.zip
             SHA256SUMS.txt
           draft: false
           prerelease: false
