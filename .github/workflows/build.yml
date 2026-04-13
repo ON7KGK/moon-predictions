@@ -12,6 +12,9 @@ on:
         default: '1.0.0-test'
 
 jobs:
+  # ════════════════════════════════════════════════════════════════
+  # Windows — Nuitka + NSIS installer + SignPath
+  # ════════════════════════════════════════════════════════════════
   build-windows:
     runs-on: windows-latest
     permissions:
@@ -19,11 +22,9 @@ jobs:
       contents: write
 
     steps:
-      # ── Checkout ──────────────────────────────────────────────
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ── Extraire la version depuis le tag ou l'input ──────────
       - name: Set version
         id: version
         shell: bash
@@ -36,23 +37,17 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      # ── Python 3.12 ───────────────────────────────────────────
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      # ── Dépendances ───────────────────────────────────────────
       - name: Install dependencies
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
           pip install nuitka zstandard ordered-set
 
-      # ── Cache Nuitka ──────────────────────────────────────────
-      # Stocke les objets C compilés entre les runs.
-      # Premier build : ~35 min. Builds suivants : ~3-6 min.
-      # Cache invalidé si un .py ou requirements.txt change.
       - name: Cache Nuitka compilation
         uses: actions/cache@v4
         with:
@@ -61,7 +56,6 @@ jobs:
           restore-keys: |
             nuitka-win-py312-
 
-      # ── Patch APP_VERSION dans main.py depuis le tag ──────────
       - name: Patch version
         shell: bash
         run: |
@@ -72,7 +66,6 @@ jobs:
           echo "Patched APP_VERSION=$VERSION APP_DATE=$DATE"
           grep "^APP_VERSION\|^APP_DATE" main.py
 
-      # ── Build Nuitka standalone ────────────────────────────────
       - name: Build with Nuitka
         run: |
           python -m nuitka `
@@ -91,17 +84,13 @@ jobs:
         env:
           NUITKA_CACHE_DIR: ${{ github.workspace }}/.nuitka-cache
 
-      # ── Installer NSIS ────────────────────────────────────────
       - name: Install NSIS
         run: choco install nsis --no-progress -y
 
-      # ── Build installeur NSIS ─────────────────────────────────
-      # /DPRODUCT_VERSION override la valeur "1.0.0" dans installer.nsi
       - name: Build NSIS installer
         run: |
           & "${env:ProgramFiles(x86)}\NSIS\makensis.exe" /DPRODUCT_VERSION=${{ env.VERSION }} installer.nsi
 
-      # ── Vérification ──────────────────────────────────────────
       - name: Verify installer exists
         run: |
           $installer = "MoonPredictions-Setup-${{ env.VERSION }}.exe"
@@ -112,7 +101,6 @@ jobs:
           $size = [math]::Round((Get-Item $installer).Length / 1MB, 1)
           Write-Host "OK — Installer: $installer ($size MB)"
 
-      # ── Upload artefact non signé pour SignPath ───────────────
       - name: Upload unsigned artifact
         id: upload-unsigned
         uses: actions/upload-artifact@v4
@@ -121,9 +109,6 @@ jobs:
           path: MoonPredictions-Setup-${{ env.VERSION }}.exe
           retention-days: 5
 
-      # ── Signature SignPath Foundation ─────────────────────────
-      # Skippé automatiquement si les secrets ne sont pas encore configurés
-      # (avant approbation SignPath). Les builds fonctionnent normalement.
       - name: Sign with SignPath Foundation
         id: signpath
         if: |
@@ -142,7 +127,6 @@ jobs:
           SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
           SIGNPATH_ORGANIZATION_ID: ${{ secrets.SIGNPATH_ORGANIZATION_ID }}
 
-      # ── Préparer l'asset de release ───────────────────────────
       - name: Prepare release asset
         shell: bash
         run: |
@@ -154,17 +138,237 @@ jobs:
             echo "Using UNSIGNED installer (SignPath not yet configured)"
           fi
 
-      # ── Générer SHA256 ────────────────────────────────────────
       - name: Generate SHA256
         shell: bash
         run: |
           VERSION="${{ env.VERSION }}"
-          sha256sum "MoonPredictions-Setup-${VERSION}.exe" > SHA256SUMS.txt
+          sha256sum "MoonPredictions-Setup-${VERSION}.exe" > SHA256SUMS-windows.txt
+          cat SHA256SUMS-windows.txt
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: |
+            MoonPredictions-Setup-${{ env.VERSION }}.exe
+            SHA256SUMS-windows.txt
+          retention-days: 5
+
+  # ════════════════════════════════════════════════════════════════
+  # Linux — Nuitka standalone + tar.gz
+  # ════════════════════════════════════════════════════════════════
+  build-linux:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y patchelf ccache \
+            libegl1 libgl1-mesa-glx libglib2.0-0 libfontconfig1 \
+            libxkbcommon0 libdbus-1-3
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install nuitka zstandard ordered-set
+
+      - name: Cache Nuitka compilation
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.nuitka-cache
+          key: nuitka-linux-py312-${{ hashFiles('**/*.py', 'requirements.txt') }}
+          restore-keys: |
+            nuitka-linux-py312-
+
+      - name: Patch version
+        run: |
+          VERSION="${{ env.VERSION }}"
+          DATE=$(date -u +%Y-%m-%d)
+          sed -i "s/^APP_VERSION = .*/APP_VERSION = \"$VERSION\"/" main.py
+          sed -i "s/^APP_DATE = .*/APP_DATE = \"$DATE\"/" main.py
+
+      - name: Build with Nuitka
+        run: |
+          python -m nuitka \
+            --standalone \
+            --enable-plugin=pyqt6 \
+            --include-package=skyfield \
+            --include-package-data=skyfield \
+            --output-filename=MoonPredictions \
+            --output-dir=build \
+            --jobs=2 \
+            --nofollow-import-to=tkinter \
+            --assume-yes-for-downloads \
+            main.py
+        env:
+          NUITKA_CACHE_DIR: ${{ github.workspace }}/.nuitka-cache
+
+      - name: Package tar.gz
+        run: |
+          VERSION="${{ env.VERSION }}"
+          cd build/main.dist
+          tar czf "../../MoonPredictions-${VERSION}-linux-x64.tar.gz" .
+          cd ../..
+          ls -lh "MoonPredictions-${VERSION}-linux-x64.tar.gz"
+
+      - name: Generate SHA256
+        run: |
+          VERSION="${{ env.VERSION }}"
+          sha256sum "MoonPredictions-${VERSION}-linux-x64.tar.gz" > SHA256SUMS-linux.txt
+          cat SHA256SUMS-linux.txt
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-linux
+          path: |
+            MoonPredictions-${{ env.VERSION }}-linux-x64.tar.gz
+            SHA256SUMS-linux.txt
+          retention-days: 5
+
+  # ════════════════════════════════════════════════════════════════
+  # macOS — Nuitka standalone + .app bundle in .zip
+  # ════════════════════════════════════════════════════════════════
+  build-macos:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install nuitka zstandard ordered-set
+
+      - name: Cache Nuitka compilation
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.nuitka-cache
+          key: nuitka-macos-py312-${{ hashFiles('**/*.py', 'requirements.txt') }}
+          restore-keys: |
+            nuitka-macos-py312-
+
+      - name: Patch version
+        run: |
+          VERSION="${{ env.VERSION }}"
+          DATE=$(date -u +%Y-%m-%d)
+          sed -i '' "s/^APP_VERSION = .*/APP_VERSION = \"$VERSION\"/" main.py
+          sed -i '' "s/^APP_DATE = .*/APP_DATE = \"$DATE\"/" main.py
+
+      - name: Build with Nuitka
+        run: |
+          python -m nuitka \
+            --standalone \
+            --enable-plugin=pyqt6 \
+            --include-package=skyfield \
+            --include-package-data=skyfield \
+            --macos-create-app-bundle \
+            --macos-app-icon=moon.ico \
+            --macos-app-name="Moon Predictions" \
+            --output-filename=MoonPredictions \
+            --output-dir=build \
+            --jobs=3 \
+            --nofollow-import-to=tkinter \
+            --assume-yes-for-downloads \
+            main.py
+        env:
+          NUITKA_CACHE_DIR: ${{ github.workspace }}/.nuitka-cache
+
+      - name: Package zip
+        run: |
+          VERSION="${{ env.VERSION }}"
+          cd build
+          zip -r "../MoonPredictions-${VERSION}-macos.zip" main.app
+          cd ..
+          ls -lh "MoonPredictions-${VERSION}-macos.zip"
+
+      - name: Generate SHA256
+        run: |
+          VERSION="${{ env.VERSION }}"
+          shasum -a 256 "MoonPredictions-${VERSION}-macos.zip" > SHA256SUMS-macos.txt
+          cat SHA256SUMS-macos.txt
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-macos
+          path: |
+            MoonPredictions-${{ env.VERSION }}-macos.zip
+            SHA256SUMS-macos.txt
+          retention-days: 5
+
+  # ════════════════════════════════════════════════════════════════
+  # Release — rassemble les 3 plateformes
+  # ════════════════════════════════════════════════════════════════
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Set version
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Merge SHA256
+        run: |
+          cat artifacts/release-*/SHA256SUMS-*.txt > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
-      # ── Créer la GitHub Release ───────────────────────────────
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           name: "Moon Predictions v${{ env.VERSION }}"
@@ -173,19 +377,34 @@ jobs:
 
             Application de prévision des passages lunaires pour les radioamateurs EME.
 
-            ### Téléchargement Windows
-            → Télécharger `MoonPredictions-Setup-${{ env.VERSION }}.exe`
+            ### Téléchargements
+            | Plateforme | Fichier |
+            |---|---|
+            | Windows | `MoonPredictions-Setup-${{ env.VERSION }}.exe` |
+            | Linux x64 | `MoonPredictions-${{ env.VERSION }}-linux-x64.tar.gz` |
+            | macOS | `MoonPredictions-${{ env.VERSION }}-macos.zip` |
 
             ### Première utilisation
             Au premier lancement, Skyfield télécharge automatiquement les éphémérides
             JPL DE440s (~32 Mo). Connexion Internet requise uniquement cette fois.
 
-            ### Signature de code
+            ### Windows — Signature de code
             Free code signing provided by [SignPath.io](https://signpath.io),
             certificate by [SignPath Foundation](https://signpath.org).
 
+            ### Linux
+            ```bash
+            tar xzf MoonPredictions-*-linux-x64.tar.gz -C MoonPredictions
+            ./MoonPredictions/MoonPredictions
+            ```
+
+            ### macOS
+            Décompresser le .zip et glisser Moon Predictions.app dans Applications.
+
           files: |
-            MoonPredictions-Setup-${{ env.VERSION }}.exe
+            artifacts/release-windows/MoonPredictions-Setup-${{ env.VERSION }}.exe
+            artifacts/release-linux/MoonPredictions-${{ env.VERSION }}-linux-x64.tar.gz
+            artifacts/release-macos/MoonPredictions-${{ env.VERSION }}-macos.zip
             SHA256SUMS.txt
           draft: false
           prerelease: false
