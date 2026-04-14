@@ -35,7 +35,7 @@ from moon_calc import (
 )
 from i18n import tr, set_language, get_language
 
-APP_VERSION = "1.4.0"
+APP_VERSION = "1.4.1"
 APP_DATE = "2026-04-14"
 
 
@@ -432,7 +432,18 @@ class MoonPredictionsWindow(QMainWindow):
             f"font-weight: bold; }}"
             f"QGroupBox::title {{ subcontrol-origin: margin; "
             f"left: 10px; padding: 0 4px; }}"
-            f"QRadioButton {{ color: {t['dlg_fg']}; padding: 3px; }}"
+            f"QRadioButton {{ color: {t['dlg_fg']}; padding: 6px 8px; "
+            f"border-radius: 4px; border: 1px solid transparent; }}"
+            f"QRadioButton:checked {{ background-color: {t['btn_checked']}; "
+            f"border: 1px solid {t['slider_handle']}; font-weight: bold; "
+            f"color: #ffffff; }}"
+            f"QRadioButton::indicator {{ width: 16px; height: 16px; }}"
+            f"QRadioButton::indicator:checked {{ "
+            f"background-color: {t['slider_handle']}; "
+            f"border: 3px solid #ffffff; border-radius: 8px; }}"
+            f"QRadioButton::indicator:unchecked {{ "
+            f"background-color: {t['bg_input']}; "
+            f"border: 2px solid {t['btn_border']}; border-radius: 8px; }}"
         )
         icon_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "moon.ico")
