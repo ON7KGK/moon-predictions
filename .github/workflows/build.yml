@@ -73,6 +73,7 @@ jobs:
             --enable-plugin=pyqt6 `
             --include-package=skyfield `
             --include-package-data=skyfield `
+            --include-data-dir=tooltips=tooltips `
             --windows-console-mode=disable `
             --windows-icon-from-ico=moon.ico `
             --output-filename=MoonPredictions.exe `
@@ -218,6 +219,7 @@ jobs:
             --enable-plugin=pyqt6 \
             --include-package=skyfield \
             --include-package-data=skyfield \
+            --include-data-dir=tooltips=tooltips \
             --output-filename=MoonPredictions \
             --output-dir=build \
             --jobs=2 \
