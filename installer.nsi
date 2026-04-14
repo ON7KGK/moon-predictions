@@ -38,6 +38,9 @@ ShowUnInstDetails show
 !define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
 
 ; Pages installation
+; Titre page Welcome sans la version (sinon 1.4.1 est tronqué)
+!define MUI_WELCOMEPAGE_TITLE "Bienvenue dans le programme d'installation de ${PRODUCT_NAME}"
+!define MUI_WELCOMEPAGE_TEXT "Vous êtes sur le point d'installer ${PRODUCT_NAME} ${PRODUCT_VERSION} sur votre ordinateur.$\r$\n$\r$\nAvant de démarrer l'installation, il est recommandé de fermer toutes les autres applications. Cela permettra la mise à jour de certains fichiers système sans redémarrer votre ordinateur.$\r$\n$\r$\nCliquez sur Suivant pour continuer."
 !insertmacro MUI_PAGE_WELCOME
 ; !insertmacro MUI_PAGE_LICENSE "LICENSE.txt"  ; Décommenter si LICENSE fourni
 !insertmacro MUI_PAGE_DIRECTORY
@@ -87,12 +90,14 @@ SectionEnd
 
 Section "Raccourci Menu Démarrer" SecStartMenu
   CreateDirectory "$SMPROGRAMS\${PRODUCT_NAME}"
-  CreateShortcut "$SMPROGRAMS\${PRODUCT_NAME}\${PRODUCT_NAME}.lnk" "$INSTDIR\${PRODUCT_EXE}"
+  ; Forcer l'icône moon.ico sur les raccourcis (évite l'icône générique
+  ; Windows au premier lancement avant que le cache shell soit rafraîchi)
+  CreateShortcut "$SMPROGRAMS\${PRODUCT_NAME}\${PRODUCT_NAME}.lnk" "$INSTDIR\${PRODUCT_EXE}" "" "$INSTDIR\moon.ico" 0
   CreateShortcut "$SMPROGRAMS\${PRODUCT_NAME}\Désinstaller.lnk" "$INSTDIR\uninstall.exe"
 SectionEnd
 
 Section "Raccourci Bureau" SecDesktop
-  CreateShortcut "$DESKTOP\${PRODUCT_NAME}.lnk" "$INSTDIR\${PRODUCT_EXE}"
+  CreateShortcut "$DESKTOP\${PRODUCT_NAME}.lnk" "$INSTDIR\${PRODUCT_EXE}" "" "$INSTDIR\moon.ico" 0
 SectionEnd
 
 ; ────────────────────────────────────────────────────────────────

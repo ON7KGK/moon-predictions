@@ -35,7 +35,7 @@ from moon_calc import (
 )
 from i18n import tr, set_language, get_language
 
-APP_VERSION = "1.4.1"
+APP_VERSION = "1.4.2"
 APP_DATE = "2026-04-14"
 
 
@@ -197,6 +197,20 @@ def _eme_path_loss_perigee(freq_hz: float) -> float:
     return 10.0 * math.log10(num / den)
 
 
+def _get_icon_path():
+    """Retourne le chemin absolu vers moon.ico.
+
+    Compatible Nuitka (exe compilé) et mode développement (.py).
+    Sous Nuitka, __file__ peut pointer vers le source d'origine — on utilise
+    sys.executable pour trouver le dossier d'installation.
+    """
+    if getattr(sys, 'frozen', False) or '__compiled__' in globals():
+        base = os.path.dirname(sys.executable)
+    else:
+        base = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base, "moon.ico")
+
+
 def _eme_color(value, green_max, orange_max, invert=False):
     t = _theme()
     if invert:
@@ -271,7 +285,7 @@ class MoonPredictionsWindow(QMainWindow):
         self.setWindowTitle("Moon Predictions \u2014 EME Pass Forecast")
 
         # Icône fenêtre (barre des tâches + titre)
-        icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "moon.ico")
+        icon_path = _get_icon_path()
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
         self.setMinimumSize(900, 500)
@@ -445,8 +459,7 @@ class MoonPredictionsWindow(QMainWindow):
             f"background-color: {t['bg_input']}; "
             f"border: 2px solid {t['btn_border']}; border-radius: 8px; }}"
         )
-        icon_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "moon.ico")
+        icon_path = _get_icon_path()
         if os.path.exists(icon_path):
             dlg.setWindowIcon(QIcon(icon_path))
 
@@ -1310,8 +1323,7 @@ class MoonPredictionsWindow(QMainWindow):
             f"QDialog {{ background-color: {t['dlg_bg']}; color: {t['dlg_fg']}; }}"
             f"QLabel {{ color: {t['dlg_fg']}; }}"
         )
-        icon_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "moon.ico")
+        icon_path = _get_icon_path()
         if os.path.exists(icon_path):
             dlg.setWindowIcon(QIcon(icon_path))
 
@@ -1355,8 +1367,7 @@ class MoonPredictionsWindow(QMainWindow):
         lay = QVBoxLayout(dlg)
         lay.setSpacing(12)
 
-        icon_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "moon.ico")
+        icon_path = _get_icon_path()
         if os.path.exists(icon_path):
             dlg.setWindowIcon(QIcon(icon_path))
 
@@ -1550,8 +1561,21 @@ class MoonPredictionsWindow(QMainWindow):
 
 
 def main():
+    app = QApplication(sys.argv)
+    app.setStyle("Fusion")
+
+    # Icône application — définie TRÈS TÔT pour éviter l'icône générique
+    # Windows au premier lancement après installation (cache shell pas
+    # encore rafraîchi). Appliqu\u00e9e avant SetCurrentProcessExplicitAppUserModelID.
+    icon_path = _get_icon_path()
+    app_icon = None
+    if os.path.exists(icon_path):
+        app_icon = QIcon(icon_path)
+        app.setWindowIcon(app_icon)
+
     # Windows : identifier l'app pour que la barre des tâches
-    # utilise notre icône (pas celle de Python)
+    # utilise notre icône (pas celle de Python). Doit être APRÈS setWindowIcon
+    # pour que Windows associe immédiatement la bonne icône au taskbar group.
     try:
         import ctypes
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
@@ -1559,18 +1583,10 @@ def main():
     except Exception:
         pass
 
-    app = QApplication(sys.argv)
-    app.setStyle("Fusion")
-
     # Charger la langue AVANT la création de la fenêtre
     settings = QSettings("ON7KGK", "MoonPredictions")
     lang = settings.value("language", "fr", type=str)
     set_language(lang)
-
-    # Icône application (barre des tâches Windows)
-    icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "moon.ico")
-    if os.path.exists(icon_path):
-        app.setWindowIcon(QIcon(icon_path))
 
     window = MoonPredictionsWindow()
     window.showMaximized()
