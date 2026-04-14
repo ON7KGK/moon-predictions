@@ -1,0 +1,54 @@
+{
+  "_comment": "Texts in English — tooltips (tip_*) and Conventions dialog (conv_*). Edit the text freely. The conv_*_explain and conv_intro texts accept simple HTML (<p>, <b>, <span style=...>). Do NOT rename the keys.",
+
+  "conv_title": "Calculation conventions",
+
+  "conv_intro": "<p>These conventions affect some computed values (distance, rise/set times). Default values are <b>optimized for EME</b></p><p style='color:#888;'>General astronomy software (e.g. mooncalc.org, Stellarium) often uses different conventions because it targets visual moon observation. For a radio link calculation, EME conventions are more accurate.</p>",
+
+  "conv_dist_group": "Earth-Moon distance",
+  "conv_dist_topo": "Topocentric — observer → Moon  (recommended for EME)",
+  "conv_dist_geo": "Geocentric — Earth center → Moon center",
+  "conv_dist_explain": "<p><b>Topocentric</b>: actual distance between your antenna and the Moon. This is the distance the radio signal travels.</p><p><b>Geocentric</b>: distance from Earth's center (classical astronomical convention, used by mooncalc).</p><p style='color:#888;'>The difference can reach ~6,378 km (Earth radius) when Moon is at zenith. For EME, topocentric distance is <b>essential</b> as it determines path loss and signal delay.</p>",
+
+  "conv_hor_group": "Rise / set horizon",
+  "conv_hor_geom": "Geometric (0°) — Moon center  (recommended for EME)",
+  "conv_hor_visual": "Visual (−0.83°) — upper limb + refraction",
+  "conv_hor_explain": "<p><b>Geometric</b>: the Moon is considered risen/set when its <b>center</b> crosses the geometric horizon (0°). This is the reference for EME link budget — below 0° the Moon is blocked by the Earth.</p><p><b>Visual</b>: classical astronomical convention. The Moon is \"risen\" when its <b>upper limb</b> becomes visible to the observer (semi-diameter ~15' + atmospheric refraction ~34' = 0.83° below geometric horizon). This is what mooncalc shows.</p><p style='color:#888;'>For EME, atmospheric refraction is negligible for radio signals (much less than optical), and the Moon's \"limb\" has no meaning for a radar echo. Geometric horizon is therefore the correct choice.</p>",
+
+
+  "tip_save": "Save callsign, locator, altitude and preferences.",
+  "tip_theme": "Toggle light / dark theme",
+  "tip_conventions": "Choose calculation conventions\n(distance, rise/set horizon)",
+  "tip_sked": "Online EME QSO planning tool\nby SA5IKN — skeds, mutual visibility, etc.",
+  "tip_font_size": "Font size.\nAutomatically saved.",
+  "tip_phase_chk": "Show lunar phase (visual only,\nno effect on radio EME)",
+  "tip_local_time": "Display in local time instead of UTC",
+  "tip_quality_filter": "Filter passes by minimum EME quality index\n(0 to 8)",
+
+  "tip_date": "Pass date (day of week + date)",
+  "tip_rise": "Moonrise time above the horizon",
+  "tip_set": "Moonset time below the horizon",
+  "tip_duration": "Total pass duration above the horizon\nGreen ≥ 5h, orange ≥ 2h, red < 2h",
+
+  "tip_el_max": "MAXIMUM ELEVATION\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nMaximum height of the Moon in the sky\nduring this pass.\n\n  Green  ≥ 20° : short atmospheric path, low loss\n  Orange ≥ 10° : acceptable\n  Red    < 10° : high atmospheric loss,\n                  high ground noise\n\nAt 10 GHz, atmospheric absorption increases\nrapidly below 10° elevation.",
+
+  "tip_el_max_time": "Time when the Moon reaches maximum elevation",
+  "tip_az_rise": "Moon azimuth at rise (0°=North, 90°=East)",
+  "tip_az_set": "Moon azimuth at set",
+
+  "tip_decl": "LUNAR DECLINATION\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nAngle of the Moon relative to the celestial equatorial plane.\n\n  Positive (+) = Moon north of the equator\n  Negative (−) = Moon south of the equator\n\nAffects the maximum height of the Moon:\n  High decl. + northern latitude → higher max EL\n  Ranges from −28.6° to +28.6° over 18.6 years.",
+
+  "tip_distance": "EARTH-MOON DISTANCE (km)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nTopocentric distance at maximum elevation.\n\n  Perigee (min.) : ~356,500 km\n  Apogee (max.)  : ~406,700 km\n  Average         : ~384,400 km\n\nSkyfield + JPL DE440s calculations (sub-km accuracy).",
+
+  "tip_extra_pl": "EXTRA PATH LOSS — Additional loss vs perigee\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nExtra PL = 40 × log₁₀(d / 356,500)\n\n  +0.0 dB = perigee (optimal)\n  +5.8 dB = apogee (worst case)\n\nFactor 40: round-trip path (d⁴).",
+
+  "tip_total_pl": "TOTAL PATH LOSS — Complete EME attenuation\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nTotal = PL perigee + Extra PL\n\nChange frequency to recalculate.",
+
+  "tip_moon_sun": "MOON-SUN ANGLE\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n  180° = opposition (no solar noise)\n  0°   = conjunction (max solar noise)\n\n  > 15° : no degradation\n  5-15° : possible S/N degradation\n  < 5°  : very difficult EME",
+
+  "tip_libration": "LIBRATION RATE (deg/h)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n  < 0.10 deg/h : EXCELLENT\n  0.10-0.25 : GOOD\n  0.25-0.40 : MEDIUM\n  > 0.40 : POOR\n\nAt 10 GHz, a high rate spreads the\nreflected signal (Doppler spread).\nAt 144/432 MHz, the effect is negligible.",
+
+  "tip_doppler": "DOPPLER SPREAD EME (Hz)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nFrequency spread of the reflected signal\ndue to libration.\n\n  < 50 Hz  : excellent\n  50-150 Hz : good\n  > 150 Hz  : difficult",
+
+  "tip_quality": "EME QUALITY INDEX (0 to 10)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n  Max elevation (30%/20%)\n  Duration (25%/10%)\n  Path loss (25%)\n  Moon-Sun (20%/15%)\n  Libration (0%/30% if ≥ 1 GHz)\n\nScore adapts to frequency:\n  < 1 GHz : libration ignored\n  ≥ 1 GHz : libration = 30% of score"
+}

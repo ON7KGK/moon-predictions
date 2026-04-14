@@ -1,0 +1,54 @@
+{
+  "_comment": "Textes en français — infobulles (tip_*) et fenêtre Conventions (conv_*). Modifiez le texte librement. Les textes conv_*_explain et conv_intro acceptent le HTML simple (<p>, <b>, <span style=...>). Les clés ne doivent PAS être renommées.",
+
+  "conv_title": "Conventions de calcul",
+
+  "conv_intro": "<p>Ces conventions influencent certaines valeurs calculées (distance, heures de lever/coucher). Les valeurs par défaut sont <b>optimisées pour l'EME</b></p><p style='color:#888;'>Un logiciel d'astronomie générale (ex : mooncalc.org, Stellarium) utilise souvent des conventions différentes car il cible l'observation visuelle de la Lune. Pour le calcul d'une liaison radio, les conventions EME sont plus précises.</p>",
+
+  "conv_dist_group": "Distance Terre-Lune",
+  "conv_dist_topo": "Topocentrique — observateur → Lune  (recommandé EME)",
+  "conv_dist_geo": "Géocentrique — centre Terre → centre Lune",
+  "conv_dist_explain": "<p><b>Topocentrique</b> : distance réelle entre votre antenne et la Lune. C'est la distance que le signal radio parcourt.</p><p><b>Géocentrique</b> : distance depuis le centre de la Terre (convention astronomique classique, utilisée par mooncalc).</p><p style='color:#888;'>La différence peut atteindre ~6 378 km (rayon terrestre) à la Lune au zénith. Pour l'EME, la distance topocentrique est <b>indispensable</b> car elle détermine le path loss et le délai du signal.</p>",
+
+  "conv_hor_group": "Horizon pour lever / coucher",
+  "conv_hor_geom": "Géométrique (0°) — centre de la Lune  (recommandé EME)",
+  "conv_hor_visual": "Visuel (−0.83°) — bord supérieur + réfraction",
+  "conv_hor_explain": "<p><b>Géométrique</b> : la Lune est considérée levée/couchée quand son <b>centre</b> traverse l'horizon géométrique (0°). C'est la référence pour le bilan de liaison EME — en dessous de 0° la Lune est bloquée par la Terre.</p><p><b>Visuel</b> : convention astronomique classique. La Lune est \"levée\" quand son <b>bord supérieur</b> apparaît à l'observateur (demi-diamètre ~15' + réfraction atmosphérique ~34' = 0.83° sous l'horizon géométrique). C'est ce qu'affiche mooncalc.</p><p style='color:#888;'>En EME, la réfraction atmosphérique est négligeable pour le signal radio (bien moindre qu'en optique), et le \"bord\" de la Lune n'a pas de sens pour un écho radar. L'horizon géométrique est donc le bon choix.</p>",
+
+
+  "tip_save": "Sauvegarder l'indicatif, le locator, l'altitude\net les préférences.",
+  "tip_theme": "Basculer thème clair / sombre",
+  "tip_conventions": "Choisir les conventions de calcul\n(distance, horizon lever/coucher)",
+  "tip_sked": "Outil en ligne de planification de QSO EME\npar SA5IKN — skeds, visibilité mutuelle, etc.",
+  "tip_font_size": "Taille de la police.\nSauvegardée automatiquement.",
+  "tip_phase_chk": "Afficher la phase lunaire (purement visuel,\npas d'effet sur l'EME radio)",
+  "tip_local_time": "Afficher en heure locale au lieu d'UTC",
+  "tip_quality_filter": "Filtrer les passages par indice de qualité EME\nminimum (0 à 8)",
+
+  "tip_date": "Date du passage (jour de la semaine + date)",
+  "tip_rise": "Heure de lever de la Lune au-dessus de l'horizon",
+  "tip_set": "Heure de coucher de la Lune sous l'horizon",
+  "tip_duration": "Durée totale du passage au-dessus de l'horizon\nVert ≥ 5h, orange ≥ 2h, rouge < 2h",
+
+  "tip_el_max": "ÉLÉVATION MAXIMALE\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nHauteur maximale de la Lune dans le ciel\npendant ce passage.\n\n  Vert  ≥ 20° : trajet atmosphérique court, peu de perte\n  Orange ≥ 10° : acceptable\n  Rouge  < 10° : beaucoup de perte atmosphérique,\n                  bruit de sol élevé\n\nÀ 10 GHz, l'absorption atmosphérique augmente\nrapidement sous 10° d'élévation.",
+
+  "tip_el_max_time": "Heure à laquelle la Lune atteint son élévation maximale",
+  "tip_az_rise": "Azimut de la Lune à son lever (0°=Nord, 90°=Est)",
+  "tip_az_set": "Azimut de la Lune à son coucher",
+
+  "tip_decl": "DÉCLINAISON LUNAIRE\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nAngle de la Lune par rapport au plan équatorial céleste.\n\n  Positive (+) = Lune au nord de l'équateur\n  Négative (−) = Lune au sud de l'équateur\n\nInfluence la hauteur maximale de la Lune :\n  Décl. élevée + latitude nord → EL max plus haute\n  Varie de −28.6° à +28.6° sur un cycle de 18.6 ans.",
+
+  "tip_distance": "DISTANCE TERRE-LUNE (km)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nDistance topocentrique au moment de l'élévation maximale.\n\n  Périgée (min.) : ~356 500 km\n  Apogée (max.)  : ~406 700 km\n  Moyenne         : ~384 400 km\n\nCalculs Skyfield + JPL DE440s (précision sub-km).",
+
+  "tip_extra_pl": "EXTRA PATH LOSS — Perte supplémentaire vs périgée\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nExtra PL = 40 × log₁₀(d / 356 500)\n\n  +0.0 dB = périgée (optimal)\n  +5.8 dB = apogée (défavorable)\n\nFacteur 40 : trajet aller-retour (d⁴).",
+
+  "tip_total_pl": "TOTAL PATH LOSS — Atténuation EME complète\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nTotal = PL périgée + Extra PL\n\nChangez la fréquence pour recalculer.",
+
+  "tip_moon_sun": "ANGLE LUNE-SOLEIL\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n  180° = opposition (pas de bruit solaire)\n  0°   = conjonction (bruit solaire max)\n\n  > 15° : aucune dégradation\n  5-15° : dégradation possible du S/N\n  < 5°  : EME très difficile",
+
+  "tip_libration": "TAUX DE LIBRATION LUNAIRE (deg/h)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n  < 0.10 deg/h : EXCELLENT\n  0.10-0.25 : BON\n  0.25-0.40 : MOYEN\n  > 0.40 : MAUVAIS\n\nÀ 10 GHz, un taux élevé étale le signal\nrefléchi (Doppler spread).\nÀ 144/432 MHz, l'effet est négligeable.",
+
+  "tip_doppler": "DOPPLER SPREAD EME (Hz)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nÉtalement en fréquence du signal réfléchi\npar la Lune dû à la libration.\n\n  < 50 Hz  : excellent\n  50-150 Hz : bon\n  > 150 Hz  : difficile",
+
+  "tip_quality": "INDICE DE QUALITÉ EME (0 à 10)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n  Élévation max (30%/20%)\n  Durée (25%/10%)\n  Path loss (25%)\n  Moon-Sun (20%/15%)\n  Libration (0%/30% si ≥ 1 GHz)\n\nLe score s'adapte à la fréquence :\n  < 1 GHz : libration ignorée\n  ≥ 1 GHz : libration = 30% du score"
+}

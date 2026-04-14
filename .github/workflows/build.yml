@@ -301,10 +301,6 @@ jobs:
             Au premier lancement, Skyfield télécharge automatiquement les éphémérides
             JPL DE440s (~32 Mo). Connexion Internet requise uniquement cette fois.
 
-            ### Windows — Signature de code
-            Free code signing provided by [SignPath.io](https://signpath.io),
-            certificate by [SignPath Foundation](https://signpath.org).
-
             ### Linux
             ```bash
             mkdir MoonPredictions && tar xzf MoonPredictions-*-linux-x64.tar.gz -C MoonPredictions

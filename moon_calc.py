@@ -103,14 +103,17 @@ def _moon_phase_name(phase_deg: float, illum_pct: float) -> str:
     return tr("phase_wan_cres")
 
 
-def _next_rise_set(body, location, t0, days=2.0):
+def _next_rise_set(body, location, t0, days=2.0, horizon_degrees=0.0):
     """Trouve le prochain lever et coucher apres t0.
 
+    horizon_degrees : 0 = centre geometrique (defaut),
+                      -0.8333 = bord superieur + refraction atmospherique.
     Returns (next_rise: datetime|None, next_set: datetime|None).
     """
     t1 = ts.tt_jd(t0.tt + days)
     try:
-        f = almanac.risings_and_settings(eph, body, location, horizon_degrees=0)
+        f = almanac.risings_and_settings(eph, body, location,
+                                         horizon_degrees=horizon_degrees)
         times, events = almanac.find_discrete(t0, t1, f)
     except Exception:
         return None, None
@@ -160,9 +163,14 @@ def _angular_sep_deg(az1: float, el1: float, az2: float, el2: float) -> float:
 # Fonctions publiques
 # ════════════════════════════════════════════
 
-def compute_moon(lat: float, lon: float, alt_m: float = 0) -> dict:
+def compute_moon(lat: float, lon: float, alt_m: float = 0,
+                 dist_reference: str = "topo",
+                 horizon_degrees: float = 0.0) -> dict:
     """Calcule la position actuelle de la Lune et les donnees EME.
 
+    dist_reference : "topo" (defaut, observateur -> Lune, recommande EME)
+                     ou "geo" (centre Terre -> centre Lune).
+    horizon_degrees : 0 (defaut, centre geometrique) ou -0.8333 (visuel).
     Returns dict avec : az, el, dist_km, illumination, phase_name,
                         next_rise (datetime|None), next_set (datetime|None)
     """
@@ -170,19 +178,30 @@ def compute_moon(lat: float, lon: float, alt_m: float = 0) -> dict:
     observer = eph['earth'] + location
     t = ts.now()
 
+    # Position (AZ/EL) toujours topocentrique (un observateur voit depuis sa
+    # position, pas depuis le centre de la Terre).
     apparent = observer.at(t).observe(eph['moon']).apparent()
-    alt, az, distance = apparent.altaz()
+    alt, az, topo_distance = apparent.altaz()
+
+    # Distance selon la convention choisie
+    if dist_reference == "geo":
+        geo_app = eph['earth'].at(t).observe(eph['moon']).apparent()
+        _, _, distance = geo_app.radec()
+        dist_km = distance.km
+    else:
+        dist_km = topo_distance.km
 
     illum = almanac.fraction_illuminated(eph, 'moon', t) * 100
     phase = almanac.moon_phase(eph, t)
     phase_name = _moon_phase_name(phase.degrees, illum)
 
-    next_rise, next_set = _next_rise_set(eph['moon'], location, t)
+    next_rise, next_set = _next_rise_set(eph['moon'], location, t,
+                                         horizon_degrees=horizon_degrees)
 
     return {
         "az": float(round(az.degrees, 1)),
         "el": float(round(alt.degrees, 1)),
-        "dist_km": float(round(distance.km, 0)),
+        "dist_km": float(round(dist_km, 0)),
         "illumination": float(round(illum, 1)),
         "phase_name": phase_name,
         "next_rise": next_rise,
@@ -190,7 +209,8 @@ def compute_moon(lat: float, lon: float, alt_m: float = 0) -> dict:
     }
 
 
-def compute_sun(lat: float, lon: float, alt_m: float = 0) -> dict:
+def compute_sun(lat: float, lon: float, alt_m: float = 0,
+                horizon_degrees: float = 0.0) -> dict:
     """Calcule la position actuelle du Soleil.
 
     Returns dict avec : az, el, next_rise (datetime|None), next_set (datetime|None)
@@ -202,7 +222,8 @@ def compute_sun(lat: float, lon: float, alt_m: float = 0) -> dict:
     apparent = observer.at(t).observe(eph['sun']).apparent()
     alt, az, _ = apparent.altaz()
 
-    next_rise, next_set = _next_rise_set(eph['sun'], location, t)
+    next_rise, next_set = _next_rise_set(eph['sun'], location, t,
+                                         horizon_degrees=horizon_degrees)
 
     return {
         "az": float(round(az.degrees, 1)),
@@ -285,10 +306,12 @@ def compute_cold_sky(lat: float, lon: float, alt_m: float = 0,
 
 
 def get_moon_passes(lat: float, lon: float, alt_m: float = 0,
-                    hours: int = 24, start_offset_hours: int = 0) -> list[dict]:
+                    hours: int = 24, start_offset_hours: int = 0,
+                    horizon_degrees: float = 0.0) -> list[dict]:
     """Liste les passages de la Lune au-dessus de l'horizon.
 
     start_offset_hours : decalage en heures depuis maintenant (ex: 720 = +30j)
+    horizon_degrees : 0 = centre geometrique, -0.8333 = visuel (bord + refraction).
     Returns list de dict : rise_time, set_time, max_el, max_el_time, duration_min
     """
     location = wgs84.latlon(lat, lon, elevation_m=alt_m)
@@ -306,7 +329,7 @@ def get_moon_passes(lat: float, lon: float, alt_m: float = 0,
 
     try:
         f = almanac.risings_and_settings(eph, moon_body, location,
-                                         horizon_degrees=0)
+                                         horizon_degrees=horizon_degrees)
         times, events = almanac.find_discrete(search_start, t1, f)
     except Exception:
         return []
@@ -468,10 +491,12 @@ def compute_libration(lat: float, lon: float, alt_m: float,
 
 
 def enrich_moon_pass(lat: float, lon: float, alt_m: float,
-                     pass_data: dict) -> dict:
+                     pass_data: dict,
+                     dist_reference: str = "topo") -> dict:
     """Enrichit un dict passage avec distance, illum, phase, AZ, decl, moon-sun,
     libration et Doppler spread.
 
+    dist_reference : "topo" (defaut) ou "geo".
     Utilise Skyfield + JPL DE440s (precision sub-km).
     """
     location = wgs84.latlon(lat, lon, elevation_m=alt_m)
@@ -480,8 +505,13 @@ def enrich_moon_pass(lat: float, lon: float, alt_m: float,
     # Au moment de l'EL max
     t_max = ts.from_datetime(pass_data["max_el_time"])
     app_moon = observer.at(t_max).observe(eph['moon']).apparent()
-    _, _, dist = app_moon.altaz()
-    pass_data["dist_km"] = dist.km
+    _, _, topo_dist = app_moon.altaz()
+    if dist_reference == "geo":
+        geo_app = eph['earth'].at(t_max).observe(eph['moon']).apparent()
+        _, _, geo_dist = geo_app.radec()
+        pass_data["dist_km"] = geo_dist.km
+    else:
+        pass_data["dist_km"] = topo_dist.km
 
     # Illumination
     illum = almanac.fraction_illuminated(eph, 'moon', t_max) * 100

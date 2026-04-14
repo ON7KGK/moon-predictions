@@ -1,6 +1,13 @@
 """
 Moon Predictions — Internationalisation (FR / NL / EN)
+
+Les infobulles (clés tip_*) sont charg\u00e9es depuis les fichiers JSON externes
+dans le dossier tooltips/ (fr.json, nl.json, en.json).
+\u00c9ditez ces fichiers pour modifier le texte des infobulles sans toucher au code.
 """
+
+import json
+import os
 
 _LANG = "fr"  # Langue par défaut
 
@@ -320,170 +327,9 @@ _STRINGS = {
     "about_icon": {"fr": "<b>Ic\u00f4ne :</b>", "nl": "<b>Icoon :</b>", "en": "<b>Icon:</b>"},
     "about_license": {"fr": "<b>Licence :</b> GNU GPL v3 \u2014 Open Source", "nl": "<b>Licentie :</b> GNU GPL v3 \u2014 Open Source", "en": "<b>License:</b> GNU GPL v3 \u2014 Open Source"},
     "btn_close": {"fr": "Fermer", "nl": "Sluiten", "en": "Close"},
+    "btn_apply": {"fr": "Appliquer", "nl": "Toepassen", "en": "Apply"},
+    "btn_cancel": {"fr": "Annuler", "nl": "Annuleren", "en": "Cancel"},
 
-    # ── Tooltips colonnes ──
-    "tip_date": {
-        "fr": "Date du passage (jour de la semaine + date)",
-        "nl": "Datum van de passage (dag van de week + datum)",
-        "en": "Pass date (day of week + date)",
-    },
-    "tip_rise": {
-        "fr": "Heure de lever de la Lune au-dessus de l'horizon",
-        "nl": "Tijdstip van maanopkomst boven de horizon",
-        "en": "Moonrise time above the horizon",
-    },
-    "tip_set": {
-        "fr": "Heure de coucher de la Lune sous l'horizon",
-        "nl": "Tijdstip van maanondergang onder de horizon",
-        "en": "Moonset time below the horizon",
-    },
-    "tip_duration": {
-        "fr": "Dur\u00e9e totale du passage au-dessus de l'horizon\nVert \u2265 5h, orange \u2265 2h, rouge < 2h",
-        "nl": "Totale duur van de passage boven de horizon\nGroen \u2265 5u, oranje \u2265 2u, rood < 2u",
-        "en": "Total pass duration above the horizon\nGreen \u2265 5h, orange \u2265 2h, red < 2h",
-    },
-    "tip_el_max": {
-        "fr": (
-            "\u00c9L\u00c9VATION MAXIMALE\n"
-            "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n"
-            "Hauteur maximale de la Lune dans le ciel\npendant ce passage.\n\n"
-            "  Vert  \u2265 20\u00b0 : trajet atmosph\u00e9rique court, peu de perte\n"
-            "  Orange \u2265 10\u00b0 : acceptable\n"
-            "  Rouge  < 10\u00b0 : beaucoup de perte atmosph\u00e9rique,\n"
-            "                  bruit de sol \u00e9lev\u00e9\n\n"
-            "\u00c0 10 GHz, l'absorption atmosph\u00e9rique augmente\n"
-            "rapidement sous 10\u00b0 d'\u00e9l\u00e9vation."
-        ),
-        "nl": (
-            "MAXIMALE ELEVATIE\n"
-            "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n"
-            "Maximale hoogte van de Maan aan de hemel\ntijdens deze passage.\n\n"
-            "  Groen  \u2265 20\u00b0 : kort atmosferisch pad, weinig verlies\n"
-            "  Oranje \u2265 10\u00b0 : acceptabel\n"
-            "  Rood   < 10\u00b0 : veel atmosferisch verlies,\n"
-            "                   hoge grondruis\n\n"
-            "Bij 10 GHz neemt de atmosferische absorptie\n"
-            "snel toe onder 10\u00b0 elevatie."
-        ),
-        "en": (
-            "MAXIMUM ELEVATION\n"
-            "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n"
-            "Maximum height of the Moon in the sky\nduring this pass.\n\n"
-            "  Green  \u2265 20\u00b0 : short atmospheric path, low loss\n"
-            "  Orange \u2265 10\u00b0 : acceptable\n"
-            "  Red    < 10\u00b0 : high atmospheric loss,\n"
-            "                  high ground noise\n\n"
-            "At 10 GHz, atmospheric absorption increases\n"
-            "rapidly below 10\u00b0 elevation."
-        ),
-    },
-    "tip_el_max_time": {
-        "fr": "Heure \u00e0 laquelle la Lune atteint son \u00e9l\u00e9vation maximale",
-        "nl": "Tijdstip waarop de Maan zijn maximale elevatie bereikt",
-        "en": "Time when the Moon reaches maximum elevation",
-    },
-    "tip_az_rise": {
-        "fr": "Azimut de la Lune \u00e0 son lever (0\u00b0=Nord, 90\u00b0=Est)",
-        "nl": "Azimut van de Maan bij opkomst (0\u00b0=Noord, 90\u00b0=Oost)",
-        "en": "Moon azimuth at rise (0\u00b0=North, 90\u00b0=East)",
-    },
-    "tip_az_set": {
-        "fr": "Azimut de la Lune \u00e0 son coucher",
-        "nl": "Azimut van de Maan bij ondergang",
-        "en": "Moon azimuth at set",
-    },
-    "tip_decl": {
-        "fr": (
-            "D\u00c9CLINAISON LUNAIRE\n"
-            "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n"
-            "Angle de la Lune par rapport au plan \u00e9quatorial c\u00e9leste.\n\n"
-            "  Positive (+) = Lune au nord de l'\u00e9quateur\n"
-            "  N\u00e9gative (\u2212) = Lune au sud de l'\u00e9quateur\n\n"
-            "Influence la hauteur maximale de la Lune :\n"
-            "  D\u00e9cl. \u00e9lev\u00e9e + latitude nord \u2192 EL max plus haute\n"
-            "  Varie de \u221228.6\u00b0 \u00e0 +28.6\u00b0 sur un cycle de 18.6 ans."
-        ),
-        "nl": (
-            "MAANDECLINATIE\n"
-            "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n"
-            "Hoek van de Maan t.o.v. het hemelse equatorvlak.\n\n"
-            "  Positief (+) = Maan ten noorden van de equator\n"
-            "  Negatief (\u2212) = Maan ten zuiden van de equator\n\n"
-            "Be\u00efnvloedt de maximale hoogte van de Maan:\n"
-            "  Hoge decl. + noordelijke breedte \u2192 hogere max EL\n"
-            "  Varieert van \u221228.6\u00b0 tot +28.6\u00b0 over 18.6 jaar."
-        ),
-        "en": (
-            "LUNAR DECLINATION\n"
-            "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n"
-            "Angle of the Moon relative to the celestial equatorial plane.\n\n"
-            "  Positive (+) = Moon north of the equator\n"
-            "  Negative (\u2212) = Moon south of the equator\n\n"
-            "Affects the maximum height of the Moon:\n"
-            "  High decl. + northern latitude \u2192 higher max EL\n"
-            "  Ranges from \u221228.6\u00b0 to +28.6\u00b0 over 18.6 years."
-        ),
-    },
-    "tip_distance": {
-        "fr": "DISTANCE TERRE-LUNE (km)\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\nDistance topocentrique au moment de l'\u00e9l\u00e9vation maximale.\n\n  P\u00e9rig\u00e9e (min.) : ~356 500 km\n  Apog\u00e9e (max.)  : ~406 700 km\n  Moyenne         : ~384 400 km\n\nCalculs Skyfield + JPL DE440s (pr\u00e9cision sub-km).",
-        "nl": "AARDE-MAAN AFSTAND (km)\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\nTopocentrische afstand op het moment van maximale elevatie.\n\n  Perigeum (min.) : ~356.500 km\n  Apogeum (max.)  : ~406.700 km\n  Gemiddeld        : ~384.400 km\n\nBerekeningen Skyfield + JPL DE440s (sub-km nauwkeurigheid).",
-        "en": "EARTH-MOON DISTANCE (km)\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\nTopocentric distance at maximum elevation.\n\n  Perigee (min.) : ~356,500 km\n  Apogee (max.)  : ~406,700 km\n  Average         : ~384,400 km\n\nSkyfield + JPL DE440s calculations (sub-km accuracy).",
-    },
-    "tip_extra_pl": {
-        "fr": "EXTRA PATH LOSS \u2014 Perte suppl\u00e9mentaire vs p\u00e9rig\u00e9e\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\nExtra PL = 40 \u00d7 log\u2081\u2080(d / 356 500)\n\n  +0.0 dB = p\u00e9rig\u00e9e (optimal)\n  +5.8 dB = apog\u00e9e (d\u00e9favorable)\n\nFacteur 40 : trajet aller-retour (d\u2074).",
-        "nl": "EXTRA PATH LOSS \u2014 Extra verlies t.o.v. perigeum\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\nExtra PL = 40 \u00d7 log\u2081\u2080(d / 356.500)\n\n  +0.0 dB = perigeum (optimaal)\n  +5.8 dB = apogeum (ongunstig)\n\nFactor 40: heen-en-terugpad (d\u2074).",
-        "en": "EXTRA PATH LOSS \u2014 Additional loss vs perigee\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\nExtra PL = 40 \u00d7 log\u2081\u2080(d / 356,500)\n\n  +0.0 dB = perigee (optimal)\n  +5.8 dB = apogee (worst case)\n\nFactor 40: round-trip path (d\u2074).",
-    },
-    "tip_total_pl": {
-        "fr": "TOTAL PATH LOSS \u2014 Att\u00e9nuation EME compl\u00e8te\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\nTotal = PL p\u00e9rig\u00e9e + Extra PL\n\nChangez la fr\u00e9quence pour recalculer.",
-        "nl": "TOTAAL PATH LOSS \u2014 Volledige EME-demping\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\nTotaal = PL perigeum + Extra PL\n\nWijzig de frequentie om te herberekenen.",
-        "en": "TOTAL PATH LOSS \u2014 Complete EME attenuation\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\nTotal = PL perigee + Extra PL\n\nChange frequency to recalculate.",
-    },
-    "tip_moon_sun": {
-        "fr": "ANGLE LUNE-SOLEIL\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n  180\u00b0 = opposition (pas de bruit solaire)\n  0\u00b0   = conjonction (bruit solaire max)\n\n  > 15\u00b0 : aucune d\u00e9gradation\n  5-15\u00b0 : d\u00e9gradation possible du S/N\n  < 5\u00b0  : EME tr\u00e8s difficile",
-        "nl": "MAAN-ZON HOEK\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n  180\u00b0 = oppositie (geen zonsruis)\n  0\u00b0   = conjunctie (max. zonsruis)\n\n  > 15\u00b0 : geen degradatie\n  5-15\u00b0 : mogelijke S/N-degradatie\n  < 5\u00b0  : EME zeer moeilijk",
-        "en": "MOON-SUN ANGLE\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n  180\u00b0 = opposition (no solar noise)\n  0\u00b0   = conjunction (max solar noise)\n\n  > 15\u00b0 : no degradation\n  5-15\u00b0 : possible S/N degradation\n  < 5\u00b0  : very difficult EME",
-    },
-    "tip_libration": {
-        "fr": "TAUX DE LIBRATION LUNAIRE (deg/h)\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n  < 0.10 deg/h : EXCELLENT\n  0.10-0.25 : BON\n  0.25-0.40 : MOYEN\n  > 0.40 : MAUVAIS\n\n\u00c0 10 GHz, un taux \u00e9lev\u00e9 \u00e9tale le signal\nrefl\u00e9chi (Doppler spread).\n\u00c0 144/432 MHz, l'effet est n\u00e9gligeable.",
-        "nl": "LIBRATIESNELHEID (deg/u)\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n  < 0.10 deg/u : UITSTEKEND\n  0.10-0.25 : GOED\n  0.25-0.40 : GEMIDDELD\n  > 0.40 : SLECHT\n\nBij 10 GHz verspreidt een hoog tempo\nhet gereflecteerde signaal (Doppler spread).\nBij 144/432 MHz is het effect verwaarloosbaar.",
-        "en": "LIBRATION RATE (deg/h)\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n  < 0.10 deg/h : EXCELLENT\n  0.10-0.25 : GOOD\n  0.25-0.40 : MEDIUM\n  > 0.40 : POOR\n\nAt 10 GHz, a high rate spreads the\nreflected signal (Doppler spread).\nAt 144/432 MHz, the effect is negligible.",
-    },
-    "tip_doppler": {
-        "fr": "DOPPLER SPREAD EME (Hz)\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n\u00c9talement en fr\u00e9quence du signal r\u00e9fl\u00e9chi\npar la Lune d\u00fb \u00e0 la libration.\n\n  < 50 Hz  : excellent\n  50-150 Hz : bon\n  > 150 Hz  : difficile",
-        "nl": "DOPPLER SPREAD EME (Hz)\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\nFrequentiespreiding van het gereflecteerde\nsignaal door libratie.\n\n  < 50 Hz  : uitstekend\n  50-150 Hz : goed\n  > 150 Hz  : moeilijk",
-        "en": "DOPPLER SPREAD EME (Hz)\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\nFrequency spread of the reflected signal\ndue to libration.\n\n  < 50 Hz  : excellent\n  50-150 Hz : good\n  > 150 Hz  : difficult",
-    },
-    "tip_quality": {
-        "fr": "INDICE DE QUALIT\u00c9 EME (0 \u00e0 10)\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n  \u00c9l\u00e9vation max (30%/20%)\n  Dur\u00e9e (25%/10%)\n  Path loss (25%)\n  Moon-Sun (20%/15%)\n  Libration (0%/30% si \u2265 1 GHz)\n\nLe score s'adapte \u00e0 la fr\u00e9quence :\n  < 1 GHz : libration ignor\u00e9e\n  \u2265 1 GHz : libration = 30% du score",
-        "nl": "EME KWALITEITSINDEX (0 tot 10)\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n  Max. elevatie (30%/20%)\n  Duur (25%/10%)\n  Path loss (25%)\n  Maan-Zon (20%/15%)\n  Libratie (0%/30% als \u2265 1 GHz)\n\nDe score past zich aan de frequentie aan:\n  < 1 GHz : libratie genegeerd\n  \u2265 1 GHz : libratie = 30% van de score",
-        "en": "EME QUALITY INDEX (0 to 10)\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n  Max elevation (30%/20%)\n  Duration (25%/10%)\n  Path loss (25%)\n  Moon-Sun (20%/15%)\n  Libration (0%/30% if \u2265 1 GHz)\n\nScore adapts to frequency:\n  < 1 GHz : libration ignored\n  \u2265 1 GHz : libration = 30% of score",
-    },
-    "tip_phase_chk": {
-        "fr": "Afficher la phase lunaire (purement visuel,\npas d'effet sur l'EME radio)",
-        "nl": "Maanfase weergeven (puur visueel,\ngeen effect op radio EME)",
-        "en": "Show lunar phase (visual only,\nno effect on radio EME)",
-    },
-    "tip_local_time": {
-        "fr": "Afficher en heure locale au lieu d'UTC",
-        "nl": "Weergeven in lokale tijd in plaats van UTC",
-        "en": "Display in local time instead of UTC",
-    },
-    "tip_quality_filter": {
-        "fr": "Filtrer les passages par indice de qualit\u00e9 EME\nminimum (0 \u00e0 8)",
-        "nl": "Passages filteren op minimum EME-kwaliteitsindex\n(0 tot 8)",
-        "en": "Filter passes by minimum EME quality index\n(0 to 8)",
-    },
-    "tip_font_size": {
-        "fr": "Taille de la police.\nSauvegard\u00e9e automatiquement.",
-        "nl": "Lettergrootte.\nAutomatisch opgeslagen.",
-        "en": "Font size.\nAutomatically saved.",
-    },
-    "tip_save": {
-        "fr": "Sauvegarder l'indicatif, le locator, l'altitude\net les pr\u00e9f\u00e9rences.",
-        "nl": "Roepnaam, locator, hoogte en voorkeuren opslaan.",
-        "en": "Save callsign, locator, altitude and preferences.",
-    },
     # ── Export PDF / TXT ──
     "exp_period": {
         "fr": "Période : jours {period}",
@@ -544,17 +390,41 @@ _STRINGS = {
     "exp_col_phase": {"fr": "Phase", "nl": "Fase", "en": "Phase"},
     "exp_file_filter_txt": {"fr": "Texte (*.txt)", "nl": "Tekst (*.txt)", "en": "Text (*.txt)"},
 
-    "tip_theme": {
-        "fr": "Basculer thème clair / sombre",
-        "nl": "Wissel licht / donker thema",
-        "en": "Toggle light / dark theme",
-    },
-    "tip_sked": {
-        "fr": "Outil en ligne de planification de QSO EME\npar SA5IKN — skeds, visibilité mutuelle, etc.",
-        "nl": "Online EME QSO planningtool\ndoor SA5IKN — skeds, wederzijdse zichtbaarheid, enz.",
-        "en": "Online EME QSO planning tool\nby SA5IKN — skeds, mutual visibility, etc.",
-    },
+    "btn_conventions": {"fr": "Conventions", "nl": "Conventies", "en": "Conventions"},
 }
+
+
+# ════════════════════════════════════════════
+# Chargement des infobulles externes (tooltips/*.json)
+# ════════════════════════════════════════════
+
+def _load_tooltips():
+    """Charge tooltips/fr.json, nl.json, en.json et les fusionne dans _STRINGS.
+
+    Chaque fichier contient {cle_tip: "texte"}.
+    Les cl\u00e9s commen\u00e7ant par '_' (ex: _comment) sont ignor\u00e9es.
+    """
+    base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tooltips")
+    if not os.path.isdir(base):
+        return
+    for lang in ("fr", "nl", "en"):
+        path = os.path.join(base, f"{lang}.json")
+        if not os.path.isfile(path):
+            continue
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception as e:
+            print(f"[i18n] Erreur lecture {path}: {e}")
+            continue
+        for key, text in data.items():
+            if key.startswith("_"):
+                continue
+            entry = _STRINGS.setdefault(key, {})
+            entry[lang] = text
+
+
+_load_tooltips()
 
 
 def set_language(lang: str):

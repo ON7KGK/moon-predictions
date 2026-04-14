@@ -1,0 +1,54 @@
+{
+  "_comment": "Teksten in het Nederlands — tooltips (tip_*) en Conventies-venster (conv_*). Bewerk de tekst vrij. De teksten conv_*_explain en conv_intro accepteren eenvoudige HTML (<p>, <b>, <span style=...>). Wijzig de sleutels NIET.",
+
+  "conv_title": "Rekenconventies",
+
+  "conv_intro": "<p>Deze conventies beïnvloeden bepaalde berekende waarden (afstand, opkomst/ondergang-tijden). De standaardwaarden zijn <b>geoptimaliseerd voor EME</b></p><p style='color:#888;'>Algemene astronomiesoftware (bv. mooncalc.org, Stellarium) gebruikt vaak andere conventies omdat het gericht is op visuele maanobservatie. Voor een radioverbinding zijn de EME-conventies nauwkeuriger.</p>",
+
+  "conv_dist_group": "Aarde-Maan afstand",
+  "conv_dist_topo": "Topocentrisch — waarnemer → Maan  (aanbevolen voor EME)",
+  "conv_dist_geo": "Geocentrisch — Aarde-centrum → Maan-centrum",
+  "conv_dist_explain": "<p><b>Topocentrisch</b>: werkelijke afstand tussen uw antenne en de Maan. Dit is de afstand die het radiosignaal aflegt.</p><p><b>Geocentrisch</b>: afstand vanaf het centrum van de Aarde (klassieke astronomische conventie, gebruikt door mooncalc).</p><p style='color:#888;'>Het verschil kan oplopen tot ~6 378 km (aardstraal) bij de Maan in het zenit. Voor EME is de topocentrische afstand <b>onmisbaar</b> omdat deze het padverlies en de signaalvertraging bepaalt.</p>",
+
+  "conv_hor_group": "Horizon voor opkomst / ondergang",
+  "conv_hor_geom": "Geometrisch (0°) — Maan-centrum  (aanbevolen voor EME)",
+  "conv_hor_visual": "Visueel (−0.83°) — bovenrand + refractie",
+  "conv_hor_explain": "<p><b>Geometrisch</b>: de Maan wordt als opgekomen/ondergegaan beschouwd wanneer haar <b>centrum</b> de geometrische horizon (0°) kruist. Dit is de referentie voor de EME-linkbudget — onder 0° wordt de Maan door de Aarde geblokkeerd.</p><p><b>Visueel</b>: klassieke astronomische conventie. De Maan is \"opgekomen\" wanneer haar <b>bovenrand</b> zichtbaar wordt voor de waarnemer (halve diameter ~15' + atmosferische refractie ~34' = 0.83° onder de geometrische horizon). Dit toont mooncalc.</p><p style='color:#888;'>Voor EME is atmosferische refractie verwaarloosbaar voor radiosignalen (veel minder dan optisch), en de \"rand\" van de Maan heeft geen betekenis voor een radarecho. De geometrische horizon is dus de juiste keuze.</p>",
+
+
+  "tip_save": "Roepnaam, locator, hoogte en voorkeuren opslaan.",
+  "tip_theme": "Wissel licht / donker thema",
+  "tip_conventions": "Rekenconventies kiezen\n(afstand, horizon opkomst/ondergang)",
+  "tip_sked": "Online EME QSO planningtool\ndoor SA5IKN — skeds, wederzijdse zichtbaarheid, enz.",
+  "tip_font_size": "Lettergrootte.\nAutomatisch opgeslagen.",
+  "tip_phase_chk": "Maanfase weergeven (puur visueel,\ngeen effect op radio EME)",
+  "tip_local_time": "Weergeven in lokale tijd in plaats van UTC",
+  "tip_quality_filter": "Passages filteren op minimum EME-kwaliteitsindex\n(0 tot 8)",
+
+  "tip_date": "Datum van de passage (dag van de week + datum)",
+  "tip_rise": "Tijdstip van maanopkomst boven de horizon",
+  "tip_set": "Tijdstip van maanondergang onder de horizon",
+  "tip_duration": "Totale duur van de passage boven de horizon\nGroen ≥ 5u, oranje ≥ 2u, rood < 2u",
+
+  "tip_el_max": "MAXIMALE ELEVATIE\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nMaximale hoogte van de Maan aan de hemel\ntijdens deze passage.\n\n  Groen  ≥ 20° : kort atmosferisch pad, weinig verlies\n  Oranje ≥ 10° : acceptabel\n  Rood   < 10° : veel atmosferisch verlies,\n                   hoge grondruis\n\nBij 10 GHz neemt de atmosferische absorptie\nsnel toe onder 10° elevatie.",
+
+  "tip_el_max_time": "Tijdstip waarop de Maan zijn maximale elevatie bereikt",
+  "tip_az_rise": "Azimut van de Maan bij opkomst (0°=Noord, 90°=Oost)",
+  "tip_az_set": "Azimut van de Maan bij ondergang",
+
+  "tip_decl": "MAANDECLINATIE\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nHoek van de Maan t.o.v. het hemelse equatorvlak.\n\n  Positief (+) = Maan ten noorden van de equator\n  Negatief (−) = Maan ten zuiden van de equator\n\nBeïnvloedt de maximale hoogte van de Maan:\n  Hoge decl. + noordelijke breedte → hogere max EL\n  Varieert van −28.6° tot +28.6° over 18.6 jaar.",
+
+  "tip_distance": "AARDE-MAAN AFSTAND (km)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nTopocentrische afstand op het moment van maximale elevatie.\n\n  Perigeum (min.) : ~356.500 km\n  Apogeum (max.)  : ~406.700 km\n  Gemiddeld        : ~384.400 km\n\nBerekeningen Skyfield + JPL DE440s (sub-km nauwkeurigheid).",
+
+  "tip_extra_pl": "EXTRA PATH LOSS — Extra verlies t.o.v. perigeum\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nExtra PL = 40 × log₁₀(d / 356.500)\n\n  +0.0 dB = perigeum (optimaal)\n  +5.8 dB = apogeum (ongunstig)\n\nFactor 40: heen-en-terugpad (d⁴).",
+
+  "tip_total_pl": "TOTAAL PATH LOSS — Volledige EME-demping\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nTotaal = PL perigeum + Extra PL\n\nWijzig de frequentie om te herberekenen.",
+
+  "tip_moon_sun": "MAAN-ZON HOEK\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n  180° = oppositie (geen zonsruis)\n  0°   = conjunctie (max. zonsruis)\n\n  > 15° : geen degradatie\n  5-15° : mogelijke S/N-degradatie\n  < 5°  : EME zeer moeilijk",
+
+  "tip_libration": "LIBRATIESNELHEID (deg/u)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n  < 0.10 deg/u : UITSTEKEND\n  0.10-0.25 : GOED\n  0.25-0.40 : GEMIDDELD\n  > 0.40 : SLECHT\n\nBij 10 GHz verspreidt een hoog tempo\nhet gereflecteerde signaal (Doppler spread).\nBij 144/432 MHz is het effect verwaarloosbaar.",
+
+  "tip_doppler": "DOPPLER SPREAD EME (Hz)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nFrequentiespreiding van het gereflecteerde\nsignaal door libratie.\n\n  < 50 Hz  : uitstekend\n  50-150 Hz : goed\n  > 150 Hz  : moeilijk",
+
+  "tip_quality": "EME KWALITEITSINDEX (0 tot 10)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n  Max. elevatie (30%/20%)\n  Duur (25%/10%)\n  Path loss (25%)\n  Maan-Zon (20%/15%)\n  Libratie (0%/30% als ≥ 1 GHz)\n\nDe score past zich aan de frequentie aan:\n  < 1 GHz : libratie genegeerd\n  ≥ 1 GHz : libratie = 30% van de score"
+}

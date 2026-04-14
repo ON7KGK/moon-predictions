@@ -23,18 +23,20 @@ from PyQt6.QtWidgets import (
     QLabel, QLineEdit, QSpinBox, QPushButton, QTableWidget,
     QTableWidgetItem, QHeaderView, QSlider, QCheckBox, QComboBox,
     QFileDialog, QMessageBox, QGroupBox, QScrollArea, QDialog,
+    QRadioButton, QButtonGroup,
 )
 from PyQt6.QtCore import Qt, QSettings, QTimer
 from PyQt6.QtGui import QColor, QFont, QIcon, QTextDocument, QPageLayout
 from PyQt6.QtPrintSupport import QPrinter
+from PyQt6.QtWidgets import QToolTip
 
 from moon_calc import (
     locator_to_latlon, get_moon_passes, enrich_moon_pass, compute_moon
 )
 from i18n import tr, set_language, get_language
 
-APP_VERSION = "1.3.0"
-APP_DATE = "2026-04-13"
+APP_VERSION = "1.4.0"
+APP_DATE = "2026-04-14"
 
 
 # ════════════════════════════════════════════
@@ -280,6 +282,9 @@ class MoonPredictionsWindow(QMainWindow):
         self._lon = 0.0
         self._alt_m = 0
         self._periodIndex = 0
+        # Conventions de calcul (defauts : EME)
+        self._distRef = "topo"       # "topo" ou "geo"
+        self._horizonMode = "geom"   # "geom" ou "visual"
 
         self._filterTimer = QTimer()
         self._filterTimer.setSingleShot(True)
@@ -372,6 +377,7 @@ class MoonPredictionsWindow(QMainWindow):
         )
         self.btnHelp.setStyleSheet(_btn_discrete)
         self.btnAbout.setStyleSheet(_btn_discrete)
+        self.btnConventions.setStyleSheet(_btn_discrete)
         # Labels à style spécifique
         self.labelTz.setStyleSheet(f"color: {t['fg_dim']};")
         self.labelInfo.setStyleSheet(f"color: {t['fg_info']};")
@@ -403,6 +409,110 @@ class MoonPredictionsWindow(QMainWindow):
         self._applyFontSize()
         self._settings.setValue("theme", new)
         self._settings.sync()
+
+    # ════════════════════════════════════════════
+    # Conventions de calcul
+    # ════════════════════════════════════════════
+
+    def _horizonDeg(self) -> float:
+        """Retourne l'horizon en degres selon le mode choisi."""
+        return -0.8333 if self._horizonMode == "visual" else 0.0
+
+    def _showConventions(self):
+        """Dialogue de choix des conventions de calcul."""
+        t = _theme()
+        dlg = QDialog(self)
+        dlg.setWindowTitle(tr("conv_title"))
+        dlg.setMinimumSize(640, 640)
+        dlg.setStyleSheet(
+            f"QDialog {{ background-color: {t['dlg_bg']}; color: {t['dlg_fg']}; }}"
+            f"QLabel {{ color: {t['dlg_fg']}; }}"
+            f"QGroupBox {{ border: 1px solid {t['btn_border']}; "
+            f"border-radius: 4px; margin-top: 10px; padding-top: 14px; "
+            f"font-weight: bold; }}"
+            f"QGroupBox::title {{ subcontrol-origin: margin; "
+            f"left: 10px; padding: 0 4px; }}"
+            f"QRadioButton {{ color: {t['dlg_fg']}; padding: 3px; }}"
+        )
+        icon_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "moon.ico")
+        if os.path.exists(icon_path):
+            dlg.setWindowIcon(QIcon(icon_path))
+
+        lay = QVBoxLayout(dlg)
+        lay.setSpacing(10)
+
+        # Intro
+        intro = QLabel(tr("conv_intro"))
+        intro.setWordWrap(True)
+        intro.setTextFormat(Qt.TextFormat.RichText)
+        lay.addWidget(intro)
+
+        # ── Groupe Distance ──
+        distBox = QGroupBox(tr("conv_dist_group"))
+        distLay = QVBoxLayout(distBox)
+        self._radioDistTopo = QRadioButton(tr("conv_dist_topo"))
+        self._radioDistGeo = QRadioButton(tr("conv_dist_geo"))
+        self._radioDistTopo.setChecked(self._distRef == "topo")
+        self._radioDistGeo.setChecked(self._distRef == "geo")
+        distLay.addWidget(self._radioDistTopo)
+        distLay.addWidget(self._radioDistGeo)
+        distExplain = QLabel(tr("conv_dist_explain"))
+        distExplain.setWordWrap(True)
+        distExplain.setTextFormat(Qt.TextFormat.RichText)
+        distLay.addWidget(distExplain)
+        lay.addWidget(distBox)
+
+        # ── Groupe Horizon ──
+        horBox = QGroupBox(tr("conv_hor_group"))
+        horLay = QVBoxLayout(horBox)
+        self._radioHorGeom = QRadioButton(tr("conv_hor_geom"))
+        self._radioHorVisual = QRadioButton(tr("conv_hor_visual"))
+        self._radioHorGeom.setChecked(self._horizonMode == "geom")
+        self._radioHorVisual.setChecked(self._horizonMode == "visual")
+        horLay.addWidget(self._radioHorGeom)
+        horLay.addWidget(self._radioHorVisual)
+        horExplain = QLabel(tr("conv_hor_explain"))
+        horExplain.setWordWrap(True)
+        horExplain.setTextFormat(Qt.TextFormat.RichText)
+        horLay.addWidget(horExplain)
+        lay.addWidget(horBox)
+
+        lay.addStretch()
+
+        # Boutons OK / Cancel
+        btnRow = QHBoxLayout()
+        btnRow.addStretch()
+        btnOk = QPushButton(tr("btn_apply"))
+        btnOk.setStyleSheet(
+            f"QPushButton {{ background-color: {t['compute_bg']}; "
+            f"color: #ffffff; font-weight: bold; padding: 6px 20px; }}"
+            f"QPushButton:hover {{ background-color: {t['compute_hover']}; }}"
+        )
+        btnOk.clicked.connect(dlg.accept)
+        btnCancel = QPushButton(tr("btn_cancel"))
+        btnCancel.setStyleSheet("QPushButton { padding: 6px 20px; }")
+        btnCancel.clicked.connect(dlg.reject)
+        btnRow.addWidget(btnCancel)
+        btnRow.addWidget(btnOk)
+        lay.addLayout(btnRow)
+
+        # Forcer la taille de police utilisateur sur le dialog
+        self._applyDialogFont(dlg)
+
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            new_dist = "topo" if self._radioDistTopo.isChecked() else "geo"
+            new_hor = "geom" if self._radioHorGeom.isChecked() else "visual"
+            changed = (new_dist != self._distRef
+                       or new_hor != self._horizonMode)
+            self._distRef = new_dist
+            self._horizonMode = new_hor
+            self._settings.setValue("dist_reference", self._distRef)
+            self._settings.setValue("horizon_mode", self._horizonMode)
+            self._settings.sync()
+            if changed and self._passes_raw:
+                # Recalculer avec les nouvelles conventions
+                self._compute()
 
     # ════════════════════════════════════════════
     # UI
@@ -454,6 +564,11 @@ class MoonPredictionsWindow(QMainWindow):
         self.btnTheme.setFixedWidth(36)
         self.btnTheme.clicked.connect(self._onThemeToggle)
         stationLayout.addWidget(self.btnTheme)
+
+        self.btnConventions = QPushButton(tr("btn_conventions"))
+        self.btnConventions.setToolTip(tr("tip_conventions"))
+        self.btnConventions.clicked.connect(self._showConventions)
+        stationLayout.addWidget(self.btnConventions)
 
         self.btnHelp = QPushButton(tr("btn_help"))
         self.btnHelp.clicked.connect(self._showHelp)
@@ -631,6 +746,11 @@ class MoonPredictionsWindow(QMainWindow):
         _set_theme(theme if theme in _THEMES else "dark")
         self._applyTheme()
         self._applyFontSize()
+        # Conventions de calcul
+        dist_ref = self._settings.value("dist_reference", "topo", type=str)
+        self._distRef = dist_ref if dist_ref in ("topo", "geo") else "topo"
+        hor_mode = self._settings.value("horizon_mode", "geom", type=str)
+        self._horizonMode = hor_mode if hor_mode in ("geom", "visual") else "geom"
 
     def showEvent(self, event):
         """Auto-calcul au premier affichage si le locator est renseigné
@@ -673,6 +793,8 @@ class MoonPredictionsWindow(QMainWindow):
         ui_font = QFont()
         ui_font.setPointSize(size)
         self.setFont(ui_font)
+        # Les infobulles ont leur propre police globale — la synchroniser
+        QToolTip.setFont(ui_font)
         # Forcer sur CHAQUE widget enfant (le stylesheet peut bloquer la cascade)
         for child in self.findChildren(QWidget):
             child.setFont(ui_font)
@@ -756,7 +878,8 @@ class MoonPredictionsWindow(QMainWindow):
         try:
             passes = get_moon_passes(
                 lat, lon, self._alt_m,
-                hours=30 * 24, start_offset_hours=offset_hours)
+                hours=30 * 24, start_offset_hours=offset_hours,
+                horizon_degrees=self._horizonDeg())
         except Exception as e:
             QMessageBox.critical(
                 self, tr("msg_error_calc"), f"Skyfield : {e}")
@@ -766,7 +889,8 @@ class MoonPredictionsWindow(QMainWindow):
         for p in passes:
             d = dict(p)
             try:
-                enrich_moon_pass(lat, lon, self._alt_m, d)
+                enrich_moon_pass(lat, lon, self._alt_m, d,
+                                 dist_reference=self._distRef)
             except Exception:
                 continue
             d["ploss"] = (40.0 * math.log10(d["dist_km"] / 356500.0)
@@ -816,8 +940,11 @@ class MoonPredictionsWindow(QMainWindow):
         from moon_calc import (compute_moon, compute_sun, compute_libration,
                                ts, _angular_sep_deg)
 
-        moon = compute_moon(self._lat, self._lon, self._alt_m)
-        sun = compute_sun(self._lat, self._lon, self._alt_m)
+        moon = compute_moon(self._lat, self._lon, self._alt_m,
+                            dist_reference=self._distRef,
+                            horizon_degrees=self._horizonDeg())
+        sun = compute_sun(self._lat, self._lon, self._alt_m,
+                          horizon_degrees=self._horizonDeg())
         lib = compute_libration(self._lat, self._lon, self._alt_m, ts.now())
 
         az = moon["az"]
@@ -1190,7 +1317,18 @@ class MoonPredictionsWindow(QMainWindow):
         btnClose.setStyleSheet("QPushButton { padding: 6px 20px; }")
         lay.addWidget(btnClose, alignment=Qt.AlignmentFlag.AlignCenter)
 
+        # Appliquer la taille de police utilisateur
+        self._applyDialogFont(dlg)
         dlg.exec()
+
+    def _applyDialogFont(self, dlg):
+        """Force la taille de police utilisateur sur un dialogue et tous ses enfants."""
+        size = self.spinFontSize.value()
+        dlg_font = QFont()
+        dlg_font.setPointSize(size)
+        dlg.setFont(dlg_font)
+        for child in dlg.findChildren(QWidget):
+            child.setFont(dlg_font)
 
     def _showAbout(self):
         """Fenêtre À propos."""
@@ -1247,6 +1385,8 @@ class MoonPredictionsWindow(QMainWindow):
         )
         lay.addWidget(btnClose, alignment=Qt.AlignmentFlag.AlignCenter)
 
+        # Appliquer la taille de police utilisateur
+        self._applyDialogFont(dlg)
         dlg.exec()
 
     def _exportPdf(self):
