@@ -36,7 +36,7 @@ from moon_calc import (
 )
 from i18n import tr, set_language, get_language
 
-APP_VERSION = "1.6.2"
+APP_VERSION = "1.6.3"
 APP_DATE = "2026-04-15"
 
 
@@ -1434,6 +1434,11 @@ class MoonPredictionsWindow(QMainWindow):
         rise_dt = pass_data["rise_time"]
         date_str = _loc_date_long(rise_dt)
         dlg.setWindowTitle(f"{tr('day_detail_title')} — {date_str}")
+        # Taille : 90% de la taille de la fenetre parente pour \u00e9viter
+        # d'avoir a defiler — si trop grand on tronque aux bornes ecran
+        parent_size = self.size()
+        dlg.resize(int(parent_size.width() * 0.92),
+                   int(parent_size.height() * 0.85))
         dlg.setMinimumSize(1100, 500)
         dlg.setStyleSheet(
             f"QDialog {{ background-color: {t['bg_main']}; color: {t['fg_text']}; }}"
