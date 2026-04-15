@@ -81,6 +81,8 @@ _STRINGS = {
     "col_moon_sun": {"fr": "Moon-Sun", "nl": "Maan-Zon", "en": "Moon-Sun"},
     "col_libration": {"fr": "Libration", "nl": "Libratie", "en": "Libration"},
     "col_spread": {"fr": "Spread ({freq})", "nl": "Spread ({freq})", "en": "Spread ({freq})"},
+    "col_spread_min": {"fr": "Spread min ({freq})", "nl": "Spread min ({freq})", "en": "Spread min ({freq})"},
+    "col_spread_max": {"fr": "Spread max ({freq})", "nl": "Spread max ({freq})", "en": "Spread max ({freq})"},
     "col_quality": {"fr": "Qualit\u00e9", "nl": "Kwaliteit", "en": "Quality"},
     "col_phase": {"fr": "Phase", "nl": "Fase", "en": "Phase"},
 
@@ -386,6 +388,8 @@ _STRINGS = {
     "exp_col_extra_pl": {"fr": "Extra PL", "nl": "Extra PL", "en": "Extra PL"},
     "exp_col_total_pl": {"fr": "Total PL ({freq})", "nl": "Totaal PL ({freq})", "en": "Total PL ({freq})"},
     "exp_col_moon_sun": {"fr": "Moon-Sun", "nl": "Maan-Zon", "en": "Moon-Sun"},
+    "exp_col_spread_min": {"fr": "Spread min ({freq})", "nl": "Spread min ({freq})", "en": "Spread min ({freq})"},
+    "exp_col_spread_max": {"fr": "Spread max ({freq})", "nl": "Spread max ({freq})", "en": "Spread max ({freq})"},
     "exp_col_quality": {"fr": "Qualité", "nl": "Kwaliteit", "en": "Quality"},
     "exp_col_phase": {"fr": "Phase", "nl": "Fase", "en": "Phase"},
     "exp_file_filter_txt": {"fr": "Texte (*.txt)", "nl": "Tekst (*.txt)", "en": "Text (*.txt)"},

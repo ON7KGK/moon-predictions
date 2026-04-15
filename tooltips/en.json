@@ -50,5 +50,9 @@
 
   "tip_doppler": "DOPPLER SPREAD EME (Hz)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nFrequency spread of the reflected signal\ndue to libration.\n\n  < 50 Hz  : excellent\n  50-150 Hz : good\n  > 150 Hz  : difficult",
 
+  "tip_spread_min": "SPREAD MIN — Best moment of the pass\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nMinimum Doppler spread value over the\nentire pass duration, with the time at which\nthe minimum occurs (the 'magic window').\n\nSpread can vary by a factor of 3× between\nrise, culmination and set, depending on the\ngeometry of the day (Moon declination,\nobserver latitude).\n\n  < 50 Hz  : excellent\n  50-150 Hz : good\n  > 150 Hz  : difficult\n\nSampled at 30 points across the pass.",
+
+  "tip_spread_max": "SPREAD MAX — Worst moment of the pass\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nMaximum Doppler spread value over the\nentire pass duration, with the time.\n\nOften at rise or set when diurnal libration\n(due to Earth rotation) is strongest.\n\nSampled at 30 points across the pass.",
+
   "tip_quality": "EME QUALITY INDEX (0 to 10)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n  Max elevation (30%/20%)\n  Duration (25%/10%)\n  Path loss (25%)\n  Moon-Sun (20%/15%)\n  Libration (0%/30% if ≥ 1 GHz)\n\nScore adapts to frequency:\n  < 1 GHz : libration ignored\n  ≥ 1 GHz : libration = 30% of score"
 }

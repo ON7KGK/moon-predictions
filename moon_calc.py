@@ -7,7 +7,7 @@ Utilise Skyfield avec ephemerides JPL DE440s (precision sub-km).
 import logging
 import math
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import numpy as np
 from skyfield.api import Loader, wgs84, Star
@@ -544,11 +544,50 @@ def enrich_moon_pass(lat: float, lon: float, alt_m: float,
     pass_data["moon_sun"] = _angular_sep_deg(
         az_m_d.degrees, alt_m_d.degrees, az_s_d.degrees, alt_s_d.degrees)
 
-    # Libration et Doppler spread au moment de l'EL max
+    # Libration et Doppler spread au moment de l'EL max (reference)
     lib = compute_libration(lat, lon, alt_m, t_max)
     pass_data["lib_lat"] = lib["lib_lat"]
     pass_data["lib_lon"] = lib["lib_lon"]
     pass_data["lib_rate"] = lib["lib_rate"]
     pass_data["doppler_spread"] = lib["doppler_spread_hz"]
+
+    # Echantillonnage du spread sur toute la duree du passage (N points)
+    # pour identifier les moments de spread min/max ("fenetres magiques").
+    # Le spread peut varier d'un facteur 3x entre lever/max/coucher selon
+    # la geometrie du jour (declinaison, latitude observateur).
+    n_samples = 30
+    t_rise = pass_data["rise_time"]
+    t_set = pass_data["set_time"]
+    duration_s = (t_set - t_rise).total_seconds()
+
+    spread_min = None
+    spread_max = None
+    spread_min_time = t_max.utc_datetime()
+    spread_max_time = t_max.utc_datetime()
+    lib_rate_min = 0.0
+    lib_rate_max = 0.0
+
+    for i in range(n_samples):
+        frac = i / (n_samples - 1) if n_samples > 1 else 0.5
+        dt = t_rise + timedelta(seconds=frac * duration_s)
+        t_sample = ts.from_datetime(dt)
+        lib_s = compute_libration(lat, lon, alt_m, t_sample)
+        spread_s = lib_s["doppler_spread_hz"]
+        lib_r_s = lib_s["lib_rate"]
+        if spread_min is None or spread_s < spread_min:
+            spread_min = spread_s
+            spread_min_time = dt
+            lib_rate_min = lib_r_s
+        if spread_max is None or spread_s > spread_max:
+            spread_max = spread_s
+            spread_max_time = dt
+            lib_rate_max = lib_r_s
+
+    pass_data["spread_min"] = spread_min
+    pass_data["spread_min_time"] = spread_min_time
+    pass_data["spread_max"] = spread_max
+    pass_data["spread_max_time"] = spread_max_time
+    pass_data["lib_rate_min"] = lib_rate_min
+    pass_data["lib_rate_max"] = lib_rate_max
 
     return pass_data

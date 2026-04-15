@@ -50,5 +50,9 @@
 
   "tip_doppler": "DOPPLER SPREAD EME (Hz)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nFrequentiespreiding van het gereflecteerde\nsignaal door libratie.\n\n  < 50 Hz  : uitstekend\n  50-150 Hz : goed\n  > 150 Hz  : moeilijk",
 
+  "tip_spread_min": "SPREAD MIN — Beste moment van de passage\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nMinimale waarde van de Doppler spread over de\nvolledige duur van de passage, met de tijd\nwaarop dit minimum wordt bereikt ('magisch venster').\n\nDe spread kan variëren met een factor 3× tussen\nopkomst, culminatie en ondergang,\nafhankelijk van de geometrie van de dag\n(maansdeclinatie, waarnemersbreedte).\n\n  < 50 Hz  : uitstekend\n  50-150 Hz : goed\n  > 150 Hz  : moeilijk\n\nBemonstering over 30 punten van de passage.",
+
+  "tip_spread_max": "SPREAD MAX — Slechtste moment van de passage\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nMaximale waarde van de Doppler spread over de\nvolledige duur van de passage, met de tijd.\n\nVaak bij opkomst of ondergang wanneer de\ndagelijkse libratie (door de aardrotatie) het\nsterkst is.\n\nBemonstering over 30 punten van de passage.",
+
   "tip_quality": "EME KWALITEITSINDEX (0 tot 10)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n  Max. elevatie (30%/20%)\n  Duur (25%/10%)\n  Path loss (25%)\n  Maan-Zon (20%/15%)\n  Libratie (0%/30% als ≥ 1 GHz)\n\nDe score past zich aan de frequentie aan:\n  < 1 GHz : libratie genegeerd\n  ≥ 1 GHz : libratie = 30% van de score"
 }

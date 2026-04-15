@@ -50,5 +50,9 @@
 
   "tip_doppler": "DOPPLER SPREAD EME (Hz)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nÉtalement en fréquence du signal réfléchi\npar la Lune dû à la libration.\n\n  < 50 Hz  : excellent\n  50-150 Hz : bon\n  > 150 Hz  : difficile",
 
+  "tip_spread_min": "SPREAD MIN — Meilleur moment du passage\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nValeur minimum du Doppler spread sur toute\nla durée du passage, avec l'heure à laquelle\nce minimum est atteint (la 'fenêtre magique').\n\nLe spread peut varier d'un facteur 3× entre\nle lever, la culmination et le coucher,\nselon la géométrie du jour (déclinaison de\nla Lune, latitude de l'observateur).\n\n  < 50 Hz  : excellent\n  50-150 Hz : bon\n  > 150 Hz  : difficile\n\nÉchantillonnage sur 30 points du passage.",
+
+  "tip_spread_max": "SPREAD MAX — Pire moment du passage\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nValeur maximum du Doppler spread sur toute\nla durée du passage, avec l'heure.\n\nSouvent au lever ou au coucher lorsque la\nlibration diurne (due à la rotation terrestre)\nest la plus forte.\n\nÉchantillonnage sur 30 points du passage.",
+
   "tip_quality": "INDICE DE QUALITÉ EME (0 à 10)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n  Élévation max (30%/20%)\n  Durée (25%/10%)\n  Path loss (25%)\n  Moon-Sun (20%/15%)\n  Libration (0%/30% si ≥ 1 GHz)\n\nLe score s'adapte à la fréquence :\n  < 1 GHz : libration ignorée\n  ≥ 1 GHz : libration = 30% du score"
 }

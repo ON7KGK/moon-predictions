@@ -35,8 +35,8 @@ from moon_calc import (
 )
 from i18n import tr, set_language, get_language
 
-APP_VERSION = "1.4.2"
-APP_DATE = "2026-04-14"
+APP_VERSION = "1.5.0"
+APP_DATE = "2026-04-15"
 
 
 # ════════════════════════════════════════════
@@ -924,10 +924,13 @@ class MoonPredictionsWindow(QMainWindow):
             base_spread = d.get("doppler_spread", 0)
             d["doppler_spread_freq"] = round(
                 base_spread * freq / 10.368e9, 0) if base_spread else 0
+            # Score base sur le lib_rate au meilleur moment du passage
+            # (spread minimum) plut\u00f4t que sur l'EL max — refl\u00e8te mieux
+            # les "fen\u00eatres magiques" cherch\u00e9es par les op\u00e9rateurs EME.
             d["score"] = _quality_score(
                 d["max_el"], d["duration_min"], d["ploss"],
                 d.get("moon_sun", 180),
-                d.get("lib_rate", 0), freq)
+                d.get("lib_rate_min", d.get("lib_rate", 0)), freq)
             self._passes_raw.append(d)
 
         station = f"{callsign} " if callsign else ""
@@ -1053,6 +1056,11 @@ class MoonPredictionsWindow(QMainWindow):
             qc = hi
             el_txt = f"{el:+.1f}\u00b0 {tr('now_below')}"
 
+        # Ligne MAINTENANT : le spread est la valeur instantan\u00e9e actuelle,
+        # dupliqu\u00e9e dans les 2 colonnes min/max (pas de plage pour une mesure
+        # ponctuelle \u2014 seulement pour les passages futurs).
+        now_time_local = datetime.now().strftime("%H:%M")
+        spread_cell = f"{spread:.0f} Hz @ {now_time_local}" if visible else f"{spread:.0f} Hz"
         cells = [
             (tr("now_label") if visible else tr("now_label_off"), hi),
             (rise_txt, hi),
@@ -1068,7 +1076,8 @@ class MoonPredictionsWindow(QMainWindow):
             (f"{total_pl:.1f} dB", pl_col),
             (f"{ms_angle:.0f}\u00b0", ms_col),
             (f"{lib_rate:.2f}\u00b0/h", lib_col),
-            (f"{spread:.0f} Hz", spr_col),
+            (spread_cell, spr_col),  # Spread min (valeur courante)
+            (spread_cell, spr_col),  # Spread max (idem pour MAINTENANT)
             (f"{sq} {score:.1f}" if visible else "---", qc),
         ]
         if show_phase:
@@ -1108,7 +1117,8 @@ class MoonPredictionsWindow(QMainWindow):
             tr("col_total_pl", freq=freq_label),
             tr("col_moon_sun"),
             tr("col_libration"),
-            tr("col_spread", freq=freq_label),
+            tr("col_spread_min", freq=freq_label),
+            tr("col_spread_max", freq=freq_label),
             tr("col_quality"),
         ]
         if show_phase:
@@ -1148,8 +1158,9 @@ class MoonPredictionsWindow(QMainWindow):
         _set_tip(11, tr("tip_total_pl"))
         _set_tip(12, tr("tip_moon_sun"))
         _set_tip(13, tr("tip_libration"))
-        _set_tip(14, tr("tip_doppler"))
-        _set_tip(15, tr("tip_quality"))
+        _set_tip(14, tr("tip_spread_min"))
+        _set_tip(15, tr("tip_spread_max"))
+        _set_tip(16, tr("tip_quality"))
 
         hdr = self.table.horizontalHeader()
         # Interactive permet le resize manuel, on ajuste après remplissage
@@ -1223,21 +1234,39 @@ class MoonPredictionsWindow(QMainWindow):
             self.table.setItem(row, col, _make_item(
                 f"{ms_angle:.0f}\u00b0", ms_color)); col += 1
 
-            # Libration rate
-            lib_r = d.get("lib_rate", 0)
+            # Libration rate (au moment du spread min — meilleur moment)
+            lib_r = d.get("lib_rate_min", d.get("lib_rate", 0))
             if lib_r < 0.10: lib_col = QColor(tc["eme_green"])
             elif lib_r < 0.25: lib_col = QColor(tc["eme_orange"])
             else: lib_col = QColor(tc["eme_red"])
             self.table.setItem(row, col, _make_item(
                 f"{lib_r:.2f}\u00b0/h", lib_col)); col += 1
 
-            # Doppler spread (à la fréquence sélectionnée)
-            spr = d.get("doppler_spread", 0) * freq / 10.368e9
-            if spr < 50: spr_col = QColor(tc["eme_green"])
-            elif spr < 150: spr_col = QColor(tc["eme_orange"])
-            else: spr_col = QColor(tc["eme_red"])
-            self.table.setItem(row, col, _make_item(
-                f"{spr:.0f} Hz", spr_col)); col += 1
+            # Doppler spread MIN (meilleur moment du passage)
+            spr_min = d.get("spread_min", d.get("doppler_spread", 0)) * freq / 10.368e9
+            spr_min_dt = d.get("spread_min_time")
+            if spr_min < 50: spr_min_col = QColor(tc["eme_green"])
+            elif spr_min < 150: spr_min_col = QColor(tc["eme_orange"])
+            else: spr_min_col = QColor(tc["eme_red"])
+            if spr_min_dt is not None:
+                t_txt = (spr_min_dt + tz_offset).strftime("%H:%M")
+                min_txt = f"{spr_min:.0f} Hz @ {t_txt}"
+            else:
+                min_txt = f"{spr_min:.0f} Hz"
+            self.table.setItem(row, col, _make_item(min_txt, spr_min_col)); col += 1
+
+            # Doppler spread MAX (pire moment du passage)
+            spr_max = d.get("spread_max", d.get("doppler_spread", 0)) * freq / 10.368e9
+            spr_max_dt = d.get("spread_max_time")
+            if spr_max < 50: spr_max_col = QColor(tc["eme_green"])
+            elif spr_max < 150: spr_max_col = QColor(tc["eme_orange"])
+            else: spr_max_col = QColor(tc["eme_red"])
+            if spr_max_dt is not None:
+                t_txt = (spr_max_dt + tz_offset).strftime("%H:%M")
+                max_txt = f"{spr_max:.0f} Hz @ {t_txt}"
+            else:
+                max_txt = f"{spr_max:.0f} Hz"
+            self.table.setItem(row, col, _make_item(max_txt, spr_max_col)); col += 1
 
             sq = _quality_squares(score)
             qc = _quality_color(score)
@@ -1294,6 +1323,18 @@ class MoonPredictionsWindow(QMainWindow):
             dur_h = int(d["duration_min"] // 60)
             dur_m = int(d["duration_min"] % 60)
             total_pl = pl_perigee + d["ploss"]
+            spr_min = d.get("spread_min", d.get("doppler_spread", 0)) * freq / 10.368e9
+            spr_max = d.get("spread_max", d.get("doppler_spread", 0)) * freq / 10.368e9
+            spr_min_dt = d.get("spread_min_time")
+            spr_max_dt = d.get("spread_max_time")
+            spr_min_txt = (
+                f"{spr_min:.0f} @ {(spr_min_dt + tz_offset).strftime('%H:%M')}"
+                if spr_min_dt else f"{spr_min:.0f}"
+            )
+            spr_max_txt = (
+                f"{spr_max:.0f} @ {(spr_max_dt + tz_offset).strftime('%H:%M')}"
+                if spr_max_dt else f"{spr_max:.0f}"
+            )
             rows.append([
                 _loc_date_long(rise_dt),
                 rise_dt.strftime("%H:%M"),
@@ -1308,6 +1349,8 @@ class MoonPredictionsWindow(QMainWindow):
                 f"{d['ploss']:.1f}",
                 f"{total_pl:.1f}",
                 f"{d.get('moon_sun', 180):.0f}",
+                spr_min_txt,
+                spr_max_txt,
                 f"{d['score']:.1f}",
                 f"{d['phase']} ({d['illum']:.0f}%)",
             ])
@@ -1444,7 +1487,10 @@ class MoonPredictionsWindow(QMainWindow):
             tr("exp_col_az_set"), tr("exp_col_decl"),
             tr("exp_col_distance"), tr("exp_col_extra_pl"),
             tr("exp_col_total_pl", freq=freq_label),
-            tr("exp_col_moon_sun"), tr("exp_col_quality"),
+            tr("exp_col_moon_sun"),
+            tr("exp_col_spread_min", freq=freq_label),
+            tr("exp_col_spread_max", freq=freq_label),
+            tr("exp_col_quality"),
         ]
         if show_phase:
             headers.append(tr("exp_col_phase"))
@@ -1544,6 +1590,9 @@ class MoonPredictionsWindow(QMainWindow):
                 f.write(f"{tr('exp_generated', time=calc_time)}\n")
                 f.write("=" * 100 + "\n")
                 for row in self._getExportRows():
+                    # Indices : 0=date 1=rise 2=set 3=dur 4=EL 5=hEL 6=AZr 7=AZs
+                    # 8=decl 9=dist 10=pl 11=tpl 12=m-s 13=spr_min 14=spr_max
+                    # 15=score 16=phase
                     f.write(
                         f"{row[0]:14} | "
                         f"{row[1]:5} - {row[2]:5} ({row[3]:5}) | "
@@ -1553,7 +1602,8 @@ class MoonPredictionsWindow(QMainWindow):
                         f"{row[9]:>6}km | "
                         f"PL+{row[10]:>4}dB | "
                         f"M-S {row[12]:>3}deg | "
-                        f"Q{row[13]:>4} | {row[14]}\n"
+                        f"Spr {row[13]:>14} / {row[14]:>14} Hz | "
+                        f"Q{row[15]:>4} | {row[16]}\n"
                     )
             QMessageBox.information(self, "Export", tr("msg_saved", path=path))
         except Exception as e:
