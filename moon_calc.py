@@ -181,6 +181,53 @@ _T_CMB = 2.73             # Kelvin (fond diffus cosmologique)
 _T_MOON = 230.0           # Kelvin (temperature de bruit de la Lune)
 
 
+def compute_hour_angles(lat: float, lon: float, alt_m: float, t_sky) -> dict:
+    """Calcule les angles horaires de la Lune.
+
+    LHA (Local Hour Angle) : angle horaire topocentrique depuis l'observateur.
+    GHA (Greenwich Hour Angle) : angle horaire depuis le meridien de Greenwich.
+
+    Convention : LHA et GHA sont en degres, 0-360.
+    LHA = GST + longitude - RA
+    GHA = GST - RA
+    """
+    location = wgs84.latlon(lat, lon, elevation_m=alt_m)
+    observer = eph['earth'] + location
+    app = observer.at(t_sky).observe(eph['moon']).apparent()
+    ra, dec, _ = app.radec()
+    ra_hours = ra.hours
+
+    # Greenwich Mean Sidereal Time (heures)
+    gst_hours = t_sky.gmst
+    gha_deg = ((gst_hours - ra_hours) * 15.0) % 360.0
+    lha_deg = (gha_deg + lon) % 360.0
+    # LHA en +/- 180 pour une lecture plus naturelle (+ = ouest, - = est)
+    if lha_deg > 180.0:
+        lha_deg -= 360.0
+    return {
+        "lha_deg": lha_deg,
+        "gha_deg": gha_deg,
+        "dec_deg": dec.degrees,
+    }
+
+
+def days_since_perigee(t_sky) -> float:
+    """Retourne le nombre de jours depuis le dernier perigee lunaire.
+
+    Perigee = distance geocentrique minimale. Recherche dans les 30 derniers
+    jours par echantillonnage toutes les 3 heures puis affinage.
+    """
+    # Recherche sur 32 jours (cycle anomalistique = 27.55 j)
+    n_back = 32 * 8  # 3h step
+    step_days = 3.0 / 24.0
+    t_arr = ts.tt_jd(np.array([t_sky.tt - i * step_days
+                                for i in range(n_back, -1, -1)]))
+    dists = eph['earth'].at(t_arr).observe(eph['moon']).distance().km
+    i_min = int(np.argmin(dists))
+    t_perigee_tt = t_arr.tt[i_min]
+    return float(t_sky.tt - t_perigee_tt)
+
+
 def compute_doppler_shift(lat: float, lon: float, alt_m: float,
                            t_sky, freq_hz: float = 10368e6) -> float:
     """Calcule le decalage Doppler central EME aller-retour (Hz).

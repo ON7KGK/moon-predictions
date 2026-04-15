@@ -17,7 +17,7 @@
 
 
   "tip_save": "Roepnaam, locator, hoogte en voorkeuren opslaan.",
-  "tip_row_dblclick": "Klik op een passage-regel om het detail\nelke 30 minuten te zien (AZ, EL, Doppler, DGR, TSky, enz.)",
+  "tip_row_dblclick": "Klik op een passage-regel om het detail\nelke 30 minuten te zien (AZ, EL, Doppler, DGR, TSky...).\nKlik op de NU-regel om het realtime dashboard\nmet alle EME-parameters te openen.",
   "tip_theme": "Wissel licht / donker thema",
   "tip_conventions": "Rekenconventies kiezen\n(afstand, horizon opkomst/ondergang)",
   "tip_sked": "Online EME QSO planningtool\ndoor SA5IKN — skeds, wederzijdse zichtbaarheid, enz.",

@@ -91,6 +91,32 @@ _STRINGS = {
         "nl": "Passage detail",
         "en": "Pass detail",
     },
+
+    # ── Fenetre detail MAINTENANT (clic ligne MAINTENANT) ──
+    "now_detail_title": {
+        "fr": "D\u00e9tail temps r\u00e9el — MAINTENANT",
+        "nl": "Realtime detail — NU",
+        "en": "Real-time detail — NOW",
+    },
+    "now_grp_position": {"fr": "Position actuelle", "nl": "Huidige positie", "en": "Current position"},
+    "now_grp_riseset": {"fr": "Lever / Coucher", "nl": "Opkomst / Ondergang", "en": "Rise / Set"},
+    "now_grp_eme": {"fr": "Donn\u00e9es EME", "nl": "EME-gegevens", "en": "EME data"},
+    "now_grp_astro": {"fr": "Coordonn\u00e9es astronomiques", "nl": "Astronomische co\u00f6rdinaten", "en": "Astronomical coordinates"},
+    "now_lbl_distance": {"fr": "Distance", "nl": "Afstand", "en": "Distance"},
+    "now_lbl_decl": {"fr": "D\u00e9clinaison", "nl": "Declinatie", "en": "Declination"},
+    "now_lbl_phase": {"fr": "Phase", "nl": "Fase", "en": "Phase"},
+    "now_lbl_dgr": {"fr": "D\u00e9gradation (DGR)", "nl": "Degradatie (DGR)", "en": "Degradation (DGR)"},
+    "now_lbl_tsky": {"fr": "Temp\u00e9rature de ciel", "nl": "Hemelsetemperatuur", "en": "Sky temperature"},
+    "now_lbl_doppler": {"fr": "Doppler central", "nl": "Centrale Doppler", "en": "Central Doppler"},
+    "now_lbl_echo": {"fr": "Home Echo", "nl": "Home Echo", "en": "Home Echo"},
+    "now_lbl_spread": {"fr": "Doppler spread", "nl": "Doppler spread", "en": "Doppler spread"},
+    "now_lbl_libration": {"fr": "Libration", "nl": "Libratie", "en": "Libration"},
+    "now_lbl_pl_extra": {"fr": "Path loss extra", "nl": "Path loss extra", "en": "Path loss extra"},
+    "now_lbl_moonsun": {"fr": "Angle Lune-Soleil", "nl": "Maan-Zon hoek", "en": "Moon-Sun angle"},
+    "now_lbl_lha": {"fr": "LHA (local)", "nl": "LHA (lokaal)", "en": "LHA (local)"},
+    "now_lbl_gha": {"fr": "GHA (Greenwich)", "nl": "GHA (Greenwich)", "en": "GHA (Greenwich)"},
+    "now_lbl_dsp": {"fr": "Jours depuis le p\u00e9rig\u00e9e", "nl": "Dagen sinds perigeum", "en": "Days since perigee"},
+    "now_lbl_days": {"fr": "jours", "nl": "dagen", "en": "days"},
     "col_day_time": {"fr": "Heure", "nl": "Tijd", "en": "Time"},
     "col_az": {"fr": "AZ", "nl": "AZ", "en": "AZ"},
     "col_el": {"fr": "EL", "nl": "EL", "en": "EL"},
@@ -254,6 +280,29 @@ _STRINGS = {
             "pour basculer entre le th\u00e8me <b>sombre</b> et le th\u00e8me <b>clair</b>. "
             "Les couleurs EME (vert/orange/rouge) sont adapt\u00e9es \u00e0 chaque th\u00e8me "
             "pour rester bien lisibles. Le choix est sauvegard\u00e9 automatiquement.</p>"
+            "<h3 style='color: #66aaff;'>8. D\u00e9tail d'un passage (clic sur une ligne)</h3>"
+            "<p>Cliquez sur n'importe quelle <b>ligne de passage</b> "
+            "pour ouvrir une fen\u00eatre listant, <b>toutes les 30 minutes</b>, "
+            "tous les param\u00e8tres : AZ, EL, distance, Doppler, Spread, "
+            "TSky, DGR, libration, angle Moon-Sun. C'est l'\u00e9quivalent "
+            "de la vue Sked Maker (GM4JJJ) pour un op\u00e9rateur solo.</p>"
+            "<h3 style='color: #66aaff;'>9. D\u00e9tail MAINTENANT (clic sur la premi\u00e8re ligne)</h3>"
+            "<p>Cliquez sur la ligne <b>MAINTENANT</b> (1\u00e8re ligne du tableau) "
+            "pour ouvrir une fen\u00eatre tableau de bord temps-r\u00e9el "
+            "avec la position actuelle de la Lune et <b>tous les param\u00e8tres EME</b> : "
+            "<ul>"
+            "<li><b>DGR (D\u00e9gradation)</b> : perte totale en dB par rapport aux "
+            "conditions optimales (combine path loss + bruit de ciel + bruit de Lune)</li>"
+            "<li><b>TSky</b> : temp\u00e9rature de bruit de ciel derri\u00e8re la Lune. "
+            "Monte pr\u00e8s du plan galactique et du centre galactique (Sagittaire)</li>"
+            "<li><b>Doppler central / Home Echo</b> : d\u00e9calage en fr\u00e9quence "
+            "de votre propre \u00e9cho (2\u00d7 aller-retour). Essentiel pour savoir "
+            "o\u00f9 r\u00e9gler votre r\u00e9cepteur. \u00c0 10 GHz, varie de \u00b130 kHz "
+            "sur un passage</li>"
+            "<li><b>LHA / GHA</b> : angles horaires local et de Greenwich</li>"
+            "<li><b>Jours depuis p\u00e9rig\u00e9e</b> : position dans le cycle "
+            "anomalistique de 27,55 jours</li>"
+            "</ul></p>"
             "<p style='color: #888;'>Survolez les en-t\u00eates de colonnes "
             "pour des explications d\u00e9taill\u00e9es.</p>"
         ),
@@ -296,6 +345,27 @@ _STRINGS = {
             "om te wisselen tussen het <b>donkere</b> en het <b>lichte</b> thema. "
             "De EME-kleuren (groen/oranje/rood) zijn aangepast per thema "
             "voor goede leesbaarheid. Uw keuze wordt automatisch opgeslagen.</p>"
+            "<h3 style='color: #66aaff;'>8. Passage detail (klik op een regel)</h3>"
+            "<p>Klik op een <b>passageregel</b> om een venster te openen met, "
+            "<b>elke 30 minuten</b>, alle parameters: AZ, EL, afstand, Doppler, "
+            "Spread, TSky, DGR, libratie, Maan-Zon hoek. Dit is het equivalent "
+            "van de Sked Maker weergave (GM4JJJ) voor een solo operator.</p>"
+            "<h3 style='color: #66aaff;'>9. NU detail (klik op de eerste regel)</h3>"
+            "<p>Klik op de regel <b>NU</b> (eerste regel van de tabel) "
+            "om een realtime dashboard te openen met de huidige maanpositie "
+            "en <b>alle EME-parameters</b>:"
+            "<ul>"
+            "<li><b>DGR (Degradatie)</b>: totaal verlies in dB t.o.v. optimale "
+            "omstandigheden (path loss + hemelruis + maanruis)</li>"
+            "<li><b>TSky</b>: ruistemperatuur van de hemel achter de Maan. "
+            "Stijgt bij het galactisch vlak en galactisch centrum (Boogschutter)</li>"
+            "<li><b>Centrale Doppler / Home Echo</b>: frequentieverschuiving "
+            "van uw eigen echo (2\u00d7 heen-en-terug). Essentieel voor "
+            "ontvangerafstemming. Bij 10 GHz varieert het \u00b130 kHz over een passage</li>"
+            "<li><b>LHA / GHA</b>: lokale en Greenwich uurhoeken</li>"
+            "<li><b>Dagen sinds perigeum</b>: positie in de anomalistische "
+            "cyclus van 27,55 dagen</li>"
+            "</ul></p>"
             "<p style='color: #888;'>Beweeg over de kolomkoppen voor uitleg.</p>"
         ),
         "en": (
@@ -337,6 +407,27 @@ _STRINGS = {
             "to switch between the <b>dark</b> and <b>light</b> theme. "
             "EME colors (green/orange/red) are adapted per theme "
             "for readability. Your choice is saved automatically.</p>"
+            "<h3 style='color: #66aaff;'>8. Pass detail (click on a row)</h3>"
+            "<p>Click any <b>pass row</b> to open a window listing, "
+            "<b>every 30 minutes</b>, all parameters: AZ, EL, distance, Doppler, "
+            "Spread, TSky, DGR, libration, Moon-Sun angle. This is the "
+            "equivalent of the Sked Maker (GM4JJJ) view for a solo operator.</p>"
+            "<h3 style='color: #66aaff;'>9. NOW detail (click on the first row)</h3>"
+            "<p>Click the <b>NOW</b> row (first row of the table) "
+            "to open a real-time dashboard with the current Moon position "
+            "and <b>all EME parameters</b>:"
+            "<ul>"
+            "<li><b>DGR (Degradation)</b>: total dB loss vs optimal conditions "
+            "(path loss + sky noise + Moon noise combined)</li>"
+            "<li><b>TSky</b>: sky noise temperature behind the Moon. "
+            "Rises near the galactic plane and galactic center (Sagittarius)</li>"
+            "<li><b>Central Doppler / Home Echo</b>: frequency shift of your "
+            "own echo (2\u00d7 round-trip). Essential to tune your receiver. "
+            "At 10 GHz, varies by \u00b130 kHz over a pass</li>"
+            "<li><b>LHA / GHA</b>: local and Greenwich hour angles</li>"
+            "<li><b>Days since perigee</b>: position in the 27.55-day "
+            "anomalistic cycle</li>"
+            "</ul></p>"
             "<p style='color: #888;'>Hover column headers for detailed explanations.</p>"
         ),
     },
