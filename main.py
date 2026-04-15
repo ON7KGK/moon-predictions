@@ -37,7 +37,7 @@ from moon_calc import (
 )
 from i18n import tr, set_language, get_language
 
-APP_VERSION = "1.7.2"
+APP_VERSION = "1.7.3"
 APP_DATE = "2026-04-15"
 
 
@@ -1866,7 +1866,7 @@ class MoonPredictionsWindow(QMainWindow):
         t = _theme()
         dlg = QDialog(self)
         dlg.setWindowTitle(tr("about_title"))
-        dlg.setFixedSize(480, 360)
+        dlg.setFixedSize(520, 460)
         dlg.setStyleSheet(
             f"QDialog {{ background-color: {t['dlg_bg']}; color: {t['dlg_fg']}; }}"
             f"QLabel {{ color: {t['dlg_fg']}; }}"
@@ -1898,6 +1898,9 @@ class MoonPredictionsWindow(QMainWindow):
             f"{tr('about_dev')} Claude Code (Anthropic)<br>"
             f"{tr('about_ephem')} NASA JPL DE440s via Skyfield<br>"
             f"{tr('about_icon')} Arkinasi — Flaticon</p>"
+            f"<hr style='border-color: {t['dlg_hr']};'>"
+            f"<p style='text-align: center;'>"
+            f"{tr('about_thanks')}<br>{tr('about_thanks_text')}</p>"
             f"<hr style='border-color: {t['dlg_hr']};'>"
             f"<p style='text-align: center;'>{tr('about_license')}</p>"
         )

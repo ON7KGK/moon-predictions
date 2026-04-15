@@ -466,6 +466,16 @@ _STRINGS = {
     "about_dev": {"fr": "<b>D\u00e9veloppement :</b>", "nl": "<b>Ontwikkeling :</b>", "en": "<b>Development:</b>"},
     "about_ephem": {"fr": "<b>\u00c9ph\u00e9m\u00e9rides :</b>", "nl": "<b>Efemerides :</b>", "en": "<b>Ephemerides:</b>"},
     "about_icon": {"fr": "<b>Ic\u00f4ne :</b>", "nl": "<b>Icoon :</b>", "en": "<b>Icon:</b>"},
+    "about_thanks": {
+        "fr": "<b>Remerciements :</b>",
+        "nl": "<b>Met dank aan :</b>",
+        "en": "<b>Thanks to:</b>",
+    },
+    "about_thanks_text": {
+        "fr": "Eric ON5TA et Michel ON7FI<br>pour leurs retours experts et suggestions d'am\u00e9lioration",
+        "nl": "Eric ON5TA en Michel ON7FI<br>voor hun deskundige feedback en verbetersuggesties",
+        "en": "Eric ON5TA and Michel ON7FI<br>for their expert feedback and improvement suggestions",
+    },
     "about_license": {"fr": "<b>Licence :</b> GNU GPL v3 \u2014 Open Source", "nl": "<b>Licentie :</b> GNU GPL v3 \u2014 Open Source", "en": "<b>License:</b> GNU GPL v3 \u2014 Open Source"},
     "btn_close": {"fr": "Fermer", "nl": "Sluiten", "en": "Close"},
     "btn_apply": {"fr": "Appliquer", "nl": "Toepassen", "en": "Apply"},
