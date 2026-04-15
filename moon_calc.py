@@ -581,6 +581,52 @@ def _libration_at(observer, t_sky):
     return lib_lon, lib_lat
 
 
+def _libration_batch(observer, t_array):
+    """Version vectorisee de _libration_at pour un tableau de temps.
+
+    Calcule en 1 seul appel Skyfield pour tous les temps en entree.
+    Retourne (lib_lons, lib_lats) : deux numpy arrays de m\u00eame longueur.
+    """
+    # 1 seul appel vectorise Skyfield pour tous les temps
+    obs_moon = observer.at(t_array).observe(eph['moon']).apparent()
+    pos = obs_moon.position.au  # shape (3, N)
+    norms = np.linalg.norm(pos, axis=0)
+    pos_unit = pos / norms  # shape (3, N)
+
+    T = (t_array.tt - 2451545.0) / 36525.0
+    d = t_array.tt - 2451545.0
+
+    # Pole Nord lunaire (IAU 2009) — varie tres lentement avec T
+    ra_pole = np.radians(269.9949 + 0.0031 * T)
+    dec_pole = np.radians(66.5392 + 0.0130 * T)
+    W = np.radians((38.3213 + 13.17635815 * d) % 360)
+
+    # Repere selenographique en ICRF (vectorise)
+    cos_dp = np.cos(dec_pole)
+    z_sel = np.array([
+        cos_dp * np.cos(ra_pole),
+        cos_dp * np.sin(ra_pole),
+        np.sin(dec_pole),
+    ])  # shape (3, N)
+    n_vec = np.array([-np.sin(ra_pole), np.cos(ra_pole), np.zeros_like(ra_pole)])
+    # e = z_sel x n (cross product par composante)
+    e_vec = np.cross(z_sel, n_vec, axis=0)
+    e_vec = e_vec / np.linalg.norm(e_vec, axis=0)
+    cW = np.cos(W)
+    sW = np.sin(W)
+    x_sel = n_vec * cW + e_vec * sW
+    y_sel = np.cross(z_sel, x_sel, axis=0)
+
+    # Projections (produit scalaire par temps)
+    px = np.sum(pos_unit * x_sel, axis=0)
+    py = np.sum(pos_unit * y_sel, axis=0)
+    pz = np.sum(pos_unit * z_sel, axis=0)
+
+    lib_lat = np.degrees(np.arcsin(np.clip(pz, -1.0, 1.0)))
+    lib_lon = np.degrees(np.arctan2(py, px))
+    return lib_lon, lib_lat
+
+
 def compute_libration(lat: float, lon: float, alt_m: float,
                       t_sky) -> dict:
     """Calcule la libration lunaire et le Doppler spread EME.
@@ -693,35 +739,44 @@ def enrich_moon_pass(lat: float, lon: float, alt_m: float,
     t_set = pass_data["set_time"]
     duration_s = (t_set - t_rise).total_seconds()
 
-    spread_min = None
-    spread_max = None
-    spread_min_time = t_max.utc_datetime()
-    spread_max_time = t_max.utc_datetime()
-    lib_rate_min = 0.0
-    lib_rate_max = 0.0
+    # Echantillonnage vectorise : on construit 3 tableaux de temps (t, t-30min,
+    # t+30min) pour calculer simultanement toutes les librations et leurs
+    # derivees en 3 appels Skyfield batch au total (au lieu de 90 avant).
+    fracs = np.linspace(0, 1, n_samples)
+    sample_dts = [t_rise + timedelta(seconds=f * duration_s) for f in fracs]
+    t_centers = ts.from_datetimes(sample_dts)
+    dt_half = 0.5 / 24  # 30 min en jours juliens
+    t_m = ts.tt_jd(t_centers.tt - dt_half)
+    t_p = ts.tt_jd(t_centers.tt + dt_half)
 
-    for i in range(n_samples):
-        frac = i / (n_samples - 1) if n_samples > 1 else 0.5
-        dt = t_rise + timedelta(seconds=frac * duration_s)
-        t_sample = ts.from_datetime(dt)
-        lib_s = compute_libration(lat, lon, alt_m, t_sample)
-        spread_s = lib_s["doppler_spread_hz"]
-        lib_r_s = lib_s["lib_rate"]
-        if spread_min is None or spread_s < spread_min:
-            spread_min = spread_s
-            spread_min_time = dt
-            lib_rate_min = lib_r_s
-        if spread_max is None or spread_s > spread_max:
-            spread_max = spread_s
-            spread_max_time = dt
-            lib_rate_max = lib_r_s
+    # 3 appels Skyfield vectorises (1 par tableau)
+    location_here = wgs84.latlon(lat, lon, elevation_m=alt_m)
+    observer_here = eph['earth'] + location_here
+    lon0_arr, _ = _libration_batch(observer_here, t_centers)
+    lon1_arr, lat1_arr = _libration_batch(observer_here, t_m)
+    lon2_arr, lat2_arr = _libration_batch(observer_here, t_p)
 
-    pass_data["spread_min"] = spread_min
-    pass_data["spread_min_time"] = spread_min_time
-    pass_data["spread_max"] = spread_max
-    pass_data["spread_max_time"] = spread_max_time
-    pass_data["lib_rate_min"] = lib_rate_min
-    pass_data["lib_rate_max"] = lib_rate_max
+    # Taux de libration par sample (gerer wrap-around +-180)
+    dlon = lon2_arr - lon1_arr
+    dlon = np.where(dlon > 180, dlon - 360, dlon)
+    dlon = np.where(dlon < -180, dlon + 360, dlon)
+    dlat = lat2_arr - lat1_arr
+    lib_rates = np.sqrt(dlon ** 2 + dlat ** 2)  # deg/h (ecart 1h)
+
+    # Spread a 10.368 GHz
+    R_MOON = 1737.4  # km
+    v_tan = lib_rates * R_MOON * math.pi / 180 * 1000 / 3600
+    spreads = 2 * v_tan * 10.368e9 / 3e8  # Hz
+
+    # Min/max
+    imin = int(np.argmin(spreads))
+    imax = int(np.argmax(spreads))
+    pass_data["spread_min"] = float(spreads[imin])
+    pass_data["spread_min_time"] = sample_dts[imin]
+    pass_data["spread_max"] = float(spreads[imax])
+    pass_data["spread_max_time"] = sample_dts[imax]
+    pass_data["lib_rate_min"] = float(lib_rates[imin])
+    pass_data["lib_rate_max"] = float(lib_rates[imax])
 
     return pass_data
 

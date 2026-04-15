@@ -36,7 +36,7 @@ from moon_calc import (
 )
 from i18n import tr, set_language, get_language
 
-APP_VERSION = "1.6.0"
+APP_VERSION = "1.6.1"
 APP_DATE = "2026-04-15"
 
 
@@ -728,8 +728,8 @@ class MoonPredictionsWindow(QMainWindow):
             QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setAlternatingRowColors(False)
         self.table.verticalHeader().setVisible(False)  # pas de numéros de lignes
-        # Double-clic sur une ligne de passage -> detail toutes les 30 min
-        self.table.cellDoubleClicked.connect(self._onRowDoubleClicked)
+        # Clic sur une ligne de passage -> detail toutes les 30 min
+        self.table.cellClicked.connect(self._onRowClicked)
         self.table.setToolTip(tr("tip_row_dblclick"))
         layout.addWidget(self.table)
 
@@ -1400,8 +1400,8 @@ class MoonPredictionsWindow(QMainWindow):
         for child in dlg.findChildren(QWidget):
             child.setFont(dlg_font)
 
-    def _onRowDoubleClicked(self, row, col):
-        """Double-clic sur une ligne du tableau -> detail du passage (30 min)."""
+    def _onRowClicked(self, row, col):
+        """Clic sur une ligne du tableau -> detail du passage (30 min)."""
         # Row 0 = ligne MAINTENANT (si elle existe), pas un passage cliquable
         has_now_row = (self._lat != 0 or self._lon != 0) and self._passes_raw
         if has_now_row and row == 0:

@@ -17,7 +17,7 @@
 
 
   "tip_save": "Sauvegarder l'indicatif, le locator, l'altitude\net les préférences.",
-  "tip_row_dblclick": "Double-cliquez sur une ligne de passage pour voir\nle détail toutes les 30 minutes (AZ, EL, Doppler, DGR, TSky, etc.)",
+  "tip_row_dblclick": "Cliquez sur une ligne de passage pour voir\nle détail toutes les 30 minutes (AZ, EL, Doppler, DGR, TSky, etc.)",
   "tip_theme": "Basculer thème clair / sombre",
   "tip_conventions": "Choisir les conventions de calcul\n(distance, horizon lever/coucher)",
   "tip_sked": "Outil en ligne de planification de QSO EME\npar SA5IKN — skeds, visibilité mutuelle, etc.",
