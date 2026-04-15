@@ -37,7 +37,7 @@ from moon_calc import (
 )
 from i18n import tr, set_language, get_language
 
-APP_VERSION = "1.7.1"
+APP_VERSION = "1.7.2"
 APP_DATE = "2026-04-15"
 
 
@@ -306,6 +306,11 @@ class MoonPredictionsWindow(QMainWindow):
         self._filterTimer.setSingleShot(True)
         self._filterTimer.setInterval(150)
         self._filterTimer.timeout.connect(self._refreshTable)
+        # Debounce pour EL min : recomputation complete (horizon mecanique)
+        self._elMinTimer = QTimer()
+        self._elMinTimer.setSingleShot(True)
+        self._elMinTimer.setInterval(500)
+        self._elMinTimer.timeout.connect(self._compute)
 
         self._buildUI()
         self._loadSettings()
@@ -433,6 +438,18 @@ class MoonPredictionsWindow(QMainWindow):
     def _horizonDeg(self) -> float:
         """Retourne l'horizon en degres selon le mode choisi."""
         return -0.8333 if self._horizonMode == "visual" else 0.0
+
+    def _effectiveHorizonDeg(self) -> float:
+        """Retourne l'horizon effectif en degres pour les calculs de lever/coucher.
+
+        Si l'utilisateur a defini EL min > 0 (obstacle mecanique : parabole
+        limitee en elevation basse, batiment, etc.), on utilise EL min comme
+        horizon au lieu de 0\u00b0/-0.83\u00b0. Le lever/coucher affiches
+        correspondent alors au moment ou la Lune franchit son horizon utile.
+        """
+        el_min = float(self.sliderMinEl.value())
+        # Si EL min > 0, il prend le pas sur l'horizon geometrique/visuel
+        return max(self._horizonDeg(), el_min)
 
     def _showConventions(self):
         """Dialogue de choix des conventions de calcul."""
@@ -614,7 +631,8 @@ class MoonPredictionsWindow(QMainWindow):
         self.sliderMinEl = QSlider(Qt.Orientation.Horizontal)
         self.sliderMinEl.setRange(0, 45)
         self.sliderMinEl.setMinimumWidth(100)
-        self.sliderMinEl.valueChanged.connect(self._onFilterChanged)
+        self.sliderMinEl.setToolTip(tr("tip_el_min"))
+        self.sliderMinEl.valueChanged.connect(self._onElMinChanged)
         filterLine1.addWidget(self.sliderMinEl)
         self.labelMinEl = QLabel("0\u00b0")
         self.labelMinEl.setMinimumWidth(35)
@@ -905,10 +923,12 @@ class MoonPredictionsWindow(QMainWindow):
         QApplication.processEvents()
 
         try:
+            # EL min agit aussi comme horizon mecanique : lever/coucher
+            # calcules au moment ou la Lune franchit cet horizon utile.
             passes = get_moon_passes(
                 lat, lon, self._alt_m,
                 hours=30 * 24, start_offset_hours=offset_hours,
-                horizon_degrees=self._horizonDeg())
+                horizon_degrees=self._effectiveHorizonDeg())
         except Exception as e:
             QMessageBox.critical(
                 self, tr("msg_error_calc"), f"Skyfield : {e}")
@@ -954,11 +974,18 @@ class MoonPredictionsWindow(QMainWindow):
             self._compute()
 
     def _onFilterChanged(self):
-        self.labelMinEl.setText(f"{self.sliderMinEl.value()}\u00b0")
         self.labelMinScore.setText(
             f"{self.sliderMinScore.value() / 10:.1f}")
         self._updateTzLabel()
         self._filterTimer.start()
+
+    def _onElMinChanged(self, value):
+        """Slider EL min change -> met \u00e0 jour le label immediatement,
+        et debounce une recomputation complete (horizon mecanique)."""
+        self.labelMinEl.setText(f"{value}\u00b0")
+        # Si pas encore calcule (pas de locator), pas la peine de declencher
+        if self.editLocator.text().strip() and self._passes_raw:
+            self._elMinTimer.start()
 
     # ════════════════════════════════════════════
     # Affichage table
@@ -972,9 +999,12 @@ class MoonPredictionsWindow(QMainWindow):
         from moon_calc import (compute_moon, compute_sun, compute_libration,
                                ts, _angular_sep_deg)
 
+        # Lever/coucher de la Lune : utilise l'horizon effectif (= EL min
+        # mecanique si defini > 0)
         moon = compute_moon(self._lat, self._lon, self._alt_m,
                             dist_reference=self._distRef,
-                            horizon_degrees=self._horizonDeg())
+                            horizon_degrees=self._effectiveHorizonDeg())
+        # Le Soleil n'est pas concerne par l'horizon mecanique de la parabole
         sun = compute_sun(self._lat, self._lon, self._alt_m,
                           horizon_degrees=self._horizonDeg())
         lib = compute_libration(self._lat, self._lon, self._alt_m, ts.now())
@@ -1470,7 +1500,7 @@ class MoonPredictionsWindow(QMainWindow):
 
         moon = compute_moon(self._lat, self._lon, self._alt_m,
                             dist_reference=self._distRef,
-                            horizon_degrees=self._horizonDeg())
+                            horizon_degrees=self._effectiveHorizonDeg())
         sun = compute_sun(self._lat, self._lon, self._alt_m,
                           horizon_degrees=self._horizonDeg())
         lib = compute_libration(self._lat, self._lon, self._alt_m, t_now)

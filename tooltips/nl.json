@@ -17,6 +17,7 @@
 
 
   "tip_save": "Roepnaam, locator, hoogte en voorkeuren opslaan.",
+  "tip_el_min": "MINIMALE ELEVATIE — Nuttige horizon\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nFiltert passages EN definieert uw MECHANISCHE HORIZON.\n\nAls uw schotel beperkt is in lage elevatie\n(obstakel: mast, gebouw, montage…), stel EL min\nin op uw drempel (bv: 25°):\n\n  → Alleen passages boven 25° worden getoond\n  → Opkomst/ondergang-tijden worden berekend op het\n    moment dat de Maan 25° kruist (niet 0°)\n  → De weergegeven duur is uw werkelijke operatietijd\n\nLaat op 0° voor klassieke astronomie.",
   "tip_row_dblclick": "Klik op een passage-regel om het detail\nelke 30 minuten te zien (AZ, EL, Doppler, DGR, TSky...).\nKlik op de NU-regel om het realtime dashboard\nmet alle EME-parameters te openen.",
   "tip_theme": "Wissel licht / donker thema",
   "tip_conventions": "Rekenconventies kiezen\n(afstand, horizon opkomst/ondergang)",

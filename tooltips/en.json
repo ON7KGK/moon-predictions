@@ -17,6 +17,7 @@
 
 
   "tip_save": "Save callsign, locator, altitude and preferences.",
+  "tip_el_min": "MINIMUM ELEVATION — Usable horizon\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nFilters passes AND defines your MECHANICAL HORIZON.\n\nIf your dish is limited in low elevation\n(obstacle: mast, building, mount…), set EL min\nto your threshold (e.g. 25°):\n\n  → Only passes exceeding 25° are shown\n  → Rise/set times are computed at the moment\n    the Moon crosses 25° (not 0°)\n  → Displayed duration is your actual operation time\n\nLeave at 0° for standard astronomy.",
   "tip_row_dblclick": "Click a pass row to see the detail\nevery 30 minutes (AZ, EL, Doppler, DGR, TSky...).\nClick the NOW row to open the real-time dashboard\nwith all EME parameters.",
   "tip_theme": "Toggle light / dark theme",
   "tip_conventions": "Choose calculation conventions\n(distance, rise/set horizon)",

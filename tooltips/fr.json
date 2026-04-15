@@ -17,6 +17,7 @@
 
 
   "tip_save": "Sauvegarder l'indicatif, le locator, l'altitude\net les préférences.",
+  "tip_el_min": "ÉLÉVATION MINIMALE — Horizon utile\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nFiltre les passages ET définit votre HORIZON MÉCANIQUE.\n\nSi votre parabole est limitée en élévation basse\n(obstacle : mât, bâtiment, monture…), réglez EL min\nà votre seuil (ex: 25°) :\n\n  → Seuls les passages dépassant 25° s'affichent\n  → Les heures de lever/coucher sont calculées au\n    moment où la Lune franchit 25° (pas 0°)\n  → La durée affichée est votre durée d'opération réelle\n\nLaissez à 0° pour l'astronomie classique.",
   "tip_row_dblclick": "Cliquez sur une ligne de passage pour voir le détail\ntoutes les 30 minutes (AZ, EL, Doppler, DGR, TSky...).\nCliquez sur la ligne MAINTENANT pour voir le tableau de bord\ntemps réel avec tous les paramètres EME.",
   "tip_theme": "Basculer thème clair / sombre",
   "tip_conventions": "Choisir les conventions de calcul\n(distance, horizon lever/coucher)",
