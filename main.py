@@ -36,7 +36,7 @@ from moon_calc import (
 )
 from i18n import tr, set_language, get_language
 
-APP_VERSION = "1.6.1"
+APP_VERSION = "1.6.2"
 APP_DATE = "2026-04-15"
 
 
@@ -1413,7 +1413,14 @@ class MoonPredictionsWindow(QMainWindow):
                     if d["max_el"] >= min_el and d["score"] >= min_score]
         pass_idx = row - (1 if has_now_row else 0)
         if 0 <= pass_idx < len(filtered):
-            self._showDayDetail(filtered[pass_idx])
+            try:
+                self._showDayDetail(filtered[pass_idx])
+            except Exception as e:
+                import traceback
+                QMessageBox.critical(
+                    self, tr("msg_error"),
+                    f"{type(e).__name__}: {e}\n\n{traceback.format_exc()}"
+                )
 
     def _showDayDetail(self, pass_data):
         """Affiche le detail d'un passage par tranches de 30 minutes.
