@@ -17,6 +17,7 @@
 
 
   "tip_save": "Save callsign, locator, altitude and preferences.",
+  "tip_row_dblclick": "Double-click a pass row to see the detail\nevery 30 minutes (AZ, EL, Doppler, DGR, TSky, etc.)",
   "tip_theme": "Toggle light / dark theme",
   "tip_conventions": "Choose calculation conventions\n(distance, rise/set horizon)",
   "tip_sked": "Online EME QSO planning tool\nby SA5IKN — skeds, mutual visibility, etc.",

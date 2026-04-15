@@ -138,6 +138,19 @@ _R_GAL_TO_ICRS = np.array([
 ])
 
 
+def _radec_to_galactic(ra_deg: float, dec_deg: float) -> tuple[float, float]:
+    """Convertit ICRS (ra, dec) en galactique (l, b) degres."""
+    ra_r = math.radians(ra_deg)
+    dec_r = math.radians(dec_deg)
+    eq = np.array([math.cos(dec_r) * math.cos(ra_r),
+                   math.cos(dec_r) * math.sin(ra_r),
+                   math.sin(dec_r)])
+    gal = _R_GAL_TO_ICRS.T @ eq
+    l = math.degrees(math.atan2(gal[1], gal[0])) % 360
+    b = math.degrees(math.asin(np.clip(gal[2], -1.0, 1.0)))
+    return l, b
+
+
 def _galactic_to_radec(gal_l_deg: float, gal_b_deg: float) -> tuple[float, float]:
     """Convertit galactique (l, b) degres en ICRS (ra, dec) degres."""
     l_r = math.radians(gal_l_deg)
@@ -157,6 +170,126 @@ def _angular_sep_deg(az1: float, el1: float, az2: float, el2: float) -> float:
     cos_s = (math.sin(e1) * math.sin(e2) +
              math.cos(e1) * math.cos(e2) * math.cos(a1 - a2))
     return math.degrees(math.acos(max(-1.0, min(1.0, cos_s))))
+
+
+# ════════════════════════════════════════════
+# Fonctions EME specifiques (Doppler, TSky, DGR)
+# ════════════════════════════════════════════
+
+_C_LIGHT = 299_792_458.0  # m/s
+_T_CMB = 2.73             # Kelvin (fond diffus cosmologique)
+_T_MOON = 230.0           # Kelvin (temperature de bruit de la Lune)
+
+
+def compute_doppler_shift(lat: float, lon: float, alt_m: float,
+                           t_sky, freq_hz: float = 10368e6) -> float:
+    """Calcule le decalage Doppler central EME aller-retour (Hz).
+
+    Le signal fait l'aller-retour Terre-Lune-Terre, d'ou le facteur 2.
+    Valeur positive = Lune s'approche (frequence recue > frequence emise).
+    A 10 GHz, varie typiquement de +-30 kHz sur un passage.
+    """
+    location = wgs84.latlon(lat, lon, elevation_m=alt_m)
+    observer = eph['earth'] + location
+    # Derivee numerique centree sur +-30 secondes
+    dt_sec = 30.0
+    dt_days = dt_sec / 86400.0
+    t1 = ts.tt_jd(t_sky.tt - dt_days)
+    t2 = ts.tt_jd(t_sky.tt + dt_days)
+    d1 = observer.at(t1).observe(eph['moon']).apparent().distance().m
+    d2 = observer.at(t2).observe(eph['moon']).apparent().distance().m
+    v_radial = (d2 - d1) / (2 * dt_sec)  # m/s (+ = Lune s'eloigne)
+    # Aller-retour : Doppler double, signe inverse (eloignement = freq plus basse)
+    return -2.0 * v_radial * freq_hz / _C_LIGHT
+
+
+def compute_sky_temp(lat: float, lon: float, alt_m: float, t_sky,
+                     freq_hz: float = 10368e6) -> float:
+    """Estime la temperature de bruit de ciel (K) derriere la Lune.
+
+    Modele simplifie base sur la latitude galactique et la proximite
+    du centre galactique. A 10 GHz, la contribution galactique est faible
+    (~2-10 K typiquement), mais elle monte pres du centre galactique et
+    des radio-sources ponctuelles (Cas A, Cyg A, etc.).
+
+    Non exhaustif : pour un modele precis il faudrait utiliser
+    une carte de bruit de ciel (Haslam 408 MHz + extrapolation spectrale).
+    """
+    location = wgs84.latlon(lat, lon, elevation_m=alt_m)
+    observer = eph['earth'] + location
+    # Position de la Lune en RA/Dec topocentrique
+    app = observer.at(t_sky).observe(eph['moon']).apparent()
+    ra, dec, _ = app.radec()
+    ra_deg = ra.hours * 15.0
+    dec_deg = dec.degrees
+    gal_l, gal_b = _radec_to_galactic(ra_deg, dec_deg)
+
+    # T_sky a 408 MHz (Haslam) : contribution galactique simplifiee.
+    # Valeur de base en fonction de la latitude galactique b.
+    # A |b|=90 : ~20 K ; a |b|=0 : ~200-400 K (centre) ou ~50-100 K (ailleurs).
+    abs_b = abs(gal_b)
+    t_gal_408 = 20.0 + 180.0 * math.exp(-abs_b / 12.0)
+
+    # Bosse au centre galactique (direction Sagittarius, l~0, b~0)
+    l_centered = gal_l if gal_l <= 180 else gal_l - 360  # -180..+180
+    if abs_b < 15 and abs(l_centered) < 30:
+        t_gal_408 += 400.0 * math.exp(
+            -(l_centered ** 2) / 400.0 - (gal_b ** 2) / 50.0)
+
+    # Extrapolation spectrale (indice spectral ~-2.5 pour synchrotron galactique)
+    # T(f) = T(408) * (408e6/f)^2.5
+    t_gal = t_gal_408 * (408e6 / freq_hz) ** 2.5
+    return _T_CMB + t_gal
+
+
+def compute_degradation(lat: float, lon: float, alt_m: float, t_sky,
+                         freq_hz: float = 10368e6,
+                         t_sys_k: float = 50.0) -> dict:
+    """Calcule la degradation EME (dB) par rapport aux conditions optimales.
+
+    DGR combine :
+      - Perte de path loss vs perigee (distance)
+      - Augmentation du bruit de ciel (galactic plane)
+      - Bruit de la Lune elle-meme (constant, ~230 K)
+
+    Parametres :
+      t_sys_k : temperature de bruit du systeme recepteur (K).
+                Typique : 50 K (10 GHz moderne), 30 K (pro), 100+ K (debutant).
+
+    Returns dict : degradation_db, path_loss_extra_db, sky_temp_k, doppler_hz.
+    """
+    location = wgs84.latlon(lat, lon, elevation_m=alt_m)
+    observer = eph['earth'] + location
+
+    # Distance topocentrique
+    app = observer.at(t_sky).observe(eph['moon']).apparent()
+    dist_km = app.distance().km
+
+    # Path loss extra vs perigee (facteur 40 pour aller-retour d^4)
+    pl_extra = 40.0 * math.log10(dist_km / 356500.0) if dist_km > 0 else 0.0
+
+    # Bruit de ciel
+    t_sky_k = compute_sky_temp(lat, lon, alt_m, t_sky, freq_hz)
+
+    # Degradation de bruit (dB) = 10*log10((Tsys + Tsky + TMoon) / (Tsys + Tcmb + TMoon))
+    # Reference = ciel froid (CMB 2.73 K) + systeme + Lune
+    t_ref = t_sys_k + _T_CMB + _T_MOON
+    t_now = t_sys_k + t_sky_k + _T_MOON
+    noise_deg_db = 10.0 * math.log10(t_now / t_ref)
+
+    # Degradation totale
+    deg_db = pl_extra + noise_deg_db
+
+    # Doppler central
+    dop_hz = compute_doppler_shift(lat, lon, alt_m, t_sky, freq_hz)
+
+    return {
+        "degradation_db": deg_db,
+        "path_loss_extra_db": pl_extra,
+        "sky_temp_k": t_sky_k,
+        "doppler_hz": dop_hz,
+        "dist_km": dist_km,
+    }
 
 
 # ════════════════════════════════════════════
@@ -591,3 +724,81 @@ def enrich_moon_pass(lat: float, lon: float, alt_m: float,
     pass_data["lib_rate_max"] = lib_rate_max
 
     return pass_data
+
+
+def sample_pass_timeline(lat: float, lon: float, alt_m: float,
+                          pass_data: dict,
+                          interval_min: int = 30,
+                          freq_hz: float = 10368e6,
+                          t_sys_k: float = 50.0,
+                          dist_reference: str = "topo") -> list[dict]:
+    """Echantillonne un passage a intervalle fixe (par defaut 30 min).
+
+    Pour chaque point : UTC, AZ, EL, distance, Doppler, spread, sky_temp,
+    degradation, libration, moon-sun.
+
+    C'est l'equivalent de la vue detaillee de Sked Maker (GM4JJJ).
+    """
+    location = wgs84.latlon(lat, lon, elevation_m=alt_m)
+    observer = eph['earth'] + location
+    t_rise = pass_data["rise_time"]
+    t_set = pass_data["set_time"]
+
+    # Aligner le premier point sur une demi-heure pile (ex: 05:00, 05:30)
+    first_minute = (t_rise.minute // interval_min + 1) * interval_min
+    if first_minute >= 60:
+        t_first = t_rise.replace(minute=0, second=0, microsecond=0) \
+                    + timedelta(hours=1)
+    else:
+        t_first = t_rise.replace(minute=first_minute, second=0, microsecond=0)
+
+    samples = []
+    t_cur = t_first
+    while t_cur <= t_set:
+        t_sky = ts.from_datetime(t_cur)
+        app = observer.at(t_sky).observe(eph['moon']).apparent()
+        alt, az, topo_dist = app.altaz()
+        if alt.degrees < 0:
+            t_cur += timedelta(minutes=interval_min)
+            continue
+
+        # Distance (topo ou geo selon convention)
+        if dist_reference == "geo":
+            geo_app = eph['earth'].at(t_sky).observe(eph['moon']).apparent()
+            _, _, dist_obj = geo_app.radec()
+            dist_km = dist_obj.km
+        else:
+            dist_km = topo_dist.km
+
+        # Libration + spread a cet instant
+        lib = compute_libration(lat, lon, alt_m, t_sky)
+
+        # DGR composite
+        deg = compute_degradation(lat, lon, alt_m, t_sky, freq_hz, t_sys_k)
+
+        # Moon-Sun angle
+        sun_app = observer.at(t_sky).observe(eph['sun']).apparent()
+        sun_alt, sun_az, _ = sun_app.altaz()
+        ms_angle = _angular_sep_deg(az.degrees, alt.degrees,
+                                    sun_az.degrees, sun_alt.degrees)
+
+        # Declinaison
+        _, dec, _ = app.radec()
+
+        samples.append({
+            "time": t_cur,
+            "az": az.degrees,
+            "el": alt.degrees,
+            "dist_km": dist_km,
+            "decl": dec.degrees,
+            "doppler_hz": deg["doppler_hz"],
+            "spread_hz": lib["doppler_spread_hz"] * freq_hz / 10.368e9,
+            "lib_rate": lib["lib_rate"],
+            "sky_temp_k": deg["sky_temp_k"],
+            "degradation_db": deg["degradation_db"],
+            "path_loss_extra_db": deg["path_loss_extra_db"],
+            "moon_sun": ms_angle,
+        })
+        t_cur += timedelta(minutes=interval_min)
+
+    return samples

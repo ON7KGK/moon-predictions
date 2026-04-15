@@ -84,6 +84,31 @@ _STRINGS = {
     "col_spread_min": {"fr": "Spread min ({freq})", "nl": "Spread min ({freq})", "en": "Spread min ({freq})"},
     "col_spread_max": {"fr": "Spread max ({freq})", "nl": "Spread max ({freq})", "en": "Spread max ({freq})"},
     "col_quality": {"fr": "Qualit\u00e9", "nl": "Kwaliteit", "en": "Quality"},
+
+    # ── Fenetre detail d'une journee (double-clic sur ligne) ──
+    "day_detail_title": {
+        "fr": "D\u00e9tail du passage",
+        "nl": "Passage detail",
+        "en": "Pass detail",
+    },
+    "col_day_time": {"fr": "Heure", "nl": "Tijd", "en": "Time"},
+    "col_az": {"fr": "AZ", "nl": "AZ", "en": "AZ"},
+    "col_el": {"fr": "EL", "nl": "EL", "en": "EL"},
+    "col_day_distance": {"fr": "Distance", "nl": "Afstand", "en": "Distance"},
+    "col_day_doppler": {
+        "fr": "Doppler ({freq})",
+        "nl": "Doppler ({freq})",
+        "en": "Doppler ({freq})",
+    },
+    "col_day_spread": {
+        "fr": "Spread ({freq})",
+        "nl": "Spread ({freq})",
+        "en": "Spread ({freq})",
+    },
+    "col_day_tsky": {"fr": "TSky", "nl": "TSky", "en": "TSky"},
+    "col_day_dgr": {"fr": "DGR", "nl": "DGR", "en": "DGR"},
+    "col_day_libration": {"fr": "Libration", "nl": "Libratie", "en": "Libration"},
+    "col_day_ms": {"fr": "Moon-Sun", "nl": "Maan-Zon", "en": "Moon-Sun"},
     "col_phase": {"fr": "Phase", "nl": "Fase", "en": "Phase"},
 
     # ── Ligne MAINTENANT ──

@@ -31,11 +31,12 @@ from PyQt6.QtPrintSupport import QPrinter
 from PyQt6.QtWidgets import QToolTip
 
 from moon_calc import (
-    locator_to_latlon, get_moon_passes, enrich_moon_pass, compute_moon
+    locator_to_latlon, get_moon_passes, enrich_moon_pass, compute_moon,
+    sample_pass_timeline,
 )
 from i18n import tr, set_language, get_language
 
-APP_VERSION = "1.5.0"
+APP_VERSION = "1.6.0"
 APP_DATE = "2026-04-15"
 
 
@@ -727,6 +728,9 @@ class MoonPredictionsWindow(QMainWindow):
             QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setAlternatingRowColors(False)
         self.table.verticalHeader().setVisible(False)  # pas de numéros de lignes
+        # Double-clic sur une ligne de passage -> detail toutes les 30 min
+        self.table.cellDoubleClicked.connect(self._onRowDoubleClicked)
+        self.table.setToolTip(tr("tip_row_dblclick"))
         layout.addWidget(self.table)
 
         # ── Footer ──
@@ -1395,6 +1399,190 @@ class MoonPredictionsWindow(QMainWindow):
         dlg.setFont(dlg_font)
         for child in dlg.findChildren(QWidget):
             child.setFont(dlg_font)
+
+    def _onRowDoubleClicked(self, row, col):
+        """Double-clic sur une ligne du tableau -> detail du passage (30 min)."""
+        # Row 0 = ligne MAINTENANT (si elle existe), pas un passage cliquable
+        has_now_row = (self._lat != 0 or self._lon != 0) and self._passes_raw
+        if has_now_row and row == 0:
+            return
+        # Calcul de l'index dans _passes_raw (filtres appliques)
+        min_el = self.sliderMinEl.value()
+        min_score = self.sliderMinScore.value() / 10.0
+        filtered = [d for d in self._passes_raw
+                    if d["max_el"] >= min_el and d["score"] >= min_score]
+        pass_idx = row - (1 if has_now_row else 0)
+        if 0 <= pass_idx < len(filtered):
+            self._showDayDetail(filtered[pass_idx])
+
+    def _showDayDetail(self, pass_data):
+        """Affiche le detail d'un passage par tranches de 30 minutes.
+
+        Equivalent de la vue Sked Maker (GM4JJJ) : pour chaque tranche,
+        AZ, EL, distance, Doppler, spread, TSky, degradation, moon-sun.
+        """
+        t = _theme()
+        dlg = QDialog(self)
+        # Titre avec la date du passage
+        rise_dt = pass_data["rise_time"]
+        date_str = _loc_date_long(rise_dt)
+        dlg.setWindowTitle(f"{tr('day_detail_title')} — {date_str}")
+        dlg.setMinimumSize(1100, 500)
+        dlg.setStyleSheet(
+            f"QDialog {{ background-color: {t['bg_main']}; color: {t['fg_text']}; }}"
+            f"QLabel {{ color: {t['fg_text']}; }}"
+            f"QTableWidget {{ background-color: {t['bg_table']}; "
+            f"gridline-color: {t['gridline']}; "
+            f"selection-background-color: {t['selection_bg']}; }}"
+            f"QHeaderView::section {{ background-color: {t['bg_header']}; "
+            f"color: {t['fg_header']}; border: 1px solid {t['gridline']}; "
+            f"padding: 4px; font-weight: bold; }}"
+        )
+        icon_path = _get_icon_path()
+        if os.path.exists(icon_path):
+            dlg.setWindowIcon(QIcon(icon_path))
+
+        lay = QVBoxLayout(dlg)
+
+        # En-tete : resume du passage
+        dur_h = int(pass_data["duration_min"] // 60)
+        dur_m = int(pass_data["duration_min"] % 60)
+        freq = self.comboFreq.currentData() or 10368e6
+        freq_label = self.comboFreq.currentText()
+        use_local = self.chkLocalTime.isChecked()
+        tz_offset = _utc_offset() if use_local else timedelta(0)
+        tz_suffix = " UTC" if not use_local else ""
+
+        hdr_txt = (
+            f"{date_str} — {tr('col_el_max')}: {pass_data['max_el']:.1f}° "
+            f"@ {(pass_data['max_el_time'] + tz_offset).strftime('%H:%M')}{tz_suffix} — "
+            f"{tr('col_duration')}: {dur_h}h{dur_m:02d} — "
+            f"{tr('lbl_frequency')} {freq_label}"
+        )
+        hdr = QLabel(hdr_txt)
+        hdr.setStyleSheet(f"color: {t['fg_info']}; padding: 4px 0;")
+        lay.addWidget(hdr)
+
+        # Echantillonnage du passage
+        try:
+            samples = sample_pass_timeline(
+                self._lat, self._lon, self._alt_m, pass_data,
+                interval_min=30, freq_hz=freq,
+                dist_reference=self._distRef)
+        except Exception as e:
+            samples = []
+            err = QLabel(f"Erreur : {e}")
+            err.setStyleSheet(f"color: {t['eme_red']};")
+            lay.addWidget(err)
+
+        # Table
+        cols = [
+            f"{tr('col_day_time')}{tz_suffix}",
+            tr("col_az"),
+            tr("col_el"),
+            tr("col_day_distance"),
+            tr("col_day_doppler", freq=freq_label),
+            tr("col_day_spread", freq=freq_label),
+            tr("col_day_tsky"),
+            tr("col_day_dgr"),
+            tr("col_day_libration"),
+            tr("col_day_ms"),
+        ]
+        table = QTableWidget(len(samples), len(cols))
+        table.setHorizontalHeaderLabels(cols)
+        table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        table.verticalHeader().setVisible(False)
+        table.setFont(_make_monospace_font(self.spinFontSize.value()))
+        hdr_font = _make_monospace_font(max(self.spinFontSize.value() - 1, 8))
+        hdr_font.setBold(True)
+        table.horizontalHeader().setFont(hdr_font)
+
+        tc = _theme()
+        for row, s in enumerate(samples):
+            t_local = s["time"] + tz_offset
+            col = 0
+            table.setItem(row, col, _make_item(
+                t_local.strftime("%H:%M"))); col += 1
+            table.setItem(row, col, _make_item(
+                f"{s['az']:.0f}\u00b0")); col += 1
+            # EL avec couleur
+            el = s['el']
+            el_col = _eme_color(el, _EL_GREEN, _EL_ORANGE)
+            table.setItem(row, col, _make_item(
+                f"{el:.1f}\u00b0", el_col)); col += 1
+            # Distance
+            dist_col = _eme_color(s['dist_km'], _DIST_GREEN, _DIST_ORANGE,
+                                   invert=True)
+            table.setItem(row, col, _make_item(
+                f"{s['dist_km']:.0f} km", dist_col)); col += 1
+            # Doppler (signe explicite)
+            dop = s['doppler_hz']
+            dop_txt = f"{dop:+.0f} Hz"
+            table.setItem(row, col, _make_item(dop_txt)); col += 1
+            # Spread
+            spr = s['spread_hz']
+            if spr < 50: spr_col = QColor(tc["eme_green"])
+            elif spr < 150: spr_col = QColor(tc["eme_orange"])
+            else: spr_col = QColor(tc["eme_red"])
+            table.setItem(row, col, _make_item(
+                f"{spr:.0f} Hz", spr_col)); col += 1
+            # TSky
+            tsky = s['sky_temp_k']
+            if tsky < 10: tsky_col = QColor(tc["eme_green"])
+            elif tsky < 50: tsky_col = QColor(tc["eme_orange"])
+            else: tsky_col = QColor(tc["eme_red"])
+            table.setItem(row, col, _make_item(
+                f"{tsky:.1f} K", tsky_col)); col += 1
+            # DGR (degradation en dB)
+            dgr = s['degradation_db']
+            if dgr < 1.0: dgr_col = QColor(tc["eme_green"])
+            elif dgr < 3.0: dgr_col = QColor(tc["eme_orange"])
+            else: dgr_col = QColor(tc["eme_red"])
+            table.setItem(row, col, _make_item(
+                f"{dgr:+.2f} dB", dgr_col)); col += 1
+            # Libration rate
+            lib_r = s['lib_rate']
+            if lib_r < 0.10: lib_col = QColor(tc["eme_green"])
+            elif lib_r < 0.25: lib_col = QColor(tc["eme_orange"])
+            else: lib_col = QColor(tc["eme_red"])
+            table.setItem(row, col, _make_item(
+                f"{lib_r:.2f}\u00b0/h", lib_col)); col += 1
+            # Moon-Sun angle
+            ms = s['moon_sun']
+            if ms < 5: ms_col = QColor(tc["eme_red"])
+            elif ms < 15: ms_col = QColor(tc["eme_orange"])
+            else: ms_col = QColor(tc["eme_green"])
+            table.setItem(row, col, _make_item(
+                f"{ms:.0f}\u00b0", ms_col)); col += 1
+
+        # Ajuster largeurs colonnes
+        table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Interactive)
+        for c in range(table.columnCount()):
+            hw = table.horizontalHeader().sectionSizeHint(c)
+            cw = table.sizeHintForColumn(c)
+            table.setColumnWidth(c, max(hw, cw) + 8)
+        table.horizontalHeader().setStretchLastSection(True)
+
+        lay.addWidget(table)
+
+        # Bouton Fermer
+        btnClose = QPushButton(tr("btn_close"))
+        btnClose.clicked.connect(dlg.close)
+        btnClose.setStyleSheet(
+            f"QPushButton {{ padding: 6px 20px; background-color: {t['btn_bg']}; "
+            f"border: 1px solid {t['btn_border']}; border-radius: 3px; }}"
+            f"QPushButton:hover {{ background-color: {t['btn_hover']}; }}"
+        )
+        btnRow = QHBoxLayout()
+        btnRow.addStretch()
+        btnRow.addWidget(btnClose)
+        lay.addLayout(btnRow)
+
+        # Appliquer la taille de police utilisateur
+        self._applyDialogFont(dlg)
+        dlg.exec()
 
     def _showAbout(self):
         """Fenêtre À propos."""
