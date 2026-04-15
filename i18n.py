@@ -135,6 +135,11 @@ _STRINGS = {
     "col_day_dgr": {"fr": "DGR", "nl": "DGR", "en": "DGR"},
     "col_day_libration": {"fr": "Libration", "nl": "Libratie", "en": "Libration"},
     "col_day_ms": {"fr": "Moon-Sun", "nl": "Maan-Zon", "en": "Moon-Sun"},
+    "col_day_pl_extra": {"fr": "PL extra", "nl": "PL extra", "en": "PL extra"},
+    "col_day_decl": {"fr": "D\u00e9cl.", "nl": "Decl.", "en": "Decl."},
+    "col_day_lha": {"fr": "LHA", "nl": "LHA", "en": "LHA"},
+    "col_day_sun_az": {"fr": "Sun AZ", "nl": "Zon AZ", "en": "Sun AZ"},
+    "col_day_sun_el": {"fr": "Sun EL", "nl": "Zon EL", "en": "Sun EL"},
     "col_phase": {"fr": "Phase", "nl": "Fase", "en": "Phase"},
 
     # ── Ligne MAINTENANT ──

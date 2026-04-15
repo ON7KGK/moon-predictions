@@ -37,7 +37,7 @@ from moon_calc import (
 )
 from i18n import tr, set_language, get_language
 
-APP_VERSION = "1.7.0"
+APP_VERSION = "1.7.1"
 APP_DATE = "2026-04-15"
 
 
@@ -1700,12 +1700,17 @@ class MoonPredictionsWindow(QMainWindow):
             tr("col_az"),
             tr("col_el"),
             tr("col_day_distance"),
+            tr("col_day_pl_extra"),
+            tr("col_day_decl"),
             tr("col_day_doppler", freq=freq_label),
             tr("col_day_spread", freq=freq_label),
             tr("col_day_tsky"),
             tr("col_day_dgr"),
             tr("col_day_libration"),
+            tr("col_day_lha"),
             tr("col_day_ms"),
+            tr("col_day_sun_az"),
+            tr("col_day_sun_el"),
         ]
         table = QTableWidget(len(samples), len(cols))
         table.setHorizontalHeaderLabels(cols)
@@ -1735,6 +1740,14 @@ class MoonPredictionsWindow(QMainWindow):
                                    invert=True)
             table.setItem(row, col, _make_item(
                 f"{s['dist_km']:.0f} km", dist_col)); col += 1
+            # Path loss extra (dB)
+            pl_extra = s['path_loss_extra_db']
+            pl_col = _eme_color(pl_extra, _PL_GREEN, _PL_ORANGE, invert=True)
+            table.setItem(row, col, _make_item(
+                f"{pl_extra:+.2f} dB", pl_col)); col += 1
+            # Declinaison
+            table.setItem(row, col, _make_item(
+                f"{s['decl']:+.1f}\u00b0")); col += 1
             # Doppler (signe explicite)
             dop = s['doppler_hz']
             dop_txt = f"{dop:+.0f} Hz"
@@ -1767,6 +1780,9 @@ class MoonPredictionsWindow(QMainWindow):
             else: lib_col = QColor(tc["eme_red"])
             table.setItem(row, col, _make_item(
                 f"{lib_r:.2f}\u00b0/h", lib_col)); col += 1
+            # LHA (Local Hour Angle)
+            table.setItem(row, col, _make_item(
+                f"{s['lha']:+.1f}\u00b0")); col += 1
             # Moon-Sun angle
             ms = s['moon_sun']
             if ms < 5: ms_col = QColor(tc["eme_red"])
@@ -1774,6 +1790,18 @@ class MoonPredictionsWindow(QMainWindow):
             else: ms_col = QColor(tc["eme_green"])
             table.setItem(row, col, _make_item(
                 f"{ms:.0f}\u00b0", ms_col)); col += 1
+            # Sun AZ / Sun EL — gris si le Soleil est sous l'horizon
+            sun_el = s['sun_el']
+            sun_color = None if sun_el > 0 else QColor(tc["fg_dim"])
+            table.setItem(row, col, _make_item(
+                f"{s['sun_az']:.0f}\u00b0", sun_color)); col += 1
+            # Sun EL : rouge si > 0 (Soleil levé — risque interférence)
+            if sun_el > 0:
+                sel_color = QColor(tc["eme_orange"])
+            else:
+                sel_color = QColor(tc["fg_dim"])
+            table.setItem(row, col, _make_item(
+                f"{sun_el:+.0f}\u00b0", sel_color)); col += 1
 
         # Ajuster largeurs colonnes
         table.horizontalHeader().setSectionResizeMode(
@@ -1782,7 +1810,7 @@ class MoonPredictionsWindow(QMainWindow):
             hw = table.horizontalHeader().sectionSizeHint(c)
             cw = table.sizeHintForColumn(c)
             table.setColumnWidth(c, max(hw, cw) + 8)
-        table.horizontalHeader().setStretchLastSection(True)
+        # Pas de stretch : avec 15 colonnes la table est assez large
 
         lay.addWidget(table)
 

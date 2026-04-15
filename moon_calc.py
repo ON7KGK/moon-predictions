@@ -878,14 +878,19 @@ def sample_pass_timeline(lat: float, lon: float, alt_m: float,
         # DGR composite
         deg = compute_degradation(lat, lon, alt_m, t_sky, freq_hz, t_sys_k)
 
-        # Moon-Sun angle
+        # Moon-Sun angle + Sun position
         sun_app = observer.at(t_sky).observe(eph['sun']).apparent()
         sun_alt, sun_az, _ = sun_app.altaz()
         ms_angle = _angular_sep_deg(az.degrees, alt.degrees,
                                     sun_az.degrees, sun_alt.degrees)
 
-        # Declinaison
-        _, dec, _ = app.radec()
+        # Declinaison + LHA
+        ra, dec, _ = app.radec()
+        gst_hours = t_sky.gmst
+        gha = ((gst_hours - ra.hours) * 15.0) % 360.0
+        lha = (gha + lon) % 360.0
+        if lha > 180.0:
+            lha -= 360.0
 
         samples.append({
             "time": t_cur,
@@ -893,6 +898,7 @@ def sample_pass_timeline(lat: float, lon: float, alt_m: float,
             "el": alt.degrees,
             "dist_km": dist_km,
             "decl": dec.degrees,
+            "lha": lha,
             "doppler_hz": deg["doppler_hz"],
             "spread_hz": lib["doppler_spread_hz"] * freq_hz / 10.368e9,
             "lib_rate": lib["lib_rate"],
@@ -900,6 +906,8 @@ def sample_pass_timeline(lat: float, lon: float, alt_m: float,
             "degradation_db": deg["degradation_db"],
             "path_loss_extra_db": deg["path_loss_extra_db"],
             "moon_sun": ms_angle,
+            "sun_az": sun_az.degrees,
+            "sun_el": sun_alt.degrees,
         })
         t_cur += timedelta(minutes=interval_min)
 
