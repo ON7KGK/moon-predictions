@@ -58,9 +58,15 @@ export function utcOffsetMs() {
   return -new Date().getTimezoneOffset() * 60 * 1000;
 }
 
+// formatHM(date) -> "HH:MM" en UTC du timestamp passe.
+// IMPORTANT : si le Date a deja un tzOffset applique (shift manuel),
+// n'ajoutez pas useLocal=true qui re-appliquerait le shift via getHours.
+// Pour l'heure locale du navigateur sans shift manuel, passer useLocal=true.
 export function formatHM(date, useLocal = false) {
-  const d = useLocal ? new Date(date) : new Date(date);
-  if (useLocal) return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const d = new Date(date);
+  if (useLocal) {
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  }
   return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
 }
 

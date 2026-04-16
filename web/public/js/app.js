@@ -242,14 +242,14 @@ function renderTable() {
 
     const spMin = (d.spreadMin || d.dopplerSpread || 0) * freq / 10.368e9;
     const spMinT = d.spreadMinTime
-      ? formatHM(new Date(new Date(d.spreadMinTime).getTime() + tzOffset), useLocal)
+      ? formatHM(new Date(new Date(d.spreadMinTime).getTime() + tzOffset), false)
       : "";
     const spMinCls = spMin < 50 ? "eme-green" : spMin < 150 ? "eme-orange" : "eme-red";
     row.appendChild(el("td", { class: spMinCls }, `${Math.round(spMin)} Hz${spMinT ? " @ " + spMinT : ""}`));
 
     const spMax = (d.spreadMax || d.dopplerSpread || 0) * freq / 10.368e9;
     const spMaxT = d.spreadMaxTime
-      ? formatHM(new Date(new Date(d.spreadMaxTime).getTime() + tzOffset), useLocal)
+      ? formatHM(new Date(new Date(d.spreadMaxTime).getTime() + tzOffset), false)
       : "";
     const spMaxCls = spMax < 50 ? "eme-green" : spMax < 150 ? "eme-orange" : "eme-red";
     row.appendChild(el("td", { class: spMaxCls }, `${Math.round(spMax)} Hz${spMaxT ? " @ " + spMaxT : ""}`));
@@ -286,10 +286,10 @@ async function fillNowRow(row, freq, showPhase, tzOffset, plPerigee) {
     const useLocal = $("#local-time-chk").checked;
     const statusTxt = visible ? tr("now_visible") : tr("now_below");
     const riseTxt = moon.nextRise
-      ? formatHM(new Date(new Date(moon.nextRise).getTime() + tzOffset), useLocal)
+      ? formatHM(new Date(new Date(moon.nextRise).getTime() + tzOffset), false)
       : "---";
     const setTxt = moon.nextSet
-      ? formatHM(new Date(new Date(moon.nextSet).getTime() + tzOffset), useLocal)
+      ? formatHM(new Date(new Date(moon.nextSet).getTime() + tzOffset), false)
       : "---";
     let durTxt = "---";
     if (moon.nextRise && moon.nextSet) {

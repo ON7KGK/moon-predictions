@@ -173,7 +173,7 @@ export async function showDayDetail(state, passData) {
   const maxElT = new Date(new Date(passData.maxElTime).getTime() + tzOffset);
   const durH = Math.floor(passData.durationMin / 60);
   const durM = Math.floor(passData.durationMin % 60);
-  const hdr = `${tr("col_el_max")}: ${passData.maxEl.toFixed(1)}° @ ${formatHM(maxElT, useLocal)}${tzSuffix} — ${tr("col_duration")}: ${durH}h${String(durM).padStart(2,"0")} — ${tr("lbl_frequency")} ${freqLabel}`;
+  const hdr = `${tr("col_el_max")}: ${passData.maxEl.toFixed(1)}° @ ${formatHM(maxElT, false)}${tzSuffix} — ${tr("col_duration")}: ${durH}h${String(durM).padStart(2,"0")} — ${tr("lbl_frequency")} ${freqLabel}`;
   content.appendChild(el("p", { style: "color: var(--fg-info);" }, hdr));
 
   const tableWrap = el("div", { style: "overflow-x: auto; max-height: 65vh;" });
@@ -210,7 +210,7 @@ export async function showDayDetail(state, passData) {
     for (const s of samples) {
       const tLocal = new Date(new Date(s.time).getTime() + tzOffset);
       const row = el("tr");
-      row.appendChild(el("td", {}, formatHM(tLocal, useLocal)));
+      row.appendChild(el("td", {}, formatHM(tLocal, false)));
       row.appendChild(el("td", {}, `${Math.round(s.az)}°`));
       row.appendChild(el("td", { class: emeColor(s.el, EL_GREEN, EL_ORANGE) }, `${s.el.toFixed(1)}°`));
       row.appendChild(el("td", { class: emeColor(s.distKm, DIST_GREEN, DIST_ORANGE, true) }, `${Math.round(s.distKm)} km`));
@@ -276,10 +276,10 @@ export async function showNowDetail(state) {
     const hiColor = visible ? "var(--now-visible-hi)" : "var(--now-invisible-hi)";
 
     const riseTxt = moon.nextRise
-      ? `${formatHM(new Date(new Date(moon.nextRise).getTime() + tzOffset), useLocal)}${tzSuffix}`
+      ? `${formatHM(new Date(new Date(moon.nextRise).getTime() + tzOffset), false)}${tzSuffix}`
       : "---";
     const setTxt = moon.nextSet
-      ? `${formatHM(new Date(new Date(moon.nextSet).getTime() + tzOffset), useLocal)}${tzSuffix}`
+      ? `${formatHM(new Date(new Date(moon.nextSet).getTime() + tzOffset), false)}${tzSuffix}`
       : "---";
     let durTxt = "---";
     if (moon.nextRise && moon.nextSet) {
