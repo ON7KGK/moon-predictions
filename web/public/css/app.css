@@ -121,6 +121,20 @@ button.active { background-color: var(--btn-checked); font-weight: bold; }
   align-items: center;
   gap: 6px;
 }
+/* Valeur du slider a largeur fixe — evite le decalage quand on passe
+   de "0°" (1 chiffre) a "10°"/"45°" (2 chiffres) ou "0.0"/"10.5" */
+#el-min-val {
+  display: inline-block;
+  min-width: 2.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+#score-min-val {
+  display: inline-block;
+  min-width: 2.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 input[type="range"] {
   width: 100px;
   accent-color: var(--slider-handle);
