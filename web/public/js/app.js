@@ -197,7 +197,7 @@ function renderTable() {
   const body = $("#passes-body");
   body.innerHTML = "";
 
-  // Ligne MAINTENANT (async) + auto-refresh toutes les 5 secondes
+  // Ligne MAINTENANT (async) + auto-refresh toutes les 10 secondes
   if (state.lat !== 0 || state.lon !== 0) {
     const nowRow = el("tr", { class: "now-row", title: tr("tip_row_click") });
     for (let i = 0; i < cols.length; i++) nowRow.appendChild(el("td", {}, "..."));
@@ -214,7 +214,7 @@ function renderTable() {
         return;
       }
       fillNowRow(nowRow, freq, showPhase, tzOffset, plPerigee);
-    }, 5000);
+    }, 10000);
   }
 
   // Lignes passages

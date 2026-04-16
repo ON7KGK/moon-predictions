@@ -311,9 +311,9 @@ class MoonPredictionsWindow(QMainWindow):
         self._elMinTimer.setSingleShot(True)
         self._elMinTimer.setInterval(500)
         self._elMinTimer.timeout.connect(self._compute)
-        # Auto-refresh de la ligne MAINTENANT toutes les 5 secondes
+        # Auto-refresh de la ligne MAINTENANT toutes les 10 secondes
         self._nowRowTimer = QTimer()
-        self._nowRowTimer.setInterval(5000)
+        self._nowRowTimer.setInterval(10000)
         self._nowRowTimer.timeout.connect(self._refreshNowRow)
 
         self._buildUI()
@@ -1130,7 +1130,7 @@ class MoonPredictionsWindow(QMainWindow):
         return cells
 
     def _refreshNowRow(self):
-        """Rafraichit uniquement la ligne MAINTENANT (row 0) toutes les 5 s.
+        """Rafraichit uniquement la ligne MAINTENANT (row 0) toutes les 10 s.
 
         Evite de reconstruire toute la table et ses 30+ lignes. Met juste a
         jour les cellules de la row 0 avec les nouvelles valeurs instantanees.
@@ -1501,7 +1501,7 @@ class MoonPredictionsWindow(QMainWindow):
 
         Inclut AZ/EL/Dist/Phase + donnees EME avancees : DGR, TSky, Doppler,
         Home Echo, Spread, Libration, LHA/GHA, jours depuis perigee.
-        Auto-refresh toutes les 5 secondes tant que la fenetre est ouverte.
+        Auto-refresh toutes les 10 secondes tant que la fenetre est ouverte.
         """
         if self._lat == 0 and self._lon == 0:
             return
@@ -1690,9 +1690,9 @@ class MoonPredictionsWindow(QMainWindow):
         # Rendu initial
         update_content()
 
-        # Auto-refresh toutes les 5 secondes
+        # Auto-refresh toutes les 10 secondes
         refresh_timer = QTimer(dlg)
-        refresh_timer.setInterval(5000)
+        refresh_timer.setInterval(10000)
         refresh_timer.timeout.connect(update_content)
         refresh_timer.start()
         # Le timer est parent du dlg -> auto-destroyed a la fermeture

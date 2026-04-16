@@ -488,9 +488,9 @@ _STRINGS = {
               "<a href='mailto:on7kgk@outlook.com'>on7kgk@outlook.com</a>",
     },
     "refresh_hint": {
-        "fr": "\u21bb Mise \u00e0 jour automatique toutes les 5 secondes",
-        "nl": "\u21bb Automatische update elke 5 seconden",
-        "en": "\u21bb Auto-update every 5 seconds",
+        "fr": "\u21bb Mise \u00e0 jour automatique toutes les 10 secondes",
+        "nl": "\u21bb Automatische update elke 10 seconden",
+        "en": "\u21bb Auto-update every 10 seconds",
     },
     "about_license": {"fr": "<b>Licence :</b> GNU GPL v3 \u2014 Open Source", "nl": "<b>Licentie :</b> GNU GPL v3 \u2014 Open Source", "en": "<b>License:</b> GNU GPL v3 \u2014 Open Source"},
     "btn_close": {"fr": "Fermer", "nl": "Sluiten", "en": "Close"},

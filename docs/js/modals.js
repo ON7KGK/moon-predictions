@@ -271,11 +271,11 @@ export async function showNowDetail(state) {
   // Premier rendu immediat
   await _renderNowDetailBody(body, state, refreshHint);
 
-  // Auto-refresh toutes les 5 secondes
+  // Auto-refresh toutes les 10 secondes
   if (_nowRefreshTimer !== null) clearInterval(_nowRefreshTimer);
   _nowRefreshTimer = setInterval(() => {
     _renderNowDetailBody(body, state, refreshHint);
-  }, 5000);
+  }, 10000);
 }
 
 async function _renderNowDetailBody(body, state, refreshHint) {
