@@ -4,9 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Moon Predictions — EME Pass Forecast</title>
-  <link rel="icon" href="/favicon.ico" type="image/x-icon">
-  <link rel="stylesheet" href="/css/themes.css">
-  <link rel="stylesheet" href="/css/app.css">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
+  <!-- PWA : permet l'installation comme app native (Chrome, Edge, ...) -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#19232D">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Moon Predictions">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/app.css">
 </head>
 <body class="theme-dark">
 
@@ -56,6 +62,10 @@
         <input type="range" id="score-min" min="0" max="80" value="0" data-tip="tip_quality_filter">
         <span id="score-min-val">0.0</span>
       </label>
+      <label><input type="checkbox" id="local-time-chk" data-tip="tip_local_time">
+        <span data-i18n="lbl_local_time">Heure locale</span>
+      </label>
+      <span id="tz-label" class="tz"></span>
       <label>
         <span data-i18n="lbl_frequency">Fréquence :</span>
         <select id="freq">
@@ -88,15 +98,6 @@
       </label>
       <button id="btn-export-txt" data-i18n="btn_export_txt">Export TXT</button>
       <button id="btn-export-pdf" data-i18n="btn_export_pdf">Export PDF</button>
-    </div>
-    <div class="filter-row">
-      <label><input type="checkbox" id="phase-chk" checked data-tip="tip_phase_chk">
-        <span data-i18n="lbl_phase">Phase</span>
-      </label>
-      <label><input type="checkbox" id="local-time-chk" data-tip="tip_local_time">
-        <span data-i18n="lbl_local_time">Heure locale</span>
-      </label>
-      <span id="tz-label" class="tz"></span>
       <a href="https://dxer.site/eme-observer/" target="_blank" class="sked-link" data-tip="tip_sked">
         EME Observer (SA5IKN)
       </a>
@@ -127,9 +128,17 @@
     <div id="modal-content" class="modal-content"></div>
   </div>
 
-  <script src="/js/i18n.js" type="module"></script>
-  <script src="/js/utils.js" type="module"></script>
-  <script src="/js/api.js" type="module"></script>
-  <script src="/js/app.js" type="module"></script>
+  <script src="js/i18n.js" type="module"></script>
+  <script src="js/utils.js" type="module"></script>
+  <script src="js/api.js" type="module"></script>
+  <script src="js/app.js" type="module"></script>
+  <script>
+    // Service Worker pour installabilite PWA (Chrome, Edge, Firefox...)
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js").catch(() => {});
+      });
+    }
+  </script>
 </body>
 </html>

@@ -40,7 +40,7 @@ function loadPrefs() {
     if (p.scoreMin !== undefined) $("#score-min").value = p.scoreMin;
     if (p.freq !== undefined) $("#freq").value = p.freq;
     if (p.fontSize !== undefined) $("#font-size").value = p.fontSize;
-    if (p.phase !== undefined) $("#phase-chk").checked = p.phase;
+    // phase : toujours affichee (case a cocher retiree en v1.8.4)
     if (p.localTime !== undefined) $("#local-time-chk").checked = p.localTime;
     if (p.lang) $("#lang").value = p.lang;
     $("#callsign").value = state.callsign;
@@ -58,7 +58,7 @@ function savePrefs() {
     scoreMin: parseInt($("#score-min").value),
     freq: $("#freq").value,
     fontSize: parseInt($("#font-size").value),
-    phase: $("#phase-chk").checked,
+    // (phase : toujours affichee, plus de setting a persister)
     localTime: $("#local-time-chk").checked,
     lang: $("#lang").value,
     distRef: state.distRef,
@@ -149,7 +149,7 @@ async function compute() {
 function renderTable() {
   const minEl = parseInt($("#el-min").value);
   const minScore = parseInt($("#score-min").value) / 10;
-  const showPhase = $("#phase-chk").checked;
+  const showPhase = true; // Phase toujours affichee
   const useLocal = $("#local-time-chk").checked;
   const tzOffset = useLocal ? utcOffsetMs() : 0;
   const tzSuffix = useLocal ? "" : " UTC";
@@ -463,7 +463,7 @@ async function init() {
     clearTimeout(window._refreshTimer);
     window._refreshTimer = setTimeout(renderTable, 150);
   });
-  $("#phase-chk").addEventListener("change", renderTable);
+  // ($("#phase-chk") retire — Phase toujours affichee)
   $("#local-time-chk").addEventListener("change", renderTable);
   $("#freq").addEventListener("change", () => {
     if (state.passes.length) {

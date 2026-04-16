@@ -9,7 +9,7 @@ export async function loadLanguage(lang) {
   if (!["fr", "nl", "en"].includes(lang)) lang = "fr";
   _lang = lang;
   try {
-    const resp = await fetch(`/texts/${lang}.json`, { cache: "no-cache" });
+    const resp = await fetch(`texts/${lang}.json`, { cache: "no-cache" });
     _strings = await resp.json();
   } catch (e) {
     console.error("Loading language failed:", e);

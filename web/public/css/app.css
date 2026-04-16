@@ -156,7 +156,6 @@ input[type="checkbox"] {
 }
 .tz { color: var(--fg-dim); font-size: 0.9em; }
 .sked-link {
-  margin-left: auto;
   font-size: 0.9em;
 }
 

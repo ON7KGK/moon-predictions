@@ -7,7 +7,7 @@ import { $, el, utcOffsetMs, formatHM, formatTz, formatPhaseHTML, emeColor,
   EL_GREEN, EL_ORANGE, DIST_GREEN, DIST_ORANGE } from "./utils.js";
 import { apiPassTimeline, apiNowDetail, apiLocator } from "./api.js";
 
-const APP_VERSION = "1.8.3";
+const APP_VERSION = "1.8.4";
 const APP_DATE = "2026-04-16";
 
 // ─── Helpers ──────────────────────────────────────────────────────

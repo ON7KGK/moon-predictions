@@ -37,7 +37,7 @@ from moon_calc import (
 )
 from i18n import tr, set_language, get_language
 
-APP_VERSION = "1.8.3"
+APP_VERSION = "1.8.4"
 APP_DATE = "2026-04-16"
 
 
@@ -655,6 +655,15 @@ class MoonPredictionsWindow(QMainWindow):
         filterLine1.addWidget(self.labelMinScore)
 
         filterLine1.addSpacing(15)
+        self.chkLocalTime = QCheckBox(tr("lbl_local_time"))
+        self.chkLocalTime.setToolTip(tr("tip_local_time"))
+        self.chkLocalTime.stateChanged.connect(self._onFilterChanged)
+        filterLine1.addWidget(self.chkLocalTime)
+        self.labelTz = QLabel("")
+        filterLine1.addWidget(self.labelTz)
+        self._updateTzLabel()
+
+        filterLine1.addSpacing(15)
         filterLine1.addWidget(QLabel(tr("lbl_frequency")))
         self.comboFreq = QComboBox()
         for label, hz in _EME_FREQS:
@@ -675,64 +684,43 @@ class MoonPredictionsWindow(QMainWindow):
         filterLine1.addWidget(self.btn31_60)
 
         filterLine1.addStretch()
-        layout.addLayout(filterLine1)
 
-        # ── Filtres — Ligne 2 : checkboxes + police + lien + période ──
-        filterLine2 = QHBoxLayout()
-        filterLine2.setSpacing(12)
-
-        self.chkPhase = QCheckBox(tr("lbl_phase"))
-        self.chkPhase.setChecked(True)
-        self.chkPhase.setToolTip(tr("tip_phase_chk"))
-        self.chkPhase.stateChanged.connect(self._onFilterChanged)
-        filterLine2.addWidget(self.chkPhase)
-
-        filterLine2.addSpacing(10)
-        self.chkLocalTime = QCheckBox(tr("lbl_local_time"))
-        self.chkLocalTime.setToolTip(tr("tip_local_time"))
-        self.chkLocalTime.stateChanged.connect(self._onFilterChanged)
-        filterLine2.addWidget(self.chkLocalTime)
-        self.labelTz = QLabel("")
-        filterLine2.addWidget(self.labelTz)
-        self._updateTzLabel()
-
-        filterLine2.addSpacing(15)
-        filterLine2.addWidget(QLabel(tr("lbl_font_size")))
+        # Outils a droite : Police / Langue / Export / EME Observer
+        filterLine1.addWidget(QLabel(tr("lbl_font_size")))
         self.spinFontSize = QSpinBox()
         self.spinFontSize.setRange(8, 18)
         self.spinFontSize.setValue(10)
         self.spinFontSize.setSuffix(" pt")
         self.spinFontSize.setToolTip(tr("tip_font_size"))
         self.spinFontSize.valueChanged.connect(self._onFontSizeChanged)
-        filterLine2.addWidget(self.spinFontSize)
+        filterLine1.addWidget(self.spinFontSize)
 
-        filterLine2.addSpacing(15)
-        self.btnExportTxt = QPushButton(tr("btn_export_txt"))
-        self.btnExportTxt.clicked.connect(self._exportTxt)
-        filterLine2.addWidget(self.btnExportTxt)
-
-        self.btnExportPdf = QPushButton(tr("btn_export_pdf"))
-        self.btnExportPdf.clicked.connect(self._exportPdf)
-        filterLine2.addWidget(self.btnExportPdf)
-
-        filterLine2.addSpacing(15)
-        filterLine2.addWidget(QLabel(tr("lbl_language")))
+        filterLine1.addSpacing(15)
+        filterLine1.addWidget(QLabel(tr("lbl_language")))
         self.comboLang = QComboBox()
         self.comboLang.addItem("Fran\u00e7ais", "fr")
         self.comboLang.addItem("Nederlands", "nl")
         self.comboLang.addItem("English", "en")
         self.comboLang.currentIndexChanged.connect(self._onLanguageChanged)
-        filterLine2.addWidget(self.comboLang)
+        filterLine1.addWidget(self.comboLang)
 
-        filterLine2.addStretch()
+        filterLine1.addSpacing(15)
+        self.btnExportTxt = QPushButton(tr("btn_export_txt"))
+        self.btnExportTxt.clicked.connect(self._exportTxt)
+        filterLine1.addWidget(self.btnExportTxt)
 
+        self.btnExportPdf = QPushButton(tr("btn_export_pdf"))
+        self.btnExportPdf.clicked.connect(self._exportPdf)
+        filterLine1.addWidget(self.btnExportPdf)
+
+        filterLine1.addSpacing(15)
         # Lien EME Observer (SA5IKN)
         self.linkSked = QLabel()
         self.linkSked.setOpenExternalLinks(True)
         self.linkSked.setToolTip(tr("tip_sked"))
-        filterLine2.addWidget(self.linkSked)
+        filterLine1.addWidget(self.linkSked)
 
-        layout.addLayout(filterLine2)
+        layout.addLayout(filterLine1)
 
         # ── Info + Légende (même ligne) ──
         infoBar = QHBoxLayout()
@@ -776,8 +764,6 @@ class MoonPredictionsWindow(QMainWindow):
             self._settings.value("altitude", 0, type=int))
         self.chkLocalTime.setChecked(
             self._settings.value("local_time", False, type=bool))
-        self.chkPhase.setChecked(
-            self._settings.value("show_phase", True, type=bool))
         self.sliderMinEl.setValue(
             self._settings.value("slider_min_el", 0, type=int))
         self.sliderMinScore.setValue(
@@ -820,8 +806,6 @@ class MoonPredictionsWindow(QMainWindow):
         self._settings.setValue("altitude", self.spinAltitude.value())
         self._settings.setValue(
             "local_time", self.chkLocalTime.isChecked())
-        self._settings.setValue(
-            "show_phase", self.chkPhase.isChecked())
         self._settings.setValue("slider_min_el", self.sliderMinEl.value())
         self._settings.setValue("slider_min_score", self.sliderMinScore.value())
         self._settings.setValue("font_size", self.spinFontSize.value())
@@ -1143,7 +1127,7 @@ class MoonPredictionsWindow(QMainWindow):
         # Normalement c'est le cas quand lat/lon sont non nuls apres compute.
         freq = self.comboFreq.currentData() or 10368e6
         pl_perigee = _eme_path_loss_perigee(freq)
-        show_phase = self.chkPhase.isChecked()
+        show_phase = True
         try:
             now_cells = self._buildNowRow(freq, pl_perigee, show_phase)
         except Exception:
@@ -1160,7 +1144,7 @@ class MoonPredictionsWindow(QMainWindow):
     def _refreshTable(self):
         min_el = self.sliderMinEl.value()
         min_score = self.sliderMinScore.value() / 10.0
-        show_phase = self.chkPhase.isChecked()
+        show_phase = True
         use_local = self.chkLocalTime.isChecked()
         tz_offset = _utc_offset() if use_local else timedelta(0)
         tz_suffix = "" if use_local else " UTC"
@@ -1981,7 +1965,7 @@ class MoonPredictionsWindow(QMainWindow):
         locator = self.editLocator.text().strip()
         freq_label = self.comboFreq.currentText()
         period_label = "1-30" if self._periodIndex == 0 else "31-60"
-        show_phase = self.chkPhase.isChecked()
+        show_phase = True
 
         # Valeurs des filtres actifs
         min_el = self.sliderMinEl.value()
