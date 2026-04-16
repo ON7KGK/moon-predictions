@@ -1,0 +1,87 @@
+/* ════════════════════════════════════════════════════════════════════
+   Themes clair / sombre — variables CSS
+   ════════════════════════════════════════════════════════════════════ */
+
+body.theme-dark {
+  --bg-main: #19232D;
+  --bg-group: #1e2a36;
+  --bg-input: #2a3742;
+  --fg-text: #cccccc;
+  --fg-input: #ffffff;
+  --fg-dim: #888888;
+  --btn-bg: #2E3D47;
+  --btn-hover: #3A4D59;
+  --btn-checked: #4a6080;
+  --btn-border: #555;
+  --btn-discrete-fg: #888;
+  --btn-discrete-border: #444;
+  --btn-discrete-hover-fg: #ccc;
+  --btn-discrete-hover-border: #666;
+  --compute-bg: #2a5a3a;
+  --compute-hover: #3a7a4a;
+  --bg-table: #19232D;
+  --bg-table-alt: #1e2a36;
+  --bg-table-hover: #2a3742;
+  --gridline: #333;
+  --selection-bg: #334;
+  --bg-header: #243039;
+  --fg-header: #aaaacc;
+  --slider-groove: #333;
+  --slider-handle: #6688cc;
+  --eme-green: #44ff44;
+  --eme-orange: #ffaa00;
+  --eme-red: #ff4444;
+  --now-visible-hi: #55ccff;
+  --now-visible-bg: #1a2a3a;
+  --now-invisible-hi: #666666;
+  --now-invisible-bg: #1a1a1a;
+  --fg-info: #aaaacc;
+  --link-color: #6699ff;
+  --dlg-bg: #1a2530;
+  --dlg-fg: #cccccc;
+  --about-title: #FFD700;
+  --about-version: #66aaff;
+  --dlg-hr: #334;
+}
+
+body.theme-light {
+  --bg-main: #F0F1F4;
+  --bg-group: #E4E6EB;
+  --bg-input: #FFFFFF;
+  --fg-text: #1a1a1a;
+  --fg-input: #000000;
+  --fg-dim: #666666;
+  --btn-bg: #D8DCE2;
+  --btn-hover: #C8CDD5;
+  --btn-checked: #A0B0CC;
+  --btn-border: #AAAAAA;
+  --btn-discrete-fg: #666;
+  --btn-discrete-border: #BBB;
+  --btn-discrete-hover-fg: #222;
+  --btn-discrete-hover-border: #888;
+  --compute-bg: #3A8A4A;
+  --compute-hover: #2E7A3E;
+  --bg-table: #F0F1F4;
+  --bg-table-alt: #E4E6EB;
+  --bg-table-hover: #D8DCE2;
+  --gridline: #CCCCCC;
+  --selection-bg: #C0D0E8;
+  --bg-header: #D0D4DC;
+  --fg-header: #333355;
+  --slider-groove: #BBBBBB;
+  --slider-handle: #5577BB;
+  --eme-green: #1B8C1B;
+  --eme-orange: #CC7700;
+  --eme-red: #CC2222;
+  --now-visible-hi: #0066AA;
+  --now-visible-bg: #D8E8F4;
+  --now-invisible-hi: #888888;
+  --now-invisible-bg: #E0E0E0;
+  --fg-info: #444466;
+  --link-color: #2255AA;
+  --dlg-bg: #EAECF0;
+  --dlg-fg: #1a1a1a;
+  --about-title: #B8860B;
+  --about-version: #2255AA;
+  --dlg-hr: #BBBBBB;
+}

@@ -1,0 +1,21 @@
+{
+  "name": "moon-predictions-web",
+  "version": "1.0.0",
+  "description": "Web version of Moon Predictions — EME pass forecast for radio amateurs",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": ["eme", "moon", "ham-radio", "radio-amateur", "astronomy"],
+  "author": "ON7KGK",
+  "license": "GPL-3.0",
+  "dependencies": {
+    "astronomy-engine": "^2.1.19",
+    "express": "^4.21.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

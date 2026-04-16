@@ -472,9 +472,9 @@ _STRINGS = {
         "en": "<b>Thanks to:</b>",
     },
     "about_thanks_text": {
-        "fr": "Eric ON5TA et Michel ON7FI<br>pour les am\u00e9liorations",
-        "nl": "Eric ON5TA en Michel ON7FI<br>voor de verbeteringen",
-        "en": "Eric ON5TA and Michel ON7FI<br>for the improvements",
+        "fr": "Eric ON5TA, Michel ON7FI et Christophe ON6ZQ<br>pour les am\u00e9liorations",
+        "nl": "Eric ON5TA, Michel ON7FI en Christophe ON6ZQ<br>voor de verbeteringen",
+        "en": "Eric ON5TA, Michel ON7FI and Christophe ON6ZQ<br>for the improvements",
     },
     "about_license": {"fr": "<b>Licence :</b> GNU GPL v3 \u2014 Open Source", "nl": "<b>Licentie :</b> GNU GPL v3 \u2014 Open Source", "en": "<b>License:</b> GNU GPL v3 \u2014 Open Source"},
     "btn_close": {"fr": "Fermer", "nl": "Sluiten", "en": "Close"},
