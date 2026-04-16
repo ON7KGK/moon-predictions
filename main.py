@@ -37,7 +37,7 @@ from moon_calc import (
 )
 from i18n import tr, set_language, get_language
 
-APP_VERSION = "1.7.6"
+APP_VERSION = "1.8.0"
 APP_DATE = "2026-04-16"
 
 
@@ -311,6 +311,10 @@ class MoonPredictionsWindow(QMainWindow):
         self._elMinTimer.setSingleShot(True)
         self._elMinTimer.setInterval(500)
         self._elMinTimer.timeout.connect(self._compute)
+        # Auto-refresh de la ligne MAINTENANT toutes les 5 secondes
+        self._nowRowTimer = QTimer()
+        self._nowRowTimer.setInterval(5000)
+        self._nowRowTimer.timeout.connect(self._refreshNowRow)
 
         self._buildUI()
         self._loadSettings()
@@ -965,6 +969,9 @@ class MoonPredictionsWindow(QMainWindow):
 
         self._saveSettings()
         self._refreshTable()
+        # Demarrer l'auto-refresh de la ligne MAINTENANT (5 sec)
+        if not self._nowRowTimer.isActive():
+            self._nowRowTimer.start()
 
     def _onPeriodChanged(self, index):
         self._periodIndex = index
@@ -1121,6 +1128,34 @@ class MoonPredictionsWindow(QMainWindow):
         # Stocker le fond pour _refreshTable
         self._nowRowBg = now_bg
         return cells
+
+    def _refreshNowRow(self):
+        """Rafraichit uniquement la ligne MAINTENANT (row 0) toutes les 5 s.
+
+        Evite de reconstruire toute la table et ses 30+ lignes. Met juste a
+        jour les cellules de la row 0 avec les nouvelles valeurs instantanees.
+        """
+        if self._lat == 0 and self._lon == 0:
+            return
+        if self.table.rowCount() == 0:
+            return
+        # Il faut s'assurer que la row 0 est bien MAINTENANT (pas un passage)
+        # Normalement c'est le cas quand lat/lon sont non nuls apres compute.
+        freq = self.comboFreq.currentData() or 10368e6
+        pl_perigee = _eme_path_loss_perigee(freq)
+        show_phase = self.chkPhase.isChecked()
+        try:
+            now_cells = self._buildNowRow(freq, pl_perigee, show_phase)
+        except Exception:
+            return
+        bg = getattr(self, '_nowRowBg',
+                     QColor(_theme()["now_visible_bg"]))
+        for c, (text, color) in enumerate(now_cells):
+            if c >= self.table.columnCount():
+                break
+            item = _make_item(text, color or QColor(_theme()["fg_dim"]))
+            item.setBackground(bg)
+            self.table.setItem(0, c, item)
 
     def _refreshTable(self):
         min_el = self.sliderMinEl.value()
@@ -1466,6 +1501,7 @@ class MoonPredictionsWindow(QMainWindow):
 
         Inclut AZ/EL/Dist/Phase + donnees EME avancees : DGR, TSky, Doppler,
         Home Echo, Spread, Libration, LHA/GHA, jours depuis perigee.
+        Auto-refresh toutes les 5 secondes tant que la fenetre est ouverte.
         """
         if self._lat == 0 and self._lon == 0:
             return
@@ -1476,7 +1512,7 @@ class MoonPredictionsWindow(QMainWindow):
         parent_size = self.size()
         dlg.resize(int(parent_size.width() * 0.6),
                    int(parent_size.height() * 0.75))
-        dlg.setMinimumSize(700, 600)
+        dlg.setMinimumSize(700, 620)
         dlg.setStyleSheet(
             f"QDialog {{ background-color: {t['bg_main']}; color: {t['fg_text']}; }}"
             f"QLabel {{ color: {t['fg_text']}; }}"
@@ -1493,154 +1529,42 @@ class MoonPredictionsWindow(QMainWindow):
         lay = QVBoxLayout(dlg)
         lay.setSpacing(8)
 
-        # ── Calculs (instant t) ──
-        freq = self.comboFreq.currentData() or 10368e6
-        freq_label = self.comboFreq.currentText()
-        t_now = _ts.now()
+        # Creation des QLabels persistants (seront rafraichis par le timer)
+        hdr_lbl = QLabel()
+        lay.addWidget(hdr_lbl)
 
-        moon = compute_moon(self._lat, self._lon, self._alt_m,
-                            dist_reference=self._distRef,
-                            horizon_degrees=self._effectiveHorizonDeg())
-        sun = compute_sun(self._lat, self._lon, self._alt_m,
-                          horizon_degrees=self._horizonDeg())
-        lib = compute_libration(self._lat, self._lon, self._alt_m, t_now)
-        deg = compute_degradation(self._lat, self._lon, self._alt_m,
-                                    t_now, freq)
-        ha = compute_hour_angles(self._lat, self._lon, self._alt_m, t_now)
-        dsp = days_since_perigee(t_now)
-
-        visible = moon["el"] > 0
-        use_local = self.chkLocalTime.isChecked()
-        tz_offset = _utc_offset() if use_local else timedelta(0)
-        tz_suffix = "" if use_local else " UTC"
-
-        # ── En-tete : statut ──
-        status_color = t["eme_green"] if visible else t["eme_red"]
-        status_txt = tr("now_visible") if visible else tr("now_below")
-        hdr = QLabel(
-            f"<div style='font-size: 16pt; font-weight: bold;'>"
-            f"<span style='color:{t['now_visible_hi'] if visible else t['now_invisible_hi']};'>"
-            f"\u25cf {tr('now_label') if visible else tr('now_label_off')}</span>"
-            f"  <span style='color:{status_color};'>{status_txt}</span>"
-            f"</div>"
-        )
-        lay.addWidget(hdr)
-
-        # ── Position courante ──
         pos_box = QGroupBox(tr("now_grp_position"))
         pos_lay = QVBoxLayout(pos_box)
-        pos_txt = (
-            f"<table cellpadding='4'>"
-            f"<tr><td><b>AZ :</b></td><td><span style='font-size:14pt;'>{moon['az']:.1f}\u00b0</span></td>"
-            f"<td width='30'></td>"
-            f"<td><b>EL :</b></td><td><span style='font-size:14pt; color:{status_color};'>{moon['el']:+.1f}\u00b0</span></td></tr>"
-            f"<tr><td><b>{tr('now_lbl_distance')} :</b></td><td>{moon['dist_km']:.0f} km</td>"
-            f"<td></td>"
-            f"<td><b>{tr('now_lbl_decl')} :</b></td><td>{ha['dec_deg']:+.2f}\u00b0</td></tr>"
-            f"<tr><td><b>{tr('now_lbl_phase')} :</b></td><td colspan='4'>{moon['phase_name']} ({moon['illumination']:.0f}%)</td></tr>"
-            f"</table>"
-        )
-        pos_lay.addWidget(QLabel(pos_txt))
+        pos_lbl = QLabel()
+        pos_lay.addWidget(pos_lbl)
         lay.addWidget(pos_box)
 
-        # ── Lever / Coucher ──
         rs_box = QGroupBox(tr("now_grp_riseset"))
         rs_lay = QVBoxLayout(rs_box)
-        rise = moon.get("next_rise")
-        sett = moon.get("next_set")
-        rise_txt = ((rise + tz_offset).strftime("%H:%M") + tz_suffix) if rise else "---"
-        set_txt = ((sett + tz_offset).strftime("%H:%M") + tz_suffix) if sett else "---"
-        if rise and sett:
-            dur_min = abs((sett - rise).total_seconds() / 60.0)
-            dur_h = int(dur_min // 60)
-            dur_m = int(dur_min % 60)
-            dur_txt = f"{dur_h}h{dur_m:02d}"
-        else:
-            dur_txt = "---"
-        rs_txt = (
-            f"<table cellpadding='4'>"
-            f"<tr><td><b>{tr('col_rise')} :</b></td><td>{rise_txt}</td>"
-            f"<td width='30'></td>"
-            f"<td><b>{tr('col_set')} :</b></td><td>{set_txt}</td>"
-            f"<td width='30'></td>"
-            f"<td><b>{tr('col_duration')} :</b></td><td>{dur_txt}</td></tr>"
-            f"</table>"
-        )
-        rs_lay.addWidget(QLabel(rs_txt))
+        rs_lbl = QLabel()
+        rs_lay.addWidget(rs_lbl)
         lay.addWidget(rs_box)
 
-        # ── EME avancees ──
-        eme_box = QGroupBox(f"{tr('now_grp_eme')} ({freq_label})")
+        eme_box = QGroupBox(tr("now_grp_eme"))
         eme_lay = QVBoxLayout(eme_box)
-        # Couleurs DGR
-        dgr_db = deg["degradation_db"]
-        if dgr_db < 1.0: dgr_html = f"<span style='color:{t['eme_green']};'>+{dgr_db:.2f} dB</span>"
-        elif dgr_db < 3.0: dgr_html = f"<span style='color:{t['eme_orange']};'>+{dgr_db:.2f} dB</span>"
-        else: dgr_html = f"<span style='color:{t['eme_red']};'>+{dgr_db:.2f} dB</span>"
-        # Couleurs TSky
-        tsky = deg["sky_temp_k"]
-        if tsky < 10: tsky_html = f"<span style='color:{t['eme_green']};'>{tsky:.1f} K</span>"
-        elif tsky < 50: tsky_html = f"<span style='color:{t['eme_orange']};'>{tsky:.1f} K</span>"
-        else: tsky_html = f"<span style='color:{t['eme_red']};'>{tsky:.1f} K</span>"
-        # Doppler = Home echo (aller-retour)
-        dop = deg["doppler_hz"]
-        # Spread
-        spread = lib["doppler_spread_hz"] * freq / 10.368e9
-        if spread < 50: spread_html = f"<span style='color:{t['eme_green']};'>{spread:.0f} Hz</span>"
-        elif spread < 150: spread_html = f"<span style='color:{t['eme_orange']};'>{spread:.0f} Hz</span>"
-        else: spread_html = f"<span style='color:{t['eme_red']};'>{spread:.0f} Hz</span>"
-        # Libration
-        lib_r = lib["lib_rate"]
-        if lib_r < 0.10: lib_html = f"<span style='color:{t['eme_green']};'>{lib_r:.2f} \u00b0/h</span>"
-        elif lib_r < 0.25: lib_html = f"<span style='color:{t['eme_orange']};'>{lib_r:.2f} \u00b0/h</span>"
-        else: lib_html = f"<span style='color:{t['eme_red']};'>{lib_r:.2f} \u00b0/h</span>"
-        # Path loss
-        pl_extra = deg["path_loss_extra_db"]
-        if pl_extra < 1.0: pl_html = f"<span style='color:{t['eme_green']};'>+{pl_extra:.2f} dB</span>"
-        elif pl_extra < 2.0: pl_html = f"<span style='color:{t['eme_orange']};'>+{pl_extra:.2f} dB</span>"
-        else: pl_html = f"<span style='color:{t['eme_red']};'>+{pl_extra:.2f} dB</span>"
-        # Moon-Sun
-        from moon_calc import _angular_sep_deg
-        ms_angle = _angular_sep_deg(moon["az"], moon["el"], sun["az"], sun["el"])
-        if ms_angle < 5: ms_html = f"<span style='color:{t['eme_red']};'>{ms_angle:.0f}\u00b0</span>"
-        elif ms_angle < 15: ms_html = f"<span style='color:{t['eme_orange']};'>{ms_angle:.0f}\u00b0</span>"
-        else: ms_html = f"<span style='color:{t['eme_green']};'>{ms_angle:.0f}\u00b0</span>"
-
-        eme_txt = (
-            f"<table cellpadding='4'>"
-            f"<tr><td><b>{tr('now_lbl_dgr')} :</b></td><td>{dgr_html}</td>"
-            f"<td width='30'></td>"
-            f"<td><b>{tr('now_lbl_tsky')} :</b></td><td>{tsky_html}</td></tr>"
-            f"<tr><td><b>{tr('now_lbl_doppler')} :</b></td><td>{dop:+.0f} Hz</td>"
-            f"<td></td>"
-            f"<td><b>{tr('now_lbl_echo')} :</b></td><td>{dop:+.0f} Hz</td></tr>"
-            f"<tr><td><b>{tr('now_lbl_spread')} :</b></td><td>{spread_html}</td>"
-            f"<td></td>"
-            f"<td><b>{tr('now_lbl_libration')} :</b></td><td>{lib_html}</td></tr>"
-            f"<tr><td><b>{tr('now_lbl_pl_extra')} :</b></td><td>{pl_html}</td>"
-            f"<td></td>"
-            f"<td><b>{tr('now_lbl_moonsun')} :</b></td><td>{ms_html}</td></tr>"
-            f"</table>"
-        )
-        eme_lay.addWidget(QLabel(eme_txt))
+        eme_lbl = QLabel()
+        eme_lay.addWidget(eme_lbl)
         lay.addWidget(eme_box)
 
-        # ── Coordonnees astronomiques ──
         astro_box = QGroupBox(tr("now_grp_astro"))
         astro_lay = QVBoxLayout(astro_box)
-        astro_txt = (
-            f"<table cellpadding='4'>"
-            f"<tr><td><b>{tr('now_lbl_lha')} :</b></td><td>{ha['lha_deg']:+.2f}\u00b0</td>"
-            f"<td width='30'></td>"
-            f"<td><b>{tr('now_lbl_gha')} :</b></td><td>{ha['gha_deg']:.2f}\u00b0</td></tr>"
-            f"<tr><td><b>{tr('now_lbl_dsp')} :</b></td>"
-            f"<td colspan='4'>{dsp:.1f} {tr('now_lbl_days')}</td></tr>"
-            f"</table>"
-        )
-        astro_lay.addWidget(QLabel(astro_txt))
+        astro_lbl = QLabel()
+        astro_lay.addWidget(astro_lbl)
         lay.addWidget(astro_box)
 
         lay.addStretch()
+
+        # Indicateur de rafraichissement automatique
+        refresh_lbl = QLabel(tr("refresh_hint"))
+        refresh_lbl.setStyleSheet(
+            f"color: {t['fg_dim']}; font-size: 9pt; font-style: italic;")
+        refresh_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        lay.addWidget(refresh_lbl)
 
         # ── Bouton Fermer ──
         btnClose = QPushButton(tr("btn_close"))
@@ -1654,6 +1578,124 @@ class MoonPredictionsWindow(QMainWindow):
         btnRow.addStretch()
         btnRow.addWidget(btnClose)
         lay.addLayout(btnRow)
+
+        # Fonction de mise a jour : recalcule tout et met a jour les QLabels
+        def update_content():
+            from moon_calc import _angular_sep_deg
+            freq = self.comboFreq.currentData() or 10368e6
+            freq_label = self.comboFreq.currentText()
+            t_now = _ts.now()
+            moon = compute_moon(self._lat, self._lon, self._alt_m,
+                                dist_reference=self._distRef,
+                                horizon_degrees=self._effectiveHorizonDeg())
+            sun = compute_sun(self._lat, self._lon, self._alt_m,
+                              horizon_degrees=self._horizonDeg())
+            lib = compute_libration(self._lat, self._lon, self._alt_m, t_now)
+            deg = compute_degradation(self._lat, self._lon, self._alt_m,
+                                        t_now, freq)
+            ha = compute_hour_angles(self._lat, self._lon, self._alt_m, t_now)
+            dsp = days_since_perigee(t_now)
+
+            visible = moon["el"] > 0
+            use_local = self.chkLocalTime.isChecked()
+            tz_offset = _utc_offset() if use_local else timedelta(0)
+            tz_suffix = "" if use_local else " UTC"
+
+            # Horloge actuelle pour montrer que ca tourne
+            if use_local:
+                now_clock = datetime.now().strftime("%H:%M:%S")
+            else:
+                now_clock = datetime.now(timezone.utc).strftime("%H:%M:%S")
+
+            status_color = t["eme_green"] if visible else t["eme_red"]
+            status_txt = tr("now_visible") if visible else tr("now_below")
+            hdr_lbl.setText(
+                f"<div style='font-size: 16pt; font-weight: bold;'>"
+                f"<span style='color:{t['now_visible_hi'] if visible else t['now_invisible_hi']};'>"
+                f"\u25cf {tr('now_label') if visible else tr('now_label_off')}</span>"
+                f"  <span style='color:{status_color};'>{status_txt}</span>"
+                f"  <span style='font-size: 10pt; color:{t['fg_dim']}; font-weight: normal;'>"
+                f"  \u2014  {now_clock}{tz_suffix}</span>"
+                f"</div>"
+            )
+            pos_lbl.setText(
+                f"<table cellpadding='4'>"
+                f"<tr><td><b>AZ :</b></td><td><span style='font-size:14pt;'>{moon['az']:.1f}\u00b0</span></td>"
+                f"<td width='30'></td>"
+                f"<td><b>EL :</b></td><td><span style='font-size:14pt; color:{status_color};'>{moon['el']:+.1f}\u00b0</span></td></tr>"
+                f"<tr><td><b>{tr('now_lbl_distance')} :</b></td><td>{moon['dist_km']:.0f} km</td>"
+                f"<td></td>"
+                f"<td><b>{tr('now_lbl_decl')} :</b></td><td>{ha['dec_deg']:+.2f}\u00b0</td></tr>"
+                f"<tr><td><b>{tr('now_lbl_phase')} :</b></td><td colspan='4'>{moon['phase_name']} ({moon['illumination']:.0f}%)</td></tr>"
+                f"</table>"
+            )
+            rise = moon.get("next_rise")
+            sett = moon.get("next_set")
+            rise_txt = ((rise + tz_offset).strftime("%H:%M") + tz_suffix) if rise else "---"
+            set_txt = ((sett + tz_offset).strftime("%H:%M") + tz_suffix) if sett else "---"
+            if rise and sett:
+                dur_min = abs((sett - rise).total_seconds() / 60.0)
+                dur_txt = f"{int(dur_min // 60)}h{int(dur_min % 60):02d}"
+            else:
+                dur_txt = "---"
+            rs_lbl.setText(
+                f"<table cellpadding='4'>"
+                f"<tr><td><b>{tr('col_rise')} :</b></td><td>{rise_txt}</td>"
+                f"<td width='30'></td>"
+                f"<td><b>{tr('col_set')} :</b></td><td>{set_txt}</td>"
+                f"<td width='30'></td>"
+                f"<td><b>{tr('col_duration')} :</b></td><td>{dur_txt}</td></tr>"
+                f"</table>"
+            )
+            eme_box.setTitle(f"{tr('now_grp_eme')} ({freq_label})")
+            dgr_db = deg["degradation_db"]
+            dgr_html = f"<span style='color:{t['eme_green'] if dgr_db < 1.0 else t['eme_orange'] if dgr_db < 3.0 else t['eme_red']};'>+{dgr_db:.2f} dB</span>"
+            tsky = deg["sky_temp_k"]
+            tsky_html = f"<span style='color:{t['eme_green'] if tsky < 10 else t['eme_orange'] if tsky < 50 else t['eme_red']};'>{tsky:.1f} K</span>"
+            dop = deg["doppler_hz"]
+            spread = lib["doppler_spread_hz"] * freq / 10.368e9
+            spread_html = f"<span style='color:{t['eme_green'] if spread < 50 else t['eme_orange'] if spread < 150 else t['eme_red']};'>{spread:.0f} Hz</span>"
+            lib_r = lib["lib_rate"]
+            lib_html = f"<span style='color:{t['eme_green'] if lib_r < 0.10 else t['eme_orange'] if lib_r < 0.25 else t['eme_red']};'>{lib_r:.2f} \u00b0/h</span>"
+            pl_extra = deg["path_loss_extra_db"]
+            pl_html = f"<span style='color:{t['eme_green'] if pl_extra < 1.0 else t['eme_orange'] if pl_extra < 2.0 else t['eme_red']};'>+{pl_extra:.2f} dB</span>"
+            ms_angle = _angular_sep_deg(moon["az"], moon["el"], sun["az"], sun["el"])
+            ms_html = f"<span style='color:{t['eme_red'] if ms_angle < 5 else t['eme_orange'] if ms_angle < 15 else t['eme_green']};'>{ms_angle:.0f}\u00b0</span>"
+            eme_lbl.setText(
+                f"<table cellpadding='4'>"
+                f"<tr><td><b>{tr('now_lbl_dgr')} :</b></td><td>{dgr_html}</td>"
+                f"<td width='30'></td>"
+                f"<td><b>{tr('now_lbl_tsky')} :</b></td><td>{tsky_html}</td></tr>"
+                f"<tr><td><b>{tr('now_lbl_doppler')} :</b></td><td>{dop:+.0f} Hz</td>"
+                f"<td></td>"
+                f"<td><b>{tr('now_lbl_echo')} :</b></td><td>{dop:+.0f} Hz</td></tr>"
+                f"<tr><td><b>{tr('now_lbl_spread')} :</b></td><td>{spread_html}</td>"
+                f"<td></td>"
+                f"<td><b>{tr('now_lbl_libration')} :</b></td><td>{lib_html}</td></tr>"
+                f"<tr><td><b>{tr('now_lbl_pl_extra')} :</b></td><td>{pl_html}</td>"
+                f"<td></td>"
+                f"<td><b>{tr('now_lbl_moonsun')} :</b></td><td>{ms_html}</td></tr>"
+                f"</table>"
+            )
+            astro_lbl.setText(
+                f"<table cellpadding='4'>"
+                f"<tr><td><b>{tr('now_lbl_lha')} :</b></td><td>{ha['lha_deg']:+.2f}\u00b0</td>"
+                f"<td width='30'></td>"
+                f"<td><b>{tr('now_lbl_gha')} :</b></td><td>{ha['gha_deg']:.2f}\u00b0</td></tr>"
+                f"<tr><td><b>{tr('now_lbl_dsp')} :</b></td>"
+                f"<td colspan='4'>{dsp:.1f} {tr('now_lbl_days')}</td></tr>"
+                f"</table>"
+            )
+
+        # Rendu initial
+        update_content()
+
+        # Auto-refresh toutes les 5 secondes
+        refresh_timer = QTimer(dlg)
+        refresh_timer.setInterval(5000)
+        refresh_timer.timeout.connect(update_content)
+        refresh_timer.start()
+        # Le timer est parent du dlg -> auto-destroyed a la fermeture
 
         # Appliquer la taille de police utilisateur
         self._applyDialogFont(dlg)

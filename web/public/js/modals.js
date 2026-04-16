@@ -3,7 +3,7 @@
 // ════════════════════════════════════════════════════════════════════
 
 import { tr, locDate, locDateLong } from "./i18n.js";
-import { $, el, utcOffsetMs, formatHM, emeColor, EL_GREEN, EL_ORANGE,
+import { $, el, utcOffsetMs, formatHM, formatTz, emeColor, EL_GREEN, EL_ORANGE,
   DIST_GREEN, DIST_ORANGE } from "./utils.js";
 import { apiPassTimeline, apiNowDetail, apiLocator } from "./api.js";
 
@@ -26,8 +26,15 @@ function openModal(contentNode, wide = false, narrow = false) {
   document.addEventListener("keydown", onKey);
 }
 
+// Timer d'auto-refresh pour le dialog NowDetail (nettoye a la fermeture)
+let _nowRefreshTimer = null;
+
 export function closeModal() {
   $("#modal-overlay").classList.add("hidden");
+  if (_nowRefreshTimer !== null) {
+    clearInterval(_nowRefreshTimer);
+    _nowRefreshTimer = null;
+  }
 }
 
 function closeBtn() {
@@ -253,9 +260,25 @@ export async function showNowDetail(state) {
   const body = el("div", { class: "now-dashboard" });
   body.appendChild(el("p", {}, "⏳..."));
   content.appendChild(body);
+  // Indicateur d'auto-refresh
+  const refreshHint = el("p", {
+    style: "text-align:center; color: var(--fg-dim); font-size:0.85em; margin:8px 0;",
+  }, "");
+  content.appendChild(refreshHint);
   content.appendChild(closeBtn());
   openModal(content);
 
+  // Premier rendu immediat
+  await _renderNowDetailBody(body, state, refreshHint);
+
+  // Auto-refresh toutes les 5 secondes
+  if (_nowRefreshTimer !== null) clearInterval(_nowRefreshTimer);
+  _nowRefreshTimer = setInterval(() => {
+    _renderNowDetailBody(body, state, refreshHint);
+  }, 5000);
+}
+
+async function _renderNowDetailBody(body, state, refreshHint) {
   const freq = parseFloat($("#freq").value);
   const freqLabel = $("#freq").selectedOptions[0].textContent;
   const useLocal = $("#local-time-chk").checked;
@@ -294,10 +317,17 @@ export async function showNowDetail(state) {
     const spread = lib.dopplerSpreadHz * freq / 10.368e9;
     const dop = deg.dopplerHz;
 
+    // Heure actuelle (pour montrer la mise a jour)
+    const now = new Date();
+    const nowTxt = useLocal
+      ? `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}:${String(now.getSeconds()).padStart(2,"0")} ${formatTz()}`
+      : `${String(now.getUTCHours()).padStart(2,"0")}:${String(now.getUTCMinutes()).padStart(2,"0")}:${String(now.getUTCSeconds()).padStart(2,"0")} UTC`;
+
     body.innerHTML = `
       <div class="status" style="color: ${hiColor};">
         ● ${tr(visible ? "now_label" : "now_label_off").replace(/^[●○]\s*/, "")}
         <span class="${statusClass}">${status}</span>
+        <span style="font-size:0.75em; color: var(--fg-dim); font-weight: normal; margin-left:12px;">${nowTxt}</span>
       </div>
 
       <div class="group">
@@ -346,6 +376,9 @@ export async function showNowDetail(state) {
         </div>
       </div>
     `;
+    if (refreshHint) {
+      refreshHint.textContent = tr("refresh_hint");
+    }
   } catch (e) {
     body.innerHTML = `<p style="color: var(--eme-red);">${tr("msg_error")} : ${e.message}</p>`;
   }

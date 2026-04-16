@@ -137,6 +137,7 @@
   "about_thanks": "<b>Thanks to:</b>",
   "about_thanks_text": "Eric ON5TA, Michel ON7FI and Christophe ON6ZQ<br>for the improvements",
   "about_opensource": "This application is <b>open source</b>.<br>Any bug can be reported to <a href='mailto:on7kgk@outlook.com'>on7kgk@outlook.com</a>",
+  "refresh_hint": "↻ Auto-update every 5 seconds",
   "about_license": "<b>License:</b> GPL-3.0 — Open Source",
 
   "day_detail_title": "Pass detail",
