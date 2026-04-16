@@ -198,25 +198,25 @@ _STRINGS = {
         "en": "Language change will take effect on restart.",
     },
 
-    # ── Phases lunaires (noms longs) ──
-    "phase_new": {"fr": "Nouvelle Lune", "nl": "Nieuwe Maan", "en": "New Moon"},
-    "phase_full": {"fr": "Pleine Lune", "nl": "Volle Maan", "en": "Full Moon"},
-    "phase_fq": {"fr": "Premier Quartier", "nl": "Eerste Kwartier", "en": "First Quarter"},
-    "phase_lq": {"fr": "Dernier Quartier", "nl": "Laatste Kwartier", "en": "Last Quarter"},
-    "phase_wax_cres": {"fr": "Premier Croissant", "nl": "Wassende Sikkel", "en": "Waxing Crescent"},
-    "phase_wax_gibb": {"fr": "Gibbeuse Croissante", "nl": "Wassende Maan", "en": "Waxing Gibbous"},
-    "phase_wan_gibb": {"fr": "Gibbeuse D\u00e9croissante", "nl": "Afnemende Maan", "en": "Waning Gibbous"},
-    "phase_wan_cres": {"fr": "Dernier Croissant", "nl": "Afnemende Sikkel", "en": "Waning Crescent"},
+    # ── Phases lunaires (noms longs, avec emoji Unicode) ──
+    "phase_new": {"fr": "\U0001F311 Nouvelle Lune", "nl": "\U0001F311 Nieuwe Maan", "en": "\U0001F311 New Moon"},
+    "phase_full": {"fr": "\U0001F315 Pleine Lune", "nl": "\U0001F315 Volle Maan", "en": "\U0001F315 Full Moon"},
+    "phase_fq": {"fr": "\U0001F313 Premier Quartier", "nl": "\U0001F313 Eerste Kwartier", "en": "\U0001F313 First Quarter"},
+    "phase_lq": {"fr": "\U0001F317 Dernier Quartier", "nl": "\U0001F317 Laatste Kwartier", "en": "\U0001F317 Last Quarter"},
+    "phase_wax_cres": {"fr": "\U0001F312 Premier Croissant", "nl": "\U0001F312 Wassende Sikkel", "en": "\U0001F312 Waxing Crescent"},
+    "phase_wax_gibb": {"fr": "\U0001F314 Lune Gibbeuse Croissante", "nl": "\U0001F314 Wassende Maan", "en": "\U0001F314 Waxing Gibbous"},
+    "phase_wan_gibb": {"fr": "\U0001F316 Lune Gibbeuse D\u00e9croissante", "nl": "\U0001F316 Afnemende Maan", "en": "\U0001F316 Waning Gibbous"},
+    "phase_wan_cres": {"fr": "\U0001F318 Dernier Croissant", "nl": "\U0001F318 Afnemende Sikkel", "en": "\U0001F318 Waning Crescent"},
 
-    # ── Phases lunaires (noms courts, table) ──
-    "phase_s_new": {"fr": "Nouvelle", "nl": "Nieuw", "en": "New"},
-    "phase_s_full": {"fr": "Pleine", "nl": "Vol", "en": "Full"},
-    "phase_s_fq": {"fr": "Prem.Q.", "nl": "Eerste K.", "en": "1st Q."},
-    "phase_s_lq": {"fr": "Dern.Q.", "nl": "Laatste K.", "en": "Last Q."},
-    "phase_s_wax_cres": {"fr": "Croiss.", "nl": "Was.S.", "en": "Wax.Cr."},
-    "phase_s_wax_gibb": {"fr": "Gibb.C.", "nl": "Was.M.", "en": "Wax.Gi."},
-    "phase_s_wan_gibb": {"fr": "Gibb.D.", "nl": "Afn.M.", "en": "Wan.Gi."},
-    "phase_s_wan_cres": {"fr": "Dern.Cr.", "nl": "Afn.S.", "en": "Wan.Cr."},
+    # ── Phases lunaires (noms courts pour la table, avec emoji) ──
+    "phase_s_new": {"fr": "\U0001F311 Nouvelle", "nl": "\U0001F311 Nieuw", "en": "\U0001F311 New"},
+    "phase_s_full": {"fr": "\U0001F315 Pleine", "nl": "\U0001F315 Vol", "en": "\U0001F315 Full"},
+    "phase_s_fq": {"fr": "\U0001F313 Prem.Q.", "nl": "\U0001F313 Eerste K.", "en": "\U0001F313 1st Q."},
+    "phase_s_lq": {"fr": "\U0001F317 Dern.Q.", "nl": "\U0001F317 Laatste K.", "en": "\U0001F317 Last Q."},
+    "phase_s_wax_cres": {"fr": "\U0001F312 Prem.Crois.", "nl": "\U0001F312 Was.S.", "en": "\U0001F312 Wax.Cr."},
+    "phase_s_wax_gibb": {"fr": "\U0001F314 Gibb.Crois.", "nl": "\U0001F314 Was.M.", "en": "\U0001F314 Wax.Gi."},
+    "phase_s_wan_gibb": {"fr": "\U0001F316 Gibb.D\u00e9cr.", "nl": "\U0001F316 Afn.M.", "en": "\U0001F316 Wan.Gi."},
+    "phase_s_wan_cres": {"fr": "\U0001F318 Dern.Crois.", "nl": "\U0001F318 Afn.S.", "en": "\U0001F318 Wan.Cr."},
 
     # ── Jours de la semaine (courts) ──
     "day_0": {"fr": "Lun", "nl": "Ma", "en": "Mon"},
