@@ -37,7 +37,7 @@ from moon_calc import (
 )
 from i18n import tr, set_language, get_language
 
-APP_VERSION = "1.8.0"
+APP_VERSION = "1.8.1"
 APP_DATE = "2026-04-16"
 
 
@@ -2122,7 +2122,25 @@ class MoonPredictionsWindow(QMainWindow):
             QMessageBox.critical(self, tr("msg_error"), str(e))
 
 
+def _parse_cli_args():
+    """Parse optionnellement --callsign / --locator / --alt passes par un
+    launcher externe (ex: app Rotator). Les valeurs ecrasent les prefs
+    sauvegardees. Les args inconnus sont ignores pour compatibilite Qt.
+    """
+    import argparse
+    parser = argparse.ArgumentParser(
+        prog="MoonPredictions", add_help=False,
+        description="EME Moon Pass Forecast")
+    parser.add_argument("--callsign", type=str, default=None)
+    parser.add_argument("--locator", type=str, default=None)
+    parser.add_argument("--alt", type=float, default=None)
+    # parse_known_args : ignore les args Qt (-style, etc.) sans erreur
+    args, _unknown = parser.parse_known_args()
+    return args
+
+
 def main():
+    cli_args = _parse_cli_args()
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
 
@@ -2151,6 +2169,15 @@ def main():
     set_language(lang)
 
     window = MoonPredictionsWindow()
+
+    # Args CLI : ecrasent les prefs sauvegardees et declenchent un calcul auto
+    if cli_args.callsign is not None:
+        window.editCallsign.setText(cli_args.callsign)
+    if cli_args.locator is not None:
+        window.editLocator.setText(cli_args.locator)
+    if cli_args.alt is not None:
+        window.spinAltitude.setValue(int(cli_args.alt))
+
     window.showMaximized()
     sys.exit(app.exec())
 
