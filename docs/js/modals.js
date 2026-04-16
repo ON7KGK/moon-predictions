@@ -3,8 +3,8 @@
 // ════════════════════════════════════════════════════════════════════
 
 import { tr, locDate, locDateLong } from "./i18n.js";
-import { $, el, utcOffsetMs, formatHM, formatTz, emeColor, EL_GREEN, EL_ORANGE,
-  DIST_GREEN, DIST_ORANGE } from "./utils.js";
+import { $, el, utcOffsetMs, formatHM, formatTz, formatPhaseHTML, emeColor,
+  EL_GREEN, EL_ORANGE, DIST_GREEN, DIST_ORANGE } from "./utils.js";
 import { apiPassTimeline, apiNowDetail, apiLocator } from "./api.js";
 
 const APP_VERSION = "1.8.2";
@@ -339,7 +339,7 @@ async function _renderNowDetailBody(body, state, refreshHint) {
           <div class="item"><span class="k">${tr("now_lbl_decl")} :</span> ${ha.decDeg >= 0 ? "+" : ""}${ha.decDeg.toFixed(2)}°</div>
         </div>
         <div class="row">
-          <div class="item"><span class="k">${tr("now_lbl_phase")} :</span> ${tr(moon.phaseName)} (${Math.round(moon.illumination)}%)</div>
+          <div class="item"><span class="k">${tr("now_lbl_phase")} :</span> ${formatPhaseHTML(tr(moon.phaseName), moon.illumination)}</div>
         </div>
       </div>
 

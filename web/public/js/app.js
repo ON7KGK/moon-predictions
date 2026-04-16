@@ -6,7 +6,7 @@ import { loadLanguage, tr, applyToDom, locDate, locDateLong, getLang } from "./i
 import {
   $, $$, el,
   emePathLossPerigee, emeColor, qualityScore, qualityColor, qualitySquares,
-  utcOffsetMs, formatHM, formatTz,
+  utcOffsetMs, formatHM, formatTz, formatPhaseHTML,
   EL_GREEN, EL_ORANGE, DUR_GREEN, DUR_ORANGE,
   DIST_GREEN, DIST_ORANGE, PL_GREEN, PL_ORANGE,
 } from "./utils.js";
@@ -266,7 +266,7 @@ function renderTable() {
     row.appendChild(el("td", { class: spMaxCls }, `${Math.round(spMax)} Hz${spMaxT ? " @ " + spMaxT : ""}`));
 
     row.appendChild(el("td", { class: qualityColor(d.score) }, `${qualitySquares(d.score)} ${d.score.toFixed(1)}`));
-    if (showPhase) row.appendChild(el("td", {}, `${tr(d.phase || "")} (${(d.illum || 0).toFixed(0)}%)`));
+    if (showPhase) row.appendChild(el("td", { class: "phase-cell", html: formatPhaseHTML(tr(d.phase || ""), d.illum || 0) }));
 
     body.appendChild(row);
   }
@@ -330,13 +330,20 @@ async function fillNowRow(row, freq, showPhase, tzOffset, plPerigee) {
       `${Math.round(spread)} Hz`,
       visible ? `${qualitySquares(qualityScore(Math.max(moon.el, 0), 0, deg.pathLossExtraDb, 180, lib.libRate, freq))} ${qualityScore(Math.max(moon.el, 0), 0, deg.pathLossExtraDb, 180, lib.libRate, freq).toFixed(1)}` : "---",
     ];
-    if (showPhase) cells.push(`${tr(moon.phaseName)} (${Math.round(moon.illumination)}%)`);
+    // Phase traitee a part (emoji + texte via HTML pour alignement)
+    const phaseHtml = showPhase
+      ? formatPhaseHTML(tr(moon.phaseName), moon.illumination)
+      : null;
     // Clear and refill
     row.innerHTML = "";
     cells.forEach(text => {
       const td = el("td", { class: nowClass }, text);
       row.appendChild(td);
     });
+    if (phaseHtml) {
+      const phaseClass = nowClass ? `${nowClass} phase-cell` : "phase-cell";
+      row.appendChild(el("td", { class: phaseClass, html: phaseHtml }));
+    }
   } catch (e) {
     console.error("fillNowRow:", e);
   }

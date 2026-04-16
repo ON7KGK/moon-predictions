@@ -82,6 +82,31 @@ export function formatTz() {
 export function $(sel) { return document.querySelector(sel); }
 export function $$(sel) { return document.querySelectorAll(sel); }
 
+/**
+ * Formate une phase lunaire en HTML avec l'emoji dans un span de
+ * largeur fixe pour aligner verticalement le texte qui suit.
+ * Les emojis moon Unicode (U+1F311..U+1F318) ont des largeurs
+ * de rendu variables selon font/OS/navigateur.
+ *
+ * @param {string} phaseText texte traduit (ex: "🌕 Pleine Lune")
+ * @param {number} illumPct pourcentage d'illumination (0-100)
+ * @returns {string} HTML de la cellule phase
+ */
+export function formatPhaseHTML(phaseText, illumPct) {
+  const pct = Math.round(illumPct || 0);
+  // Regex emoji moon U+1F311 (🌑) a U+1F318 (🌘) (codepoints 127761..127768)
+  const m = phaseText.match(/^([\u{1F311}-\u{1F318}])\s*(.*)$/u);
+  if (!m) return `${escapeHtml(phaseText)} (${pct}%)`;
+  const [, emoji, rest] = m;
+  return `<span class="phase-emoji">${emoji}</span>${escapeHtml(rest)} (${pct}%)`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
+
 export function el(tag, attrs = {}, children = []) {
   const node = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {

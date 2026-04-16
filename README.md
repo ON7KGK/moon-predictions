@@ -130,8 +130,8 @@ Les calculs utilisent **Skyfield** avec les éphémérides **JPL DE440s** de la 
 ## Remerciements
 
 Un grand merci à :
-- **Eric ON5TA**, **Michel ON7FI** et **Christophe ON6ZQ** pour leurs retours
-  experts et suggestions d'améliorations
+- **Eric ON5TA**, **Michel ON7FI** et **Christophe ON6ZQ** pour leurs retours experts et suggestions d'améliorations
+Merci à Christophe pour son hébergement de la version Web actuellement en démo : https://moon.on6zq.be/moon-predictions/ 
 
 ## Signaler un bug
 
@@ -145,8 +145,7 @@ Licence : GPL-3.0
 
 ## Code signing policy
 
-Free code signing provided by [SignPath.io](https://signpath.io),
-certificate by [SignPath Foundation](https://signpath.org).
+Free code signing will be provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org).
 
 **Team roles:**
 - Committers and Approvers: [ON7KGK](https://github.com/ON7KGK)

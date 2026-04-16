@@ -21,6 +21,14 @@ button, input, select {
 a { color: var(--link-color); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
+/* Pousser cet element (et les suivants) a l'extreme droite de la filter-row */
+.util-right {
+  margin-left: auto;
+}
+.util-right input[type="number"] {
+  width: 50px;
+}
+
 /* ─── Bandeau station ─── */
 .station-bar {
   background-color: var(--bg-group);
@@ -210,6 +218,21 @@ input[type="checkbox"] {
 .eme-orange { color: var(--eme-orange); font-weight: bold; }
 .eme-red { color: var(--eme-red); font-weight: bold; }
 .now-hi { color: var(--now-visible-hi); }
+/* Emoji moon dans la colonne Phase — largeur fixe pour aligner
+   verticalement le texte qui suit malgré les glyphes de largeurs variables */
+.phase-emoji {
+  display: inline-block;
+  width: 1.5em;
+  text-align: center;
+  margin-right: 0.25em;
+}
+/* Colonne Phase (dernière si showPhase activé) : aligner a gauche pour
+   que les emojis démarrent tous au meme X. Sinon centré par défaut et
+   les différences de longueur de texte décalent l'emoji. */
+#passes-table td.phase-cell {
+  text-align: left;
+  padding-left: 10px;
+}
 
 /* ─── Footer ─── */
 .footer {
