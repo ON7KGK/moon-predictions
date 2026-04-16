@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moon Predictions — EME Pass Forecast</title>
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="/css/themes.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="theme-dark">
+
+  <!-- ═══ Bandeau station ═══ -->
+  <header class="station-bar">
+    <div class="station-inputs">
+      <label><span data-i18n="lbl_callsign">Indicatif :</span>
+        <input id="callsign" type="text" placeholder="ON7KGK" autocomplete="off">
+      </label>
+      <label><span data-i18n="lbl_locator">Locator :</span>
+        <input id="locator" type="text" placeholder="JO20BM85" autocomplete="off">
+      </label>
+      <label><span data-i18n="lbl_altitude">Altitude :</span>
+        <input id="altitude" type="number" value="0" min="0" max="9000"> m
+      </label>
+    </div>
+    <div class="station-actions">
+      <button id="btn-compute" class="btn-primary">
+        <span data-i18n="btn_compute">▶ Calculer</span>
+      </button>
+      <button id="btn-save" data-tip="tip_save">
+        <span data-i18n="btn_save">💾 Sauvegarder</span>
+      </button>
+      <button id="btn-theme" class="btn-icon" data-tip="tip_theme">☀</button>
+      <button id="btn-conventions" class="btn-discrete" data-tip="tip_conventions">
+        <span data-i18n="btn_conventions">Conventions</span>
+      </button>
+      <button id="btn-help" class="btn-discrete">
+        <span data-i18n="btn_help">Aide</span>
+      </button>
+      <button id="btn-about" class="btn-discrete">
+        <span data-i18n="btn_about">About</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══ Filtres ═══ -->
+  <section class="filters">
+    <div class="filter-row">
+      <label class="slider-label">
+        <span data-i18n="lbl_el_min">EL min :</span>
+        <input type="range" id="el-min" min="0" max="45" value="0" data-tip="tip_el_min">
+        <span id="el-min-val">0°</span>
+      </label>
+      <label class="slider-label">
+        <span data-i18n="lbl_score_min">Score min :</span>
+        <input type="range" id="score-min" min="0" max="80" value="0" data-tip="tip_quality_filter">
+        <span id="score-min-val">0.0</span>
+      </label>
+      <label>
+        <span data-i18n="lbl_frequency">Fréquence :</span>
+        <select id="freq">
+          <option value="50e6">50 MHz</option>
+          <option value="144e6">144 MHz</option>
+          <option value="432e6">432 MHz</option>
+          <option value="1296e6">1.2 GHz</option>
+          <option value="2304e6">2.3 GHz</option>
+          <option value="5760e6">5.7 GHz</option>
+          <option value="10368e6" selected>10 GHz</option>
+          <option value="24048e6">24 GHz</option>
+        </select>
+      </label>
+      <div class="period-buttons">
+        <button id="btn-1-30" class="active">1-30 j</button>
+        <button id="btn-31-60">31-60 j</button>
+      </div>
+    </div>
+    <div class="filter-row">
+      <label><input type="checkbox" id="phase-chk" checked data-tip="tip_phase_chk">
+        <span data-i18n="lbl_phase">Phase</span>
+      </label>
+      <label><input type="checkbox" id="local-time-chk" data-tip="tip_local_time">
+        <span data-i18n="lbl_local_time">Heure locale</span>
+      </label>
+      <span id="tz-label" class="tz"></span>
+      <label>
+        <span data-i18n="lbl_font_size">Police :</span>
+        <input type="number" id="font-size" value="13" min="10" max="20" data-tip="tip_font_size"> pt
+      </label>
+      <button id="btn-export-txt" data-i18n="btn_export_txt">Export TXT</button>
+      <button id="btn-export-pdf" data-i18n="btn_export_pdf">Export PDF</button>
+      <label>
+        <span data-i18n="lbl_language">Langue :</span>
+        <select id="lang">
+          <option value="fr">Français</option>
+          <option value="nl">Nederlands</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+      <a href="https://dxer.site/eme-observer/" target="_blank" class="sked-link" data-tip="tip_sked">
+        EME Observer (SA5IKN)
+      </a>
+    </div>
+  </section>
+
+  <!-- ═══ Info + légende ═══ -->
+  <section class="info-bar">
+    <span id="info-msg" data-i18n="info_enter_locator">Entrez votre locator et cliquez sur Calculer.</span>
+    <span class="legend">
+      <span class="sq-green">■</span> <span data-i18n="legend_excellent">Excellent</span>
+      <span class="sq-orange">■</span> <span data-i18n="legend_medium">Moyen</span>
+      <span class="sq-red">■</span> <span data-i18n="legend_poor">Faible</span>
+    </span>
+  </section>
+
+  <!-- ═══ Table des passages ═══ -->
+  <main class="table-wrapper">
+    <table id="passes-table"><thead><tr id="passes-header"></tr></thead><tbody id="passes-body"></tbody></table>
+  </main>
+
+  <footer class="footer">
+    <span id="footer-msg"></span>
+  </footer>
+
+  <!-- ═══ Modales ═══ -->
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div id="modal-content" class="modal-content"></div>
+  </div>
+
+  <script src="/js/i18n.js" type="module"></script>
+  <script src="/js/utils.js" type="module"></script>
+  <script src="/js/api.js" type="module"></script>
+  <script src="/js/app.js" type="module"></script>
+</body>
+</html>
