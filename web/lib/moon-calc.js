@@ -12,7 +12,6 @@ import {
   SearchRiseSet,
   MoonPhase,
   Illumination,
-  Libration,
   AstroTime,
   MakeTime,
   GeoMoon,
@@ -186,21 +185,84 @@ export function computeSun(lat, lon, altM = 0, horizonDegrees = 0) {
 
 // ─── Libration & Doppler spread ───────────────────────────────────
 
-function librationAt(t) {
-  // astronomy-engine a Libration natif (retourne lon, lat en deg)
-  const lib = Libration(t);
-  return { lon: lib.elon, lat: lib.elat };
+// Libration selenographique TOPOCENTRIQUE — formules IAU 2009.
+// Equivalent de _libration_at() dans moon_calc.py.
+// Inclut la libration diurne (rotation terrestre), essentielle pour le
+// calcul du Doppler spread EME depuis un observateur a latitude non nulle.
+function librationAt(observer, t) {
+  // Position apparente topocentrique de la Lune
+  const eq = Equator(Body.Moon, t, observer, true, true);
+  // RA/Dec + distance -> vecteur cartesien ICRS
+  const raRad = eq.ra * Math.PI / 12; // ra est en heures
+  const decRad = eq.dec * Math.PI / 180;
+  const d = eq.dist; // AU
+  const pos = [
+    d * Math.cos(decRad) * Math.cos(raRad),
+    d * Math.cos(decRad) * Math.sin(raRad),
+    d * Math.sin(decRad),
+  ];
+  const norm = Math.hypot(pos[0], pos[1], pos[2]);
+  const posUnit = [pos[0] / norm, pos[1] / norm, pos[2] / norm];
+
+  // IAU 2009 : pole Nord lunaire + rotation propre
+  // t.tt = jours TT depuis J2000. T en siecles juliens.
+  const T = t.tt / 36525.0;
+  const dd = t.tt;
+  const raPole = (269.9949 + 0.0031 * T) * Math.PI / 180;
+  const decPole = (66.5392 + 0.0130 * T) * Math.PI / 180;
+  let W = (38.3213 + 13.17635815 * dd) % 360;
+  if (W < 0) W += 360;
+  const Wrad = W * Math.PI / 180;
+
+  // Repere selenographique en ICRF
+  const cosDp = Math.cos(decPole);
+  const zSel = [
+    cosDp * Math.cos(raPole),
+    cosDp * Math.sin(raPole),
+    Math.sin(decPole),
+  ];
+  const n = [-Math.sin(raPole), Math.cos(raPole), 0];
+  // e = zSel x n
+  const e = [
+    zSel[1] * n[2] - zSel[2] * n[1],
+    zSel[2] * n[0] - zSel[0] * n[2],
+    zSel[0] * n[1] - zSel[1] * n[0],
+  ];
+  const eNorm = Math.hypot(e[0], e[1], e[2]);
+  const eU = [e[0] / eNorm, e[1] / eNorm, e[2] / eNorm];
+  const cW = Math.cos(Wrad), sW = Math.sin(Wrad);
+  const xSel = [
+    n[0] * cW + eU[0] * sW,
+    n[1] * cW + eU[1] * sW,
+    n[2] * cW + eU[2] * sW,
+  ];
+  // ySel = zSel x xSel
+  const ySel = [
+    zSel[1] * xSel[2] - zSel[2] * xSel[1],
+    zSel[2] * xSel[0] - zSel[0] * xSel[2],
+    zSel[0] * xSel[1] - zSel[1] * xSel[0],
+  ];
+
+  // Projections
+  const px = posUnit[0] * xSel[0] + posUnit[1] * xSel[1] + posUnit[2] * xSel[2];
+  const py = posUnit[0] * ySel[0] + posUnit[1] * ySel[1] + posUnit[2] * ySel[2];
+  const pz = posUnit[0] * zSel[0] + posUnit[1] * zSel[1] + posUnit[2] * zSel[2];
+
+  const libLat = Math.asin(Math.max(-1, Math.min(1, pz))) * 180 / Math.PI;
+  const libLon = Math.atan2(py, px) * 180 / Math.PI;
+  return { lon: libLon, lat: libLat };
 }
 
 export function computeLibration(lat, lon, altM, t) {
+  const observer = new Observer(lat, lon, altM);
   const t0 = t instanceof AstroTime ? t : MakeTime(t);
-  const { lon: l0, lat: b0 } = librationAt(t0);
-  // Derivee numerique centree sur +-30 min
+  const { lon: l0, lat: b0 } = librationAt(observer, t0);
+  // Derivee numerique centree sur +-30 min (total 1h)
   const dtDays = 0.5 / 24;
   const tm = t0.AddDays(-dtDays);
   const tp = t0.AddDays(+dtDays);
-  const { lon: l1, lat: b1 } = librationAt(tm);
-  const { lon: l2, lat: b2 } = librationAt(tp);
+  const { lon: l1, lat: b1 } = librationAt(observer, tm);
+  const { lon: l2, lat: b2 } = librationAt(observer, tp);
   let dlon = l2 - l1;
   if (dlon > 180) dlon -= 360;
   if (dlon < -180) dlon += 360;
