@@ -278,6 +278,32 @@ input[type="checkbox"] {
 }
 .modal-content button { padding: 6px 20px; }
 
+/* Tableau du dialog "Détail du passage" : meme style que la table principale
+   (bordures, police monospace, en-tetes colores) */
+#day-detail-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-family: "Consolas", "Menlo", "DejaVu Sans Mono", "Liberation Mono", "Courier New", monospace;
+  font-variant-numeric: tabular-nums;
+}
+#day-detail-table th, #day-detail-table td {
+  border: 1px solid var(--gridline);
+  padding: 4px 6px;
+  text-align: center;
+  white-space: nowrap;
+}
+#day-detail-table th {
+  background-color: var(--bg-header);
+  color: var(--fg-header);
+  font-weight: bold;
+  font-size: 0.95em;
+  position: sticky;
+  top: 0;
+}
+#day-detail-table tbody tr:hover td {
+  background-color: var(--bg-table-hover);
+}
+
 .convention-group {
   border: 1px solid var(--btn-border);
   border-radius: 4px;
