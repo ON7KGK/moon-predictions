@@ -1,15 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="80" fill="#1a2530"/>
+  <rect width="512" height="512" rx="80" fill="#19232D"/>
   <!-- Halo -->
-  <circle cx="256" cy="256" r="210" fill="none" stroke="#55ccff" stroke-width="2" opacity="0.3"/>
-  <!-- Lune pleine base -->
-  <circle cx="256" cy="256" r="170" fill="#e8e4d8"/>
-  <!-- Ombre portée à gauche pour effet croissant gibbeuse -->
-  <circle cx="180" cy="256" r="170" fill="#1a2530"/>
-  <!-- Cratères -->
-  <circle cx="320" cy="200" r="22" fill="#b8b0a0" opacity="0.55"/>
-  <circle cx="300" cy="320" r="30" fill="#b8b0a0" opacity="0.45"/>
-  <circle cx="360" cy="280" r="16" fill="#b8b0a0" opacity="0.5"/>
-  <circle cx="280" cy="250" r="12" fill="#b8b0a0" opacity="0.4"/>
-  <circle cx="340" cy="360" r="14" fill="#b8b0a0" opacity="0.4"/>
+  <circle cx="256" cy="256" r="210" fill="none" stroke="#ffd966" stroke-width="2" opacity="0.25"/>
+  <!-- Lune jaune -->
+  <circle cx="256" cy="256" r="180" fill="#f4c430"/>
+  <!-- Crateres / mers -->
+  <circle cx="200" cy="210" r="28" fill="#c8a02a" opacity="0.55"/>
+  <circle cx="310" cy="250" r="36" fill="#c8a02a" opacity="0.5"/>
+  <circle cx="230" cy="320" r="22" fill="#c8a02a" opacity="0.45"/>
+  <circle cx="330" cy="340" r="18" fill="#c8a02a" opacity="0.5"/>
+  <circle cx="280" cy="180" r="14" fill="#c8a02a" opacity="0.4"/>
+  <circle cx="180" cy="280" r="16" fill="#c8a02a" opacity="0.4"/>
 </svg>
