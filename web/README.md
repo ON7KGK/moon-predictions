@@ -159,8 +159,16 @@ un peu plus précis mais rarement nécessaire pour les skeds.
 
 ## Remerciements
 
-- **Eric ON5TA** et **Michel ON7FI** pour les améliorations
+Un grand merci à :
+- **Eric ON5TA**, **Michel ON7FI** et **Christophe ON6ZQ** pour leurs retours
+  experts et suggestions d'améliorations
 - [astronomy-engine](https://github.com/cosinekitty/astronomy) par Don Cross (MIT)
+
+## Signaler un bug
+
+Cette application est **open source**. Tout bug constaté peut être envoyé à
+[on7kgk@outlook.com](mailto:on7kgk@outlook.com) ou signalé via
+[GitHub Issues](https://github.com/ON7KGK/moon-predictions/issues).
 
 ## Crédits
 

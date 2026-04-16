@@ -127,6 +127,18 @@ Les calculs utilisent **Skyfield** avec les éphémérides **JPL DE440s** de la 
 - **Éphémérides** : NASA JPL DE440s via [Skyfield](https://rhodesmill.org/skyfield/)
 - **Icône** : [Crescent icons created by Arkinasi - Flaticon](https://www.flaticon.com/free-icons/crescent)
 
+## Remerciements
+
+Un grand merci à :
+- **Eric ON5TA**, **Michel ON7FI** et **Christophe ON6ZQ** pour leurs retours
+  experts et suggestions d'améliorations
+
+## Signaler un bug
+
+Cette application est **open source**. Tout bug constaté peut être envoyé à
+[on7kgk@outlook.com](mailto:on7kgk@outlook.com) ou signalé via
+[GitHub Issues](https://github.com/ON7KGK/moon-predictions/issues).
+
 Licence : GPL-3.0
 
 ---
