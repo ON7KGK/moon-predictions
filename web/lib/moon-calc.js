@@ -333,11 +333,18 @@ export function daysSincePerigee(t) {
 export function getMoonPasses(lat, lon, altM,
     hours = 720, startOffsetHours = 0, horizonDegrees = 0) {
   const observer = new Observer(lat, lon, altM);
-  const tStart = MakeTime(new Date(Date.now() + startOffsetHours * 3600 * 1000));
+  const tStartReq = MakeTime(new Date(Date.now() + startOffsetHours * 3600 * 1000));
+  const endTt = tStartReq.tt + hours / 24;
+
+  // Si la Lune est deja levee au debut de la fenetre, reculer la recherche
+  // d'1 jour pour inclure le passage en cours (comme moon_calc.py).
+  const { el: elStart } = moonAltAzDist(observer, tStartReq);
+  const searchStart = elStart > horizonDegrees
+    ? tStartReq.AddDays(-1)
+    : tStartReq;
+
   const passes = [];
-  // Chercher alternance rise/set sur la plage
-  const endTt = tStart.tt + hours / 24;
-  let current = tStart;
+  let current = searchStart;
   let safety = 200;
   while (current.tt < endTt && safety-- > 0) {
     let rise, set;
@@ -350,19 +357,20 @@ export function getMoonPasses(lat, lon, altM,
       set = SearchRiseSet(Body.Moon, observer, -1, rise, 2, horizonDegrees);
     } catch (e) { set = null; }
     if (!set) break;
-    if (set.tt <= tStart.tt) {
+    // Ignorer les passages entierement avant le debut de la fenetre
+    if (set.tt < tStartReq.tt) {
       current = set.AddDays(0.001);
       continue;
     }
     if (rise.tt > endTt) break;
-    // Echantillonnage d'elevation pour trouver le max
+    // Echantillonnage d'elevation pour trouver le max (AddDays pour
+    // conversion TT correcte — NE PAS utiliser MakeTime avec JD)
     const nSamples = 50;
+    const ttSpan = set.tt - rise.tt;
     let maxEl = -Infinity, maxElDate = rise.date;
     for (let i = 0; i <= nSamples; i++) {
       const frac = i / nSamples;
-      const tt = rise.tt + frac * (set.tt - rise.tt);
-      const tSample = MakeTime(new Date(
-        (tt - 2440587.5) * 86400 * 1000));
+      const tSample = rise.AddDays(frac * ttSpan);
       const { el } = moonAltAzDist(observer, tSample);
       if (el > maxEl) { maxEl = el; maxElDate = tSample.date; }
     }
