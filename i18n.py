@@ -484,7 +484,7 @@ _STRINGS = {
               "Gevonden bugs kunt u melden aan "
               "<a href='mailto:on7kgk@outlook.com'>on7kgk@outlook.com</a>",
         "en": "This application is <b>open source</b>.<br>"
-              "Any bug can be reported to "
+              "Any bugs can be reported to "
               "<a href='mailto:on7kgk@outlook.com'>on7kgk@outlook.com</a>",
     },
     "refresh_hint": {

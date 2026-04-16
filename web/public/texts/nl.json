@@ -135,7 +135,7 @@
   "about_dev": "<b>Ontwikkeling :</b>",
   "about_ephem": "<b>Berekeningen :</b>",
   "about_thanks": "<b>Met dank aan :</b>",
-  "about_thanks_text": "Eric ON5TA, Michel ON7FI en Christophe ON6ZQ<br>voor de verbeteringen",
+  "about_thanks_text": "Eric ON5TA, Michel ON7FI en Christophe ON6ZQ<br>voor de verbeteringen.<br>Dank ook aan Christophe ON6ZQ<br>voor het hosten van de webversie.",
   "about_opensource": "Deze applicatie is <b>open source</b>.<br>Gevonden bugs kunt u melden aan <a href='mailto:on7kgk@outlook.com'>on7kgk@outlook.com</a>",
   "refresh_hint": "↻ Automatische update elke 5 seconden",
   "about_license": "<b>Licentie :</b> GPL-3.0 — Open Source",
