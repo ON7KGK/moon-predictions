@@ -37,7 +37,7 @@ from moon_calc import (
 )
 from i18n import tr, set_language, get_language
 
-APP_VERSION = "1.7.5"
+APP_VERSION = "1.7.6"
 APP_DATE = "2026-04-16"
 
 
@@ -1866,7 +1866,7 @@ class MoonPredictionsWindow(QMainWindow):
         t = _theme()
         dlg = QDialog(self)
         dlg.setWindowTitle(tr("about_title"))
-        dlg.setFixedSize(520, 460)
+        dlg.setFixedSize(540, 540)
         dlg.setStyleSheet(
             f"QDialog {{ background-color: {t['dlg_bg']}; color: {t['dlg_fg']}; }}"
             f"QLabel {{ color: {t['dlg_fg']}; }}"
@@ -1901,6 +1901,8 @@ class MoonPredictionsWindow(QMainWindow):
             f"<hr style='border-color: {t['dlg_hr']};'>"
             f"<p style='text-align: center;'>"
             f"{tr('about_thanks')}<br>{tr('about_thanks_text')}</p>"
+            f"<hr style='border-color: {t['dlg_hr']};'>"
+            f"<p style='text-align: center;'>{tr('about_opensource')}</p>"
             f"<hr style='border-color: {t['dlg_hr']};'>"
             f"<p style='text-align: center;'>{tr('about_license')}</p>"
         )

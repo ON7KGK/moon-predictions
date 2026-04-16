@@ -72,6 +72,8 @@ export function showAbout() {
         ${tr("about_thanks_text")}
       </p>
       <hr>
+      <p style="text-align:center;">${tr("about_opensource")}</p>
+      <hr>
       <p style="text-align:center;">${tr("about_license")}</p>
     `
   }));

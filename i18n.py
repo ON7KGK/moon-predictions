@@ -476,6 +476,17 @@ _STRINGS = {
         "nl": "Eric ON5TA, Michel ON7FI en Christophe ON6ZQ<br>voor de verbeteringen",
         "en": "Eric ON5TA, Michel ON7FI and Christophe ON6ZQ<br>for the improvements",
     },
+    "about_opensource": {
+        "fr": "Cette application est <b>open source</b>.<br>"
+              "Tout bug constat\u00e9 peut \u00eatre envoy\u00e9 \u00e0 "
+              "<a href='mailto:on7kgk@outlook.com'>on7kgk@outlook.com</a>",
+        "nl": "Deze applicatie is <b>open source</b>.<br>"
+              "Gevonden bugs kunt u melden aan "
+              "<a href='mailto:on7kgk@outlook.com'>on7kgk@outlook.com</a>",
+        "en": "This application is <b>open source</b>.<br>"
+              "Any bug can be reported to "
+              "<a href='mailto:on7kgk@outlook.com'>on7kgk@outlook.com</a>",
+    },
     "about_license": {"fr": "<b>Licence :</b> GNU GPL v3 \u2014 Open Source", "nl": "<b>Licentie :</b> GNU GPL v3 \u2014 Open Source", "en": "<b>License:</b> GNU GPL v3 \u2014 Open Source"},
     "btn_close": {"fr": "Fermer", "nl": "Sluiten", "en": "Close"},
     "btn_apply": {"fr": "Appliquer", "nl": "Toepassen", "en": "Apply"},
