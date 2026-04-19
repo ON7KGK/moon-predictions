@@ -1558,11 +1558,12 @@ class MoonPredictionsWindow(QMainWindow):
         # Police : suit le reglage utilisateur (taille de base pour tout le dialog)
         base_pt = self.spinFontSize.value()
         # Echelle des grosses polices (clock, AZ/EL) basee sur base_pt
-        big_pt = int(base_pt * 2.2)
-        clock_pt = int(base_pt * 2.6)
-        # Taille compacte, proche de MoonSked (~650x450)
-        dlg.setMinimumSize(640, 440)
-        dlg.resize(720, 500)
+        big_pt = int(base_pt * 2.0)
+        clock_pt = int(base_pt * 2.3)
+        # Dimensions qui scalent avec la police (au 10 pt : 640x440, au 15 pt : 960x660)
+        scale = base_pt / 10.0
+        dlg.setMinimumSize(int(640 * scale), int(440 * scale))
+        dlg.resize(int(720 * scale), int(510 * scale))
         dlg.setStyleSheet(
             f"QDialog {{ background-color: {t['bg_main']}; color: {t['fg_text']};"
             f" font-size: {base_pt}pt; }}"
@@ -1598,10 +1599,10 @@ class MoonPredictionsWindow(QMainWindow):
         grid = QGridLayout()
         grid.setSpacing(4)
         grid.setContentsMargins(4, 4, 4, 4)
-        # Colonnes equilibrees
-        grid.setColumnStretch(0, 1)
-        grid.setColumnStretch(1, 1)
-        grid.setColumnStretch(2, 1)
+        # Column 1 (DGR/UTC/TXRX) un peu plus large pour "Total DGR +X.XX dB"
+        grid.setColumnStretch(0, 10)
+        grid.setColumnStretch(1, 13)
+        grid.setColumnStretch(2, 10)
 
         # Row 0 : Range | DGR/Sky/Spread | Geocentric ------------------
         range_box, range_inner = make_box("Range")
