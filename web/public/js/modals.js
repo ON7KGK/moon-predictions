@@ -512,7 +512,7 @@ async function _renderNowDetailBody(body, state, refreshHint) {
 
         <div class="mt-box mt-txpol">
           <div class="mt-title">TX Polarisation</div>
-          ${hasDx ? `<div><b>${homePolLbl === "H" ? "V" : homePolLbl === "V" ? "H" : homePolLbl}</b></div><div>${polOff >= 0 ? "+" : ""}${polOff.toFixed(0)}°</div>` : `<div style="color: var(--fg-dim);">—</div>`}
+          ${hasDx ? `<div><b>${homePolLbl}</b></div><div>${polOff >= 0 ? "+" : ""}${polOff.toFixed(0)}°</div>` : `<div style="color: var(--fg-dim);">—</div>`}
         </div>
 
       </div>

@@ -1894,11 +1894,13 @@ class MoonPredictionsWindow(QMainWindow):
                 f"{rx_d} Degrees <b>{pol_h}</b>\u00b0"
             )
             if has_dx:
-                # TX polarisation coté DX = home pol moins offset spatial
-                tx_pol_deg = ((pol_h - pol_offset) % 180 + 180) % 180
-                tx_pol_lbl_home = "H" if abs(tx_pol_deg) < 1 else "V" if abs(tx_pol_deg - 90) < 1 else f"{tx_pol_deg:.0f}\u00b0"
+                # Convention MoonSked : ligne 1 = polarisation Home (V/H/slant),
+                # ligne 2 = decalage spatial (= valeur "Polarity" de la ligne DX).
+                if pol_h == 0: home_pol_lbl2 = "H"
+                elif pol_h == 90: home_pol_lbl2 = "V"
+                else: home_pol_lbl2 = f"{pol_h}\u00b0"
                 txpol_lbl.setText(
-                    f"<b>{tx_pol_lbl_home}</b><br>"
+                    f"<b>{home_pol_lbl2}</b><br>"
                     f"{pol_offset:+.0f}\u00b0"
                 )
             else:
