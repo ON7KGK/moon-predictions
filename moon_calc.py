@@ -806,11 +806,14 @@ def compute_spreading_bistatic(lat_h: float, lon_h: float, alt_h: float,
                                t_sky, freq_hz: float = 10368e6) -> float:
     """Spreading Doppler bistatique Home -> Lune -> DX en Hz.
 
-    Formule bistatique (convention MoonSked, G3WDG 2010) :
-        Spreading = 2 * f * (v_home + v_dx) * R_moon / c
-    ou v_X = taux_libration_vu_de_X * pi/180 / 3600 (rad/s).
+    Convention MoonSked (GM4JJJ), calee sur leurs captures :
+        Spreading = f * (v_home + v_dx) * R_moon / c
+    ou v_X = taux_libration_vu_de_X * R_moon en m/s.
 
-    Se reduit a l'Echo Width monostatique (4 * f * v * R / c) quand DX = Home.
+    Note : notre "Echo Width" monostatique reste en peak-to-peak
+    (4 * f * v * R / c), qui est la definition physique K1JT/G3WDG.
+    La "Spreading" bistatique MoonSked vaut environ la moitie de
+    l'Echo Width quand DX = Home (convention half-width differente).
     """
     loc_h = wgs84.latlon(lat_h, lon_h, elevation_m=alt_h)
     loc_d = wgs84.latlon(lat_d, lon_d, elevation_m=alt_d)
@@ -821,7 +824,7 @@ def compute_spreading_bistatic(lat_h: float, lon_h: float, alt_h: float,
     R_MOON = 1737.4  # km
     v_h = rate_h * R_MOON * math.pi / 180 * 1000 / 3600  # m/s
     v_d = rate_d * R_MOON * math.pi / 180 * 1000 / 3600
-    return 2.0 * freq_hz * (v_h + v_d) / 3e8
+    return freq_hz * (v_h + v_d) / 3e8
 
 
 def enrich_moon_pass(lat: float, lon: float, alt_m: float,
