@@ -6,9 +6,24 @@ import { tr, locDate, locDateLong } from "./i18n.js";
 import { $, el, utcOffsetMs, formatHM, formatTz, formatPhaseHTML, emeColor,
   EL_GREEN, EL_ORANGE, DIST_GREEN, DIST_ORANGE } from "./utils.js";
 import { apiPassTimeline, apiNowDetail, apiLocator } from "./api.js";
+import { computeSpreadingBistatic, computePolarizationOffset, computeMnr, locatorToLatLon, computeDopplerBistatic, computeMoonAzEl } from "./moon-calc.js";
+import { MakeTime } from "https://esm.sh/astronomy-engine@2.1.19";
 
-const APP_VERSION = "1.8.4";
-const APP_DATE = "2026-04-16";
+const APP_VERSION = "1.9.0-alpha";
+const APP_DATE = "2026-04-19";
+
+// Helpers DX + polarisation Home (lus depuis le DOM)
+function getDxInfo() {
+  const dx = ($("#dx-locator")?.value || "").trim();
+  if (!dx) return null;
+  try {
+    const [lat, lon] = locatorToLatLon(dx);
+    return { locator: dx.toUpperCase(), lat, lon };
+  } catch (e) { return null; }
+}
+function getPolHome() {
+  return parseInt($("#pol-home")?.value) || 90;
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────
 
@@ -266,16 +281,16 @@ export async function showNowDetail(state) {
   }, "");
   content.appendChild(refreshHint);
   content.appendChild(closeBtn());
-  openModal(content);
+  openModal(content, true);
 
   // Premier rendu immediat
   await _renderNowDetailBody(body, state, refreshHint);
 
-  // Auto-refresh toutes les 10 secondes
+  // Auto-refresh temps reel (500 ms = 2 Hz, comme MoonSked Moon Track)
   if (_nowRefreshTimer !== null) clearInterval(_nowRefreshTimer);
   _nowRefreshTimer = setInterval(() => {
     _renderNowDetailBody(body, state, refreshHint);
-  }, 10000);
+  }, 500);
 }
 
 async function _renderNowDetailBody(body, state, refreshHint) {
@@ -314,68 +329,209 @@ async function _renderNowDetailBody(body, state, refreshHint) {
       durTxt = `${dh}h${String(dm).padStart(2, "0")}`;
     }
 
-    const spread = lib.dopplerSpreadHz * freq / 10.368e9;
+    // Lire lat/lon/alt de la station Home depuis l'UI (pas de state object ici)
+    const homeLocator = ($("#locator").value || "").trim();
+    const hAlt = parseFloat($("#altitude").value) || 0;
+    let hLat = 0, hLon = 0;
+    try { [hLat, hLon] = locatorToLatLon(homeLocator); } catch (e) {}
+
+    // Spread : monostatique (Echo Width) ou bistatique (Spreading) si DX
+    const dxInfo = getDxInfo();
+    let spread = lib.dopplerSpreadHz * freq / 10.368e9;
+    let spreadLbl = tr("now_lbl_spread");
+    if (dxInfo) {
+      spread = computeSpreadingBistatic(hLat, hLon, hAlt, dxInfo.lat, dxInfo.lon, 0, MakeTime(new Date()), freq);
+      spreadLbl = `${tr("now_lbl_spreading")} → ${dxInfo.locator}`;
+    }
     const dop = deg.dopplerHz;
 
-    // Heure actuelle (pour montrer la mise a jour)
+    // Bloc polarisation + MNR si DX configure
+    let polBlock = "";
+    if (dxInfo) {
+      const polH = getPolHome();
+      const polOff = computePolarizationOffset(
+        hLat, hLon, dxInfo.lat, dxInfo.lon, MakeTime(new Date()));
+      const polD = ((polH + polOff) % 180 + 180) % 180;
+      const mnr = computeMnr(polOff);
+      const homeLbl = polH === 0 ? "H (0°)" : polH === 90 ? "V (90°)" : `Slant (${polH}°)`;
+      const mnrCls = mnr < 3 ? "eme-green" : mnr < 10 ? "eme-orange" : "eme-red";
+      polBlock = `
+        <div class="group">
+          <div class="group-title">${tr("now_grp_polarization")} → ${dxInfo.locator}</div>
+          <div class="row">
+            <div class="item"><span class="k">${tr("now_lbl_pol_home")} :</span> ${homeLbl}</div>
+            <div class="item"><span class="k">${tr("now_lbl_pol_dx")} :</span> ${polD.toFixed(0)}° <span style="color:var(--fg-dim); font-size:0.85em;">(${tr("now_lbl_pol_offset")} ${polOff >= 0 ? "+" : ""}${polOff.toFixed(1)}°)</span></div>
+          </div>
+          <div class="row">
+            <div class="item"><span class="k">${tr("now_lbl_mnr")} :</span> <span class="${mnrCls}">${mnr.toFixed(1)} dB</span> <span style="color:var(--fg-dim); font-size:0.85em; margin-left:8px;">${tr("now_lbl_mnr_hint")}</span></div>
+          </div>
+        </div>`;
+    }
+
+    // Heure actuelle UTC (grosse horloge centrale)
     const now = new Date();
-    const nowTxt = useLocal
-      ? `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}:${String(now.getSeconds()).padStart(2,"0")} ${formatTz()}`
-      : `${String(now.getUTCHours()).padStart(2,"0")}:${String(now.getUTCMinutes()).padStart(2,"0")}:${String(now.getUTCSeconds()).padStart(2,"0")} UTC`;
+    const hhmmss = `${String(now.getUTCHours()).padStart(2,"0")}:${String(now.getUTCMinutes()).padStart(2,"0")}:${String(now.getUTCSeconds()).padStart(2,"0")}`;
+
+    // Phase graphique (emoji)
+    const phaseEmoji = formatPhaseHTML("", moon.illumination).replace(/<[^>]*>/g, "").trim() || "●";
+
+    // Infos DX (Az/El/Doppler bistatique/Polarity/MNR) si DX rempli
+    let dxAz = 0, dxEl = 0, dxDop = 0, polOff = 0, polHomeDeg = 90, mnr = 0;
+    let hasDx = false;
+    let dxCallsign = "DXSTATION";
+    let dxLatLbl = "0.00", dxLonLbl = "0.00";
+    if (dxInfo) {
+      hasDx = true;
+      const t0 = MakeTime(new Date());
+      const dxAzEl = computeMoonAzEl(dxInfo.lat, dxInfo.lon, 0, t0);
+      dxAz = dxAzEl.az;
+      dxEl = dxAzEl.el;
+      dxDop = computeDopplerBistatic(hLat, hLon, hAlt, dxInfo.lat, dxInfo.lon, 0, t0, freq);
+      polOff = computePolarizationOffset(hLat, hLon, dxInfo.lat, dxInfo.lon, t0);
+      polHomeDeg = getPolHome();
+      mnr = computeMnr(polOff);
+      dxLatLbl = dxInfo.lat.toFixed(2);
+      dxLonLbl = dxInfo.lon.toFixed(2);
+    }
+    const mnrCls = mnr < 3 ? "eme-green" : mnr < 10 ? "eme-orange" : "eme-red";
+
+    // TX/RX indicateur (convention EAST, periode 2 min : premieres 2 min TX, 2 min RX)
+    const totalSec = now.getUTCMinutes() * 60 + now.getUTCSeconds();
+    const periodSec = 120; // 2 min
+    const isTx = Math.floor(totalSec / periodSec) % 2 === 0;
+    const txRxLbl = isTx ? "TX" : "RX";
+    const txRxCls = isTx ? "tx-mode" : "rx-mode";
+
+    // Pol Home libelle
+    const homePolLbl = polHomeDeg === 0 ? "H" : polHomeDeg === 90 ? "V" : `${polHomeDeg}\u00b0`;
+    // TX polarity a utiliser par DX (= Home pol + offset, note -offset a appliquer coté TX MoonSked)
+    const txPolDeg = ((polHomeDeg - polOff) % 180 + 180) % 180;
+
+    // Home locator + lat/lon
+    const homeLatLbl = hLat.toFixed(2);
+    const homeLonLbl = hLon.toFixed(2);
+
+    // Range DGR mini (juste le path loss extra, convention MoonSked)
+    const rangeDgrMini = `(${(deg.pathLossExtraDb).toFixed(2)}dB)`;
+    const rangeCls = deg.pathLossExtraDb < 1 ? "eme-green" : deg.pathLossExtraDb < 2 ? "eme-orange" : "eme-red";
+
+    // Date courte localisee
+    const dateLbl = locDate(now) + " " + now.getFullYear();
 
     body.innerHTML = `
-      <div class="status" style="color: ${hiColor};">
-        ● ${tr(visible ? "now_label" : "now_label_off").replace(/^[●○]\s*/, "")}
-        <span class="${statusClass}">${status}</span>
-        <span style="font-size:0.75em; color: var(--fg-dim); font-weight: normal; margin-left:12px;">${nowTxt}</span>
-      </div>
+      <div class="mt-grid">
 
-      <div class="group">
-        <div class="group-title">${tr("now_grp_position")}</div>
-        <div class="row">
-          <div class="item"><span class="k">AZ :</span> <span class="big">${moon.az.toFixed(1)}°</span></div>
-          <div class="item"><span class="k">EL :</span> <span class="big ${statusClass}">${moon.el >= 0 ? "+" : ""}${moon.el.toFixed(1)}°</span></div>
-          <div class="item"><span class="k">${tr("now_lbl_distance")} :</span> ${Math.round(moon.distKm)} km</div>
-          <div class="item"><span class="k">${tr("now_lbl_decl")} :</span> ${ha.decDeg >= 0 ? "+" : ""}${ha.decDeg.toFixed(2)}°</div>
+        <div class="mt-box mt-range">
+          <div class="mt-title">Range</div>
+          <div class="mt-range-val">${Math.round(moon.distKm).toLocaleString("fr-FR")} Km</div>
+          <div class="mt-range-dgr">${rangeDgrMini}</div>
+          <div class="mt-range-bar ${rangeCls}"></div>
         </div>
-        <div class="row">
-          <div class="item"><span class="k">${tr("now_lbl_phase")} :</span> ${formatPhaseHTML(tr(moon.phaseName), moon.illumination)}</div>
-        </div>
-      </div>
 
-      <div class="group">
-        <div class="group-title">${tr("now_grp_riseset")}</div>
-        <div class="row">
-          <div class="item"><span class="k">${tr("col_rise")} :</span> ${riseTxt}</div>
-          <div class="item"><span class="k">${tr("col_set")} :</span> ${setTxt}</div>
-          <div class="item"><span class="k">${tr("col_duration")} :</span> ${durTxt}</div>
+        <div class="mt-box mt-dgr">
+          <div>Total DGR <b>${deg.degradationDb >= 0 ? "+" : ""}${deg.degradationDb.toFixed(2)} dB</b></div>
+          <div>Sky Temp <b>${deg.skyTempK.toFixed(1)} K</b></div>
+          <div style="margin-top:4px;">${hasDx ? tr("now_lbl_spreading") : tr("now_lbl_spread")}
+            <b class="${spread < 50 ? "eme-green" : spread < 150 ? "eme-orange" : "eme-red"}">${Math.round(spread)} Hz</b></div>
         </div>
-      </div>
 
-      <div class="group">
-        <div class="group-title">${tr("now_grp_eme")} (${freqLabel})</div>
-        <div class="row">
-          <div class="item"><span class="k">${tr("now_lbl_dgr")} :</span> <span class="${deg.degradationDb < 1 ? "eme-green" : deg.degradationDb < 3 ? "eme-orange" : "eme-red"}">${deg.degradationDb >= 0 ? "+" : ""}${deg.degradationDb.toFixed(2)} dB</span></div>
-          <div class="item"><span class="k">${tr("now_lbl_tsky")} :</span> <span class="${deg.skyTempK < 10 ? "eme-green" : deg.skyTempK < 50 ? "eme-orange" : "eme-red"}">${deg.skyTempK.toFixed(1)} K</span></div>
-          <div class="item"><span class="k">${tr("now_lbl_doppler")} :</span> ${dop >= 0 ? "+" : ""}${Math.round(dop)} Hz</div>
-          <div class="item"><span class="k">${tr("now_lbl_echo")} :</span> ${dop >= 0 ? "+" : ""}${Math.round(dop)} Hz</div>
+        <div class="mt-box mt-geo">
+          <div class="mt-title">Geocentric</div>
+          <div>GHA <b>${ha.ghaDeg.toFixed(1)}°</b></div>
+          <div>Decl <b>${ha.decDeg >= 0 ? "+" : ""}${ha.decDeg.toFixed(1)}°</b></div>
+          <div class="mt-phase">${phaseEmoji}</div>
         </div>
-        <div class="row">
-          <div class="item"><span class="k">${tr("now_lbl_spread")} :</span> <span class="${spread < 50 ? "eme-green" : spread < 150 ? "eme-orange" : "eme-red"}">${Math.round(spread)} Hz</span></div>
-          <div class="item"><span class="k">${tr("now_lbl_libration")} :</span> <span class="${lib.libRate < 0.10 ? "eme-green" : lib.libRate < 0.25 ? "eme-orange" : "eme-red"}">${lib.libRate.toFixed(2)}°/h</span></div>
-          <div class="item"><span class="k">${tr("now_lbl_pl_extra")} :</span> <span class="${deg.pathLossExtraDb < 1 ? "eme-green" : deg.pathLossExtraDb < 2 ? "eme-orange" : "eme-red"}">${deg.pathLossExtraDb >= 0 ? "+" : ""}${deg.pathLossExtraDb.toFixed(2)} dB</span></div>
-        </div>
-      </div>
 
-      <div class="group">
-        <div class="group-title">${tr("now_grp_astro")}</div>
-        <div class="row">
-          <div class="item"><span class="k">${tr("now_lbl_lha")} :</span> ${ha.lhaDeg >= 0 ? "+" : ""}${ha.lhaDeg.toFixed(2)}°</div>
-          <div class="item"><span class="k">${tr("now_lbl_gha")} :</span> ${ha.ghaDeg.toFixed(2)}°</div>
-          <div class="item"><span class="k">${tr("now_lbl_dsp")} :</span> ${daysSincePerigee.toFixed(1)} ${tr("now_lbl_days")}</div>
+        <div class="mt-perigee">
+          <span>${daysSincePerigee.toFixed(0)} ${tr("now_lbl_days_since_perigee")}</span>
+          <span style="margin-left:20px; color: var(--fg-dim);">${dateLbl}</span>
         </div>
+
+        <div class="mt-box mt-home">
+          <div class="mt-title">Home</div>
+          <div><b>${(locator || "---").toUpperCase()}</b></div>
+          <div>Lat <b>${homeLatLbl}</b></div>
+          <div>Lon <b>${homeLonLbl}</b></div>
+        </div>
+
+        <div class="mt-box mt-utc">
+          <div class="mt-title">UTC</div>
+          <div class="mt-clock">${hhmmss}</div>
+        </div>
+
+        <div class="mt-box mt-dx-info">
+          <div class="mt-title">DX</div>
+          <div><b style="color: var(--link-color);">${hasDx ? dxInfo.locator : "—"}</b></div>
+          ${hasDx ? `<div>Lat <b>${dxLatLbl}</b></div><div>Lon <b>${dxLonLbl}</b></div>` : `<div style="color: var(--fg-dim); font-size:0.85em;">${tr("now_hint_enter_dx")}</div>`}
+        </div>
+
+        <div class="mt-dx-row">
+          <span class="mt-title-inline">DX</span>
+          ${hasDx ? `
+            <span>Azimuth <b>${dxAz.toFixed(2)}°</b></span>
+            <span>Elevation <b>${dxEl >= 0 ? "+" : ""}${dxEl.toFixed(2)}°</b></span>
+            <span>${Math.round(freq/1e6)}MHz Doppler <b>${dxDop >= 0 ? "+" : ""}${Math.round(dxDop)}Hz</b></span>
+            <span>Polarity <b>${polOff >= 0 ? "+" : ""}${polOff.toFixed(0)}°</b></span>
+            <span>MNR <b class="${mnrCls}">${mnr.toFixed(0)}dB</b></span>
+          ` : `<span style="color: var(--fg-dim);">${tr("now_hint_enter_dx")}</span>`}
+        </div>
+
+        <div class="mt-box mt-az">
+          <div class="mt-title">Azimuth</div>
+          <div class="mt-big">${moon.az.toFixed(2)}°</div>
+        </div>
+
+        <div class="mt-txrx">
+          <div class="mt-txrx-top">EAST &nbsp; 2 Mins</div>
+          <div class="mt-txrx-mode ${txRxCls}">${txRxLbl}</div>
+          <div>Home Echo</div>
+          <div class="mt-txrx-echo">${dop >= 0 ? "+" : ""}${Math.round(dop)}Hz</div>
+        </div>
+
+        <div class="mt-box mt-el">
+          <div class="mt-title">Elevation</div>
+          <div class="mt-big ${visible ? "eme-green" : "eme-red"}">${moon.el >= 0 ? "+" : ""}${moon.el.toFixed(2)}°</div>
+        </div>
+
+        <div class="mt-box mt-topo">
+          <div class="mt-title">Topocentric</div>
+          <div>LHA <b>${ha.lhaDeg.toFixed(2)}°</b></div>
+          <div>GHA <b>${ha.ghaDeg.toFixed(2)}°</b></div>
+          <div>Decl <b>${ha.decDeg >= 0 ? "+" : ""}${ha.decDeg.toFixed(2)}°</b></div>
+        </div>
+
+        <div class="mt-box mt-rxpol">
+          <div class="mt-title">RX Polarisation</div>
+          <label><input type="radio" name="mt-rxpol" ${polHomeDeg === 0 ? "checked" : ""} value="0"> H</label>
+          <label><input type="radio" name="mt-rxpol" ${polHomeDeg === 90 ? "checked" : ""} value="90"> V</label>
+          <div><label><input type="radio" name="mt-rxpol" value="deg" ${polHomeDeg !== 0 && polHomeDeg !== 90 ? "checked" : ""}> Degrees</label>
+          <input type="number" id="mt-rxpol-deg" min="0" max="180" value="${polHomeDeg}" style="width:50px;"></div>
+        </div>
+
+        <div class="mt-box mt-txpol">
+          <div class="mt-title">TX Polarisation</div>
+          ${hasDx ? `<div><b>${homePolLbl === "H" ? "V" : homePolLbl === "V" ? "H" : homePolLbl}</b></div><div>${polOff >= 0 ? "+" : ""}${polOff.toFixed(0)}°</div>` : `<div style="color: var(--fg-dim);">—</div>`}
+        </div>
+
       </div>
     `;
+
+    // Wiring : radio H/V/Deg modifie le pol Home input principal
+    const mtRxDeg = body.querySelector("#mt-rxpol-deg");
+    body.querySelectorAll('input[name="mt-rxpol"]').forEach(r => {
+      r.addEventListener("change", () => {
+        if (r.value === "0") $("#pol-home").value = "0";
+        else if (r.value === "90") $("#pol-home").value = "90";
+        else if (r.value === "deg" && mtRxDeg) $("#pol-home").value = mtRxDeg.value;
+        $("#pol-home").dispatchEvent(new Event("change"));
+      });
+    });
+    if (mtRxDeg) {
+      mtRxDeg.addEventListener("change", () => {
+        $("#pol-home").value = mtRxDeg.value;
+        $("#pol-home").dispatchEvent(new Event("change"));
+      });
+    }
     if (refreshHint) {
       refreshHint.textContent = tr("refresh_hint");
     }

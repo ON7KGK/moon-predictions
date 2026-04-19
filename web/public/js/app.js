@@ -11,6 +11,23 @@ import {
   DIST_GREEN, DIST_ORANGE, PL_GREEN, PL_ORANGE,
 } from "./utils.js";
 import { apiPasses, apiNowDetail, apiMoon, apiPassTimeline, apiLocator } from "./api.js";
+import { computeSpreadingBistatic, computePolarizationOffset, computeMnr, locatorToLatLon } from "./moon-calc.js";
+import { MakeTime } from "https://esm.sh/astronomy-engine@2.1.19";
+
+// Helper : retourne lat/lon de la station DX si locator valide, sinon null
+function getDxInfo() {
+  const dx = ($("#dx-locator")?.value || "").trim();
+  if (!dx) return null;
+  try {
+    const [lat, lon] = locatorToLatLon(dx);
+    return { locator: dx.toUpperCase(), lat, lon };
+  } catch (e) {
+    return null;
+  }
+}
+function getPolHome() {
+  return parseInt($("#pol-home")?.value) || 90;
+}
 
 const state = {
   lat: 0, lon: 0, altM: 0,
@@ -46,6 +63,8 @@ function loadPrefs() {
     $("#callsign").value = state.callsign;
     $("#locator").value = state.locator;
     $("#altitude").value = state.altM;
+    if (p.dxLocator !== undefined) $("#dx-locator").value = p.dxLocator;
+    if (p.polHome !== undefined) $("#pol-home").value = p.polHome;
   } catch (e) {}
 }
 
@@ -64,6 +83,8 @@ function savePrefs() {
     distRef: state.distRef,
     horizonMode: state.horizonMode,
     theme: state.theme,
+    dxLocator: $("#dx-locator").value.trim(),
+    polHome: parseInt($("#pol-home").value) || 90,
   }));
 }
 
@@ -175,8 +196,12 @@ function renderTable() {
     tr("col_total_pl", { freq: freqLabel }),
     tr("col_moon_sun"),
     tr("col_libration"),
-    tr("col_spread_min", { freq: freqLabel }),
-    tr("col_spread_max", { freq: freqLabel }),
+    (getDxInfo()
+      ? tr("col_spreading_min", { freq: freqLabel, dx: getDxInfo().locator })
+      : tr("col_spread_min", { freq: freqLabel })),
+    (getDxInfo()
+      ? tr("col_spreading_max", { freq: freqLabel, dx: getDxInfo().locator })
+      : tr("col_spread_max", { freq: freqLabel })),
     tr("col_quality"),
   ];
   if (showPhase) cols.push(tr("col_phase"));
@@ -197,7 +222,7 @@ function renderTable() {
   const body = $("#passes-body");
   body.innerHTML = "";
 
-  // Ligne MAINTENANT (async) + auto-refresh toutes les 10 secondes
+  // Ligne MAINTENANT (async) + auto-refresh temps reel (500 ms = 2 Hz)
   if (state.lat !== 0 || state.lon !== 0) {
     const nowRow = el("tr", { class: "now-row", title: tr("tip_row_click") });
     for (let i = 0; i < cols.length; i++) nowRow.appendChild(el("td", {}, "..."));
@@ -214,7 +239,7 @@ function renderTable() {
         return;
       }
       fillNowRow(nowRow, freq, showPhase, tzOffset, plPerigee);
-    }, 10000);
+    }, 500);
   }
 
   // Lignes passages
@@ -251,14 +276,26 @@ function renderTable() {
     const libR = d.libRateMin || d.libRate || 0;
     row.appendChild(el("td", { class: libR < 0.10 ? "eme-green" : libR < 0.25 ? "eme-orange" : "eme-red" }, `${libR.toFixed(2)}°/h`));
 
-    const spMin = (d.spreadMin || d.dopplerSpread || 0) * freq / 10.368e9;
+    // Spread min/max : monostatique par defaut, bistatique si DX configure
+    const dxInfo = getDxInfo();
+    let spMin, spMax;
+    if (dxInfo && d.spreadMinTime && d.spreadMaxTime) {
+      const tMin = MakeTime(new Date(d.spreadMinTime));
+      const tMax = MakeTime(new Date(d.spreadMaxTime));
+      spMin = computeSpreadingBistatic(state.lat, state.lon, state.altM,
+        dxInfo.lat, dxInfo.lon, 0, tMin, freq);
+      spMax = computeSpreadingBistatic(state.lat, state.lon, state.altM,
+        dxInfo.lat, dxInfo.lon, 0, tMax, freq);
+    } else {
+      spMin = (d.spreadMin || d.dopplerSpread || 0) * freq / 10.368e9;
+      spMax = (d.spreadMax || d.dopplerSpread || 0) * freq / 10.368e9;
+    }
     const spMinT = d.spreadMinTime
       ? formatHM(new Date(new Date(d.spreadMinTime).getTime() + tzOffset), false)
       : "";
     const spMinCls = spMin < 50 ? "eme-green" : spMin < 150 ? "eme-orange" : "eme-red";
     row.appendChild(el("td", { class: spMinCls }, `${Math.round(spMin)} Hz${spMinT ? " @ " + spMinT : ""}`));
 
-    const spMax = (d.spreadMax || d.dopplerSpread || 0) * freq / 10.368e9;
     const spMaxT = d.spreadMaxTime
       ? formatHM(new Date(new Date(d.spreadMaxTime).getTime() + tzOffset), false)
       : "";
@@ -309,7 +346,13 @@ async function fillNowRow(row, freq, showPhase, tzOffset, plPerigee) {
       const dm = Math.floor(Math.abs(durMs) / 60000) % 60;
       durTxt = `${dh}h${String(dm).padStart(2,"0")}`;
     }
-    const spread = lib.dopplerSpreadHz * freq / 10.368e9;
+    // Spread pour MAINTENANT : monostatique sauf si DX rempli -> bistatique
+    const dxInfo = getDxInfo();
+    let spread = lib.dopplerSpreadHz * freq / 10.368e9;
+    if (dxInfo) {
+      spread = computeSpreadingBistatic(state.lat, state.lon, state.altM,
+        dxInfo.lat, dxInfo.lon, 0, MakeTime(new Date()), freq);
+    }
     const nowUtc = new Date().toISOString().slice(11, 16) + " UTC";
 
     const nowClass = visible ? "now-hi" : "";
@@ -465,6 +508,15 @@ async function init() {
   });
   // ($("#phase-chk") retire — Phase toujours affichee)
   $("#local-time-chk").addEventListener("change", renderTable);
+  $("#dx-locator").addEventListener("input", () => {
+    savePrefs();
+    if (state.passes.length) renderTable();
+  });
+  $("#pol-home").addEventListener("change", () => {
+    savePrefs();
+    // Rafraichir MAINTENANT pour que le MNR prenne en compte la nouvelle pol
+    if (state.passes.length) renderTable();
+  });
   $("#freq").addEventListener("change", () => {
     if (state.passes.length) {
       // Recalcul score avec nouvelle frequence

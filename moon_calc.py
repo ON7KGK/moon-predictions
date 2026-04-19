@@ -308,12 +308,16 @@ def compute_degradation(lat: float, lon: float, alt_m: float, t_sky,
     location = wgs84.latlon(lat, lon, elevation_m=alt_m)
     observer = eph['earth'] + location
 
-    # Distance topocentrique
+    # Distance topocentrique (observateur -> Lune) : affichee a titre d'info
     app = observer.at(t_sky).observe(eph['moon']).apparent()
     dist_km = app.distance().km
 
-    # Path loss extra vs perigee (facteur 40 pour aller-retour d^4)
-    pl_extra = 40.0 * math.log10(dist_km / 356500.0) if dist_km > 0 else 0.0
+    # Path loss extra vs perigee : utilise la distance GEOCENTRIQUE
+    # (convention MoonSked et references EME standard, le perigee
+    # 356500 km est defini Terre-centre -> Lune-centre).
+    # Facteur 40 = 10 * 4 pour le trajet aller-retour (d^4).
+    dist_geo_km = eph['earth'].at(t_sky).observe(eph['moon']).apparent().distance().km
+    pl_extra = 40.0 * math.log10(dist_geo_km / 356500.0) if dist_geo_km > 0 else 0.0
 
     # Bruit de ciel
     t_sky_k = compute_sky_temp(lat, lon, alt_m, t_sky, freq_hz)
@@ -704,9 +708,11 @@ def compute_libration(lat: float, lon: float, alt_m: float,
 
     # Doppler spread a 10.368 GHz
     # v_tangentielle = lib_rate × R_lune × pi/180
+    # EME = trajet aller-retour monostatique : facteur 4 (pas 2 comme one-way)
+    # B_D = 4 × omega × R_moon × f / c  (Cole KL7UW, W5ZN, NK6K)
     R_MOON = 1737.4  # km
     v_tan = lib_rate * R_MOON * math.pi / 180 * 1000 / 3600  # m/s
-    spread = 2 * v_tan * 10.368e9 / 3e8  # Hz
+    spread = 4 * v_tan * 10.368e9 / 3e8  # Hz
 
     return {
         "lib_lon": round(lon0, 2),
@@ -714,6 +720,108 @@ def compute_libration(lat: float, lon: float, alt_m: float,
         "lib_rate": round(lib_rate, 4),
         "doppler_spread_hz": round(spread, 0),
     }
+
+
+def _libration_rate_at(observer, t_sky) -> float:
+    """Retourne le taux de libration |omega| en deg/h vu par 'observer' a t_sky."""
+    dt = 0.5 / 24  # 30 min
+    t1 = ts.tt_jd(t_sky.tt - dt)
+    t2 = ts.tt_jd(t_sky.tt + dt)
+    lon1, lat1 = _libration_at(observer, t1)
+    lon2, lat2 = _libration_at(observer, t2)
+    dlon = lon2 - lon1
+    if dlon > 180: dlon -= 360
+    if dlon < -180: dlon += 360
+    dlat = lat2 - lat1
+    return math.sqrt(dlon * dlon + dlat * dlat)
+
+
+def _pol_hustig(lat: float, az: float, el: float) -> float:
+    """Polarisation spatiale d'une antenne (degres) par rapport a l'axe
+    polaire terrestre — formule Hustig/Pettis KL7WE, referencee dans
+    le manuel MoonSked (Appendix 1).
+
+        P = atan2(sin(L)*cos(E) - cos(L)*cos(A)*sin(E), cos(L)*sin(A))
+
+    ou L = latitude station, A = azimut Lune, E = elevation Lune.
+    """
+    L = math.radians(lat)
+    A = math.radians(az)
+    E = math.radians(el)
+    num = math.sin(L) * math.cos(E) - math.cos(L) * math.cos(A) * math.sin(E)
+    den = math.cos(L) * math.sin(A)
+    return math.degrees(math.atan2(num, den))
+
+
+def compute_polarization_offset(lat_h: float, lon_h: float,
+                                lat_d: float, lon_d: float,
+                                t_sky) -> float:
+    """Decalage spatial de polarisation entre Home et DX en degres.
+
+    Formule officielle EME (Hustig/Pettis KL7WE via manuel MoonSked) :
+    chaque station calcule son angle de polarisation par rapport au
+    pole celeste via sa position (lat) et l'az/el de la Lune. L'offset
+    est la difference P_home - P_dx, normalisee dans [-90, +90] degres.
+
+    Ignore la rotation Faraday ionospherique (negligeable >= 1 GHz).
+    """
+    # Position Lune vue de Home et DX (topocentrique, ephemerides Skyfield)
+    loc_h = wgs84.latlon(lat_h, lon_h)
+    loc_d = wgs84.latlon(lat_d, lon_d)
+    obs_h = eph['earth'] + loc_h
+    obs_d = eph['earth'] + loc_d
+    alt_h, az_h, _ = obs_h.at(t_sky).observe(eph['moon']).apparent().altaz()
+    alt_d, az_d, _ = obs_d.at(t_sky).observe(eph['moon']).apparent().altaz()
+    p_h = _pol_hustig(lat_h, az_h.degrees, alt_h.degrees)
+    p_d = _pol_hustig(lat_d, az_d.degrees, alt_d.degrees)
+    offset = p_h - p_d
+    # Normaliser dans [-90, +90] (convention MoonSked)
+    while offset > 90: offset -= 180
+    while offset < -90: offset += 180
+    return offset
+
+
+def compute_mnr(offset_deg: float) -> float:
+    """Maximum Non-Reciprocity (MNR) en dB a partir de l'offset spatial.
+
+    Concept introduit par Paul Kelly N1BUG (Z-TRACK, repris dans MoonSked).
+    Donne la non-reciprocite maximale que la rotation Faraday peut
+    produire sur le trajet EME bistatique pour un offset spatial donne.
+
+        MNR = -20 * log10(|cos(2*offset)|)   (cape a 25 dB)
+
+    - Offset 0 ou 90 deg   -> MNR = 0 dB (reciprocite garantie)
+    - Offset 45 deg         -> MNR -> infini (risque "one-way" maximal)
+    - N1BUG : QSO faciles si MNR < 3 dB (90% des logs EME)
+    """
+    cos_2 = abs(math.cos(math.radians(2.0 * offset_deg)))
+    if cos_2 < 1e-3:
+        return 25.0
+    mnr = -20.0 * math.log10(cos_2)
+    return min(mnr, 25.0)
+
+
+def compute_spreading_bistatic(lat_h: float, lon_h: float, alt_h: float,
+                               lat_d: float, lon_d: float, alt_d: float,
+                               t_sky, freq_hz: float = 10368e6) -> float:
+    """Spreading Doppler bistatique Home -> Lune -> DX en Hz.
+
+    Formule bistatique (convention MoonSked, G3WDG 2010) :
+        Spreading = 2 * f * (v_home + v_dx) * R_moon / c
+    ou v_X = taux_libration_vu_de_X * pi/180 / 3600 (rad/s).
+
+    Se reduit a l'Echo Width monostatique (4 * f * v * R / c) quand DX = Home.
+    """
+    loc_h = wgs84.latlon(lat_h, lon_h, elevation_m=alt_h)
+    loc_d = wgs84.latlon(lat_d, lon_d, elevation_m=alt_d)
+    obs_h = eph['earth'] + loc_h
+    obs_d = eph['earth'] + loc_d
+    rate_h = _libration_rate_at(obs_h, t_sky)  # deg/h
+    rate_d = _libration_rate_at(obs_d, t_sky)
+    R_MOON = 1737.4  # km
+    v_h = rate_h * R_MOON * math.pi / 180 * 1000 / 3600  # m/s
+    v_d = rate_d * R_MOON * math.pi / 180 * 1000 / 3600
+    return 2.0 * freq_hz * (v_h + v_d) / 3e8
 
 
 def enrich_moon_pass(lat: float, lon: float, alt_m: float,
@@ -810,10 +918,10 @@ def enrich_moon_pass(lat: float, lon: float, alt_m: float,
     dlat = lat2_arr - lat1_arr
     lib_rates = np.sqrt(dlon ** 2 + dlat ** 2)  # deg/h (ecart 1h)
 
-    # Spread a 10.368 GHz
+    # Spread a 10.368 GHz (monostatique, facteur 4)
     R_MOON = 1737.4  # km
     v_tan = lib_rates * R_MOON * math.pi / 180 * 1000 / 3600
-    spreads = 2 * v_tan * 10.368e9 / 3e8  # Hz
+    spreads = 4 * v_tan * 10.368e9 / 3e8  # Hz
 
     # Min/max
     imin = int(np.argmin(spreads))

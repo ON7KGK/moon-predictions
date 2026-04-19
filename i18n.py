@@ -15,7 +15,28 @@ _STRINGS = {
     # ── Interface station ──
     "lbl_callsign": {"fr": "Indicatif :", "nl": "Roepnaam :", "en": "Callsign:"},
     "lbl_locator": {"fr": "Locator :", "nl": "Locator :", "en": "Locator:"},
-    "lbl_altitude": {"fr": "Altitude :", "nl": "Hoogte :", "en": "Altitude:"},
+    "lbl_altitude": {"fr": "\u00c9l\u00e9vation :", "nl": "Elevatie :", "en": "Elevation:"},
+    "lbl_dx_locator": {"fr": "Locator DX :", "nl": "DX Locator :", "en": "DX Locator:"},
+    "lbl_pol_home": {"fr": "Pol Home :", "nl": "Pol Home :", "en": "Home Pol:"},
+    "tip_pol_home": {
+        "fr": "Polarisation TX de votre station (en degres).\n\n  0\u00b0  = Horizontale (H)\n  90\u00b0 = Verticale (V)\n  Autre = polarisation oblique (slant/dipole incline)\n\nPar defaut 90\u00b0 (V). Utilise pour calculer la\npolarisation vue chez la station DX apres rotation\ngeometrique spatiale.\n\nLa rotation Faraday ionospherique est negligeable\na partir de 1 GHz et n'est pas prise en compte.",
+        "nl": "TX-polarisatie van uw station (in graden).\n\n  0\u00b0  = Horizontaal (H)\n  90\u00b0 = Verticaal (V)\n\nStandaard 90\u00b0 (V). Gebruikt om de polarisatie\nte berekenen zoals gezien bij het DX-station\nna ruimtelijke rotatie.\n\nIonosferische Faraday-rotatie is verwaarloosbaar\nboven 1 GHz.",
+        "en": "TX polarization of your station (degrees).\n\n  0\u00b0  = Horizontal (H)\n  90\u00b0 = Vertical (V)\n  Other = slant polarization\n\nDefault 90\u00b0 (V). Used to compute the polarization\nseen at the DX station after spatial rotation.\n\nIonospheric Faraday rotation is negligible above\n1 GHz and is not modeled.",
+    },
+    "now_lbl_pol_home": {"fr": "Pol Home", "nl": "Pol Home", "en": "Home Pol"},
+    "now_lbl_pol_dx": {"fr": "Pol vue chez DX", "nl": "Pol gezien bij DX", "en": "Pol seen at DX"},
+    "now_lbl_pol_offset": {"fr": "Decalage spatial", "nl": "Ruimtelijk verschil", "en": "Spatial offset"},
+    "now_lbl_mnr": {"fr": "MNR (non-reciprocite max)", "nl": "MNR (max niet-wederkerigheid)", "en": "MNR (max non-reciprocity)"},
+    "now_lbl_mnr_hint": {
+        "fr": "&lt; 3 dB : bon / 3-10 dB : a risque / &gt; 10 dB : one-way probable",
+        "nl": "&lt; 3 dB : goed / 3-10 dB : risico / &gt; 10 dB : one-way waarschijnlijk",
+        "en": "&lt; 3 dB : good / 3-10 dB : risky / &gt; 10 dB : one-way likely",
+    },
+    "tip_dx_locator": {
+        "fr": "Locator Maidenhead de la station DX (optionnel).\n\nSi rempli, une colonne 'Spreading (DX)' est affichee,\nqui calcule le Doppler spread bistatique\nHome \u2192 Lune \u2192 DX.\n\nVide = uniquement Echo Width monostatique.",
+        "nl": "Maidenhead locator van het DX-station (optioneel).\n\nIndien ingevuld wordt een kolom 'Spreading (DX)' getoond,\ndie de bistatische Doppler-spreiding berekent\nHome \u2192 Maan \u2192 DX.\n\nLeeg = alleen monostatische Echo Width.",
+        "en": "Maidenhead locator of the DX station (optional).\n\nIf filled, a 'Spreading (DX)' column is shown,\ncomputing the bistatic Doppler spread\nHome \u2192 Moon \u2192 DX.\n\nEmpty = monostatic Echo Width only.",
+    },
     "btn_compute": {"fr": "\u25b6  Calculer", "nl": "\u25b6  Berekenen", "en": "\u25b6  Compute"},
     "btn_save": {"fr": "\U0001f4be  Sauvegarder", "nl": "\U0001f4be  Opslaan", "en": "\U0001f4be  Save"},
     "btn_saved": {"fr": "\u2713  Sauvegard\u00e9", "nl": "\u2713  Opgeslagen", "en": "\u2713  Saved"},
@@ -80,9 +101,12 @@ _STRINGS = {
     "col_total_pl": {"fr": "Total PL ({freq})", "nl": "Totaal PL ({freq})", "en": "Total PL ({freq})"},
     "col_moon_sun": {"fr": "Moon-Sun", "nl": "Maan-Zon", "en": "Moon-Sun"},
     "col_libration": {"fr": "Libration", "nl": "Libratie", "en": "Libration"},
-    "col_spread": {"fr": "Spread ({freq})", "nl": "Spread ({freq})", "en": "Spread ({freq})"},
-    "col_spread_min": {"fr": "Spread min ({freq})", "nl": "Spread min ({freq})", "en": "Spread min ({freq})"},
-    "col_spread_max": {"fr": "Spread max ({freq})", "nl": "Spread max ({freq})", "en": "Spread max ({freq})"},
+    "col_spread": {"fr": "Echo Width ({freq})", "nl": "Echo Width ({freq})", "en": "Echo Width ({freq})"},
+    "col_spread_min": {"fr": "Echo Width min ({freq})", "nl": "Echo Width min ({freq})", "en": "Echo Width min ({freq})"},
+    "col_spreading_min": {"fr": "Spreading min vers {dx} ({freq})", "nl": "Spreading min naar {dx} ({freq})", "en": "Spreading min to {dx} ({freq})"},
+    "col_spreading_max": {"fr": "Spreading max vers {dx} ({freq})", "nl": "Spreading max naar {dx} ({freq})", "en": "Spreading max to {dx} ({freq})"},
+    "now_lbl_spreading": {"fr": "Spreading", "nl": "Spreading", "en": "Spreading"},
+    "col_spread_max": {"fr": "Echo Width max ({freq})", "nl": "Echo Width max ({freq})", "en": "Echo Width max ({freq})"},
     "col_quality": {"fr": "Qualit\u00e9", "nl": "Kwaliteit", "en": "Quality"},
 
     # ── Fenetre detail d'une journee (double-clic sur ligne) ──
@@ -109,7 +133,7 @@ _STRINGS = {
     "now_lbl_tsky": {"fr": "Temp\u00e9rature de ciel", "nl": "Hemelsetemperatuur", "en": "Sky temperature"},
     "now_lbl_doppler": {"fr": "Doppler central", "nl": "Centrale Doppler", "en": "Central Doppler"},
     "now_lbl_echo": {"fr": "Home Echo", "nl": "Home Echo", "en": "Home Echo"},
-    "now_lbl_spread": {"fr": "Doppler spread", "nl": "Doppler spread", "en": "Doppler spread"},
+    "now_lbl_spread": {"fr": "Echo Width", "nl": "Echo Width", "en": "Echo Width"},
     "now_lbl_libration": {"fr": "Libration", "nl": "Libratie", "en": "Libration"},
     "now_lbl_pl_extra": {"fr": "Path loss extra", "nl": "Path loss extra", "en": "Path loss extra"},
     "now_lbl_moonsun": {"fr": "Angle Lune-Soleil", "nl": "Maan-Zon hoek", "en": "Moon-Sun angle"},
@@ -127,9 +151,9 @@ _STRINGS = {
         "en": "Doppler ({freq})",
     },
     "col_day_spread": {
-        "fr": "Spread ({freq})",
-        "nl": "Spread ({freq})",
-        "en": "Spread ({freq})",
+        "fr": "Echo Width ({freq})",
+        "nl": "Echo Width ({freq})",
+        "en": "Echo Width ({freq})",
     },
     "col_day_tsky": {"fr": "TSky", "nl": "TSky", "en": "TSky"},
     "col_day_dgr": {"fr": "DGR", "nl": "DGR", "en": "DGR"},
@@ -245,10 +269,14 @@ _STRINGS = {
     "help_title": {"fr": "Aide \u2014 Moon Predictions", "nl": "Help \u2014 Moon Predictions", "en": "Help \u2014 Moon Predictions"},
     "help_content": {
         "fr": (
+            "<div style='background:#b8860b; color:#fff; padding:8px 12px;"
+            " border-radius:4px; margin-bottom:10px;'>"
+            "<b>\u26a0 Version alpha</b> \u2014 programme en cours d'\u00e9volution. "
+            "Certaines fonctionnalit\u00e9s sont exp\u00e9rimentales.</div>"
             "<h2 style='color: #FFD700;'>Comment utiliser Moon Predictions</h2>"
             "<h3 style='color: #66aaff;'>1. Configuration de la station</h3>"
             "<p>Renseignez votre <b>indicatif</b> (optionnel), votre <b>QRA locator</b> "
-            "(6 ou 8 caract\u00e8res, ex: JO20CL) et votre <b>altitude</b> en m\u00e8tres. "
+            "(6 ou 8 caract\u00e8res, ex: JO20CL) et votre <b>\u00e9l\u00e9vation</b> en m\u00e8tres. "
             "Cliquez <b>Sauvegarder</b> pour conserver ces informations.</p>"
             "<h3 style='color: #66aaff;'>2. Calcul des passages</h3>"
             "<p>Cliquez <b>Calculer</b> pour afficher les passages de la Lune "
@@ -274,7 +302,7 @@ _STRINGS = {
             "<span style='color:#44ff44;'>vert</span> = signal propre, "
             "<span style='color:#ff4444;'>rouge</span> = signal \u00e9tal\u00e9. "
             "<b>Critique \u00e0 10 GHz et au-dessus !</b></li>"
-            "<li><b>Spread</b> : \u00e9talement Doppler du signal r\u00e9fl\u00e9chi en Hz</li>"
+            "<li><b>Echo Width</b> : \u00e9talement Doppler du signal r\u00e9fl\u00e9chi en Hz</li>"
             "<li><b>Qualit\u00e9</b> : score global 0-10 combinant tous les facteurs</li>"
             "</ul>"
             "<h3 style='color: #66aaff;'>5. Score de qualit\u00e9</h3>"
@@ -294,7 +322,7 @@ _STRINGS = {
             "<h3 style='color: #66aaff;'>8. D\u00e9tail d'un passage (clic sur une ligne)</h3>"
             "<p>Cliquez sur n'importe quelle <b>ligne de passage</b> "
             "pour ouvrir une fen\u00eatre listant, <b>toutes les 30 minutes</b>, "
-            "tous les param\u00e8tres : AZ, EL, distance, Doppler, Spread, "
+            "tous les param\u00e8tres : AZ, EL, distance, Doppler, Echo Width, "
             "TSky, DGR, libration, angle Moon-Sun. C'est l'\u00e9quivalent "
             "de la vue Sked Maker (GM4JJJ) pour un op\u00e9rateur solo.</p>"
             "<h3 style='color: #66aaff;'>9. D\u00e9tail MAINTENANT (clic sur la premi\u00e8re ligne)</h3>"
@@ -318,10 +346,14 @@ _STRINGS = {
             "pour des explications d\u00e9taill\u00e9es.</p>"
         ),
         "nl": (
+            "<div style='background:#b8860b; color:#fff; padding:8px 12px;"
+            " border-radius:4px; margin-bottom:10px;'>"
+            "<b>\u26a0 Alpha versie</b> \u2014 programma in ontwikkeling. "
+            "Sommige functies zijn experimenteel.</div>"
             "<h2 style='color: #FFD700;'>Hoe Moon Predictions te gebruiken</h2>"
             "<h3 style='color: #66aaff;'>1. Stationsinstellingen</h3>"
             "<p>Vul uw <b>roepnaam</b> (optioneel), uw <b>QRA locator</b> "
-            "(6 of 8 tekens, bv: JO20CL) en uw <b>hoogte</b> in meters in. "
+            "(6 of 8 tekens, bv: JO20CL) en uw <b>elevatie</b> in meters in. "
             "Klik op <b>Opslaan</b> om deze informatie te bewaren.</p>"
             "<h3 style='color: #66aaff;'>2. Berekening</h3>"
             "<p>Klik op <b>Berekenen</b> om de maanpassages boven de horizon "
@@ -346,7 +378,7 @@ _STRINGS = {
             "<span style='color:#44ff44;'>groen</span> = schoon signaal, "
             "<span style='color:#ff4444;'>rood</span> = verspreid signaal. "
             "<b>Kritisch bij 10 GHz en hoger!</b></li>"
-            "<li><b>Spread</b>: Doppler-spreiding van het gereflecteerde signaal in Hz</li>"
+            "<li><b>Echo Width</b>: Echo Width van het gereflecteerde signaal in Hz</li>"
             "<li><b>Kwaliteit</b>: globale score 0-10</li>"
             "</ul>"
             "<h3 style='color: #66aaff;'>5. Kwaliteitsscore</h3>"
@@ -365,7 +397,7 @@ _STRINGS = {
             "<h3 style='color: #66aaff;'>8. Passage detail (klik op een regel)</h3>"
             "<p>Klik op een <b>passageregel</b> om een venster te openen met, "
             "<b>elke 30 minuten</b>, alle parameters: AZ, EL, afstand, Doppler, "
-            "Spread, TSky, DGR, libratie, Maan-Zon hoek. Dit is het equivalent "
+            "Echo Width, TSky, DGR, libratie, Maan-Zon hoek. Dit is het equivalent "
             "van de Sked Maker weergave (GM4JJJ) voor een solo operator.</p>"
             "<h3 style='color: #66aaff;'>9. NU detail (klik op de eerste regel)</h3>"
             "<p>Klik op de regel <b>NU</b> (eerste regel van de tabel) "
@@ -386,10 +418,14 @@ _STRINGS = {
             "<p style='color: #888;'>Beweeg over de kolomkoppen voor uitleg.</p>"
         ),
         "en": (
+            "<div style='background:#b8860b; color:#fff; padding:8px 12px;"
+            " border-radius:4px; margin-bottom:10px;'>"
+            "<b>\u26a0 Alpha version</b> \u2014 program under active development. "
+            "Some features are experimental.</div>"
             "<h2 style='color: #FFD700;'>How to use Moon Predictions</h2>"
             "<h3 style='color: #66aaff;'>1. Station setup</h3>"
             "<p>Enter your <b>callsign</b> (optional), your <b>QRA locator</b> "
-            "(6 or 8 characters, e.g. JO20CL) and your <b>altitude</b> in meters. "
+            "(6 or 8 characters, e.g. JO20CL) and your <b>elevation</b> in meters. "
             "Click <b>Save</b> to store this information.</p>"
             "<h3 style='color: #66aaff;'>2. Computation</h3>"
             "<p>Click <b>Compute</b> to display moon passes above the horizon "
@@ -414,7 +450,7 @@ _STRINGS = {
             "<span style='color:#44ff44;'>green</span> = clean signal, "
             "<span style='color:#ff4444;'>red</span> = spread signal. "
             "<b>Critical at 10 GHz and above!</b></li>"
-            "<li><b>Spread</b>: Doppler spread of reflected signal in Hz</li>"
+            "<li><b>Echo Width</b>: Echo Width of reflected signal in Hz</li>"
             "<li><b>Quality</b>: overall score 0-10</li>"
             "</ul>"
             "<h3 style='color: #66aaff;'>5. Quality score</h3>"
@@ -433,7 +469,7 @@ _STRINGS = {
             "<h3 style='color: #66aaff;'>8. Pass detail (click on a row)</h3>"
             "<p>Click any <b>pass row</b> to open a window listing, "
             "<b>every 30 minutes</b>, all parameters: AZ, EL, distance, Doppler, "
-            "Spread, TSky, DGR, libration, Moon-Sun angle. This is the "
+            "Echo Width, TSky, DGR, libration, Moon-Sun angle. This is the "
             "equivalent of the Sked Maker (GM4JJJ) view for a solo operator.</p>"
             "<h3 style='color: #66aaff;'>9. NOW detail (click on the first row)</h3>"
             "<p>Click the <b>NOW</b> row (first row of the table) "
@@ -488,9 +524,9 @@ _STRINGS = {
               "<a href='mailto:on7kgk@outlook.com'>on7kgk@outlook.com</a>",
     },
     "refresh_hint": {
-        "fr": "\u21bb Mise \u00e0 jour automatique toutes les 10 secondes",
-        "nl": "\u21bb Automatische update elke 10 seconden",
-        "en": "\u21bb Auto-update every 10 seconds",
+        "fr": "\u21bb Mise \u00e0 jour temps r\u00e9el (2 Hz)",
+        "nl": "\u21bb Realtime update (2 Hz)",
+        "en": "\u21bb Realtime update (2 Hz)",
     },
     "about_license": {"fr": "<b>Licence :</b> GNU GPL v3 \u2014 Open Source", "nl": "<b>Licentie :</b> GNU GPL v3 \u2014 Open Source", "en": "<b>License:</b> GNU GPL v3 \u2014 Open Source"},
     "btn_close": {"fr": "Fermer", "nl": "Sluiten", "en": "Close"},
@@ -553,8 +589,8 @@ _STRINGS = {
     "exp_col_extra_pl": {"fr": "Extra PL", "nl": "Extra PL", "en": "Extra PL"},
     "exp_col_total_pl": {"fr": "Total PL ({freq})", "nl": "Totaal PL ({freq})", "en": "Total PL ({freq})"},
     "exp_col_moon_sun": {"fr": "Moon-Sun", "nl": "Maan-Zon", "en": "Moon-Sun"},
-    "exp_col_spread_min": {"fr": "Spread min ({freq})", "nl": "Spread min ({freq})", "en": "Spread min ({freq})"},
-    "exp_col_spread_max": {"fr": "Spread max ({freq})", "nl": "Spread max ({freq})", "en": "Spread max ({freq})"},
+    "exp_col_spread_min": {"fr": "Echo Width min ({freq})", "nl": "Echo Width min ({freq})", "en": "Echo Width min ({freq})"},
+    "exp_col_spread_max": {"fr": "Echo Width max ({freq})", "nl": "Echo Width max ({freq})", "en": "Echo Width max ({freq})"},
     "exp_col_quality": {"fr": "Qualité", "nl": "Kwaliteit", "en": "Quality"},
     "exp_col_phase": {"fr": "Phase", "nl": "Fase", "en": "Phase"},
     "exp_file_filter_txt": {"fr": "Texte (*.txt)", "nl": "Tekst (*.txt)", "en": "Text (*.txt)"},

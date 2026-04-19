@@ -356,6 +356,109 @@ input[type="checkbox"] {
 .now-dashboard .big { font-size: 1.2em; }
 .now-dashboard .status { font-size: 1.15em; font-weight: bold; }
 
+/* ─── Dashboard MAINTENANT — layout MoonSked Moon Track ─── */
+.mt-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  gap: 8px;
+  font-size: 0.95em;
+}
+.mt-box {
+  border: 1px solid var(--btn-border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  background: var(--dlg-bg);
+}
+.mt-title {
+  font-size: 0.85em;
+  color: var(--fg-dim);
+  margin-bottom: 3px;
+}
+.mt-title-inline {
+  font-size: 0.85em;
+  color: var(--fg-dim);
+  margin-right: 10px;
+  display: inline-block;
+  min-width: 24px;
+}
+.mt-range-val { font-size: 1.2em; font-weight: bold; color: var(--link-color); display: inline-block; }
+.mt-range-dgr { color: var(--fg-dim); display: inline-block; margin-left: 6px; }
+.mt-range-bar { height: 6px; margin-top: 4px; border-radius: 2px; }
+.mt-range-bar.eme-green { background: var(--eme-green); }
+.mt-range-bar.eme-orange { background: var(--eme-orange); }
+.mt-range-bar.eme-red { background: var(--eme-red); }
+
+.mt-dgr { line-height: 1.5; }
+.mt-geo { position: relative; }
+.mt-phase {
+  position: absolute; top: 8px; right: 10px;
+  font-size: 1.6em; line-height: 1;
+}
+
+.mt-perigee {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 4px 0;
+  font-size: 0.95em;
+}
+
+.mt-home, .mt-dx-info { line-height: 1.5; }
+.mt-home b, .mt-dx-info b { font-family: monospace; }
+
+.mt-utc {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.mt-clock {
+  font-family: "Consolas", monospace;
+  font-size: 2.8em;
+  font-weight: bold;
+  color: var(--link-color);
+  line-height: 1;
+}
+
+.mt-dx-row {
+  grid-column: 1 / -1;
+  display: flex; flex-wrap: wrap; gap: 18px;
+  padding: 6px 10px;
+  border: 1px solid var(--btn-border);
+  border-radius: 4px;
+  background: var(--dlg-bg);
+  align-items: baseline;
+}
+.mt-dx-row b { font-family: monospace; }
+
+.mt-az, .mt-el {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 90px;
+}
+.mt-big {
+  font-family: "Consolas", monospace;
+  font-size: 2.4em;
+  font-weight: bold;
+  color: var(--link-color);
+  line-height: 1;
+}
+
+.mt-txrx {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border: 1px solid var(--btn-border); border-radius: 4px;
+  background: var(--dlg-bg); padding: 8px;
+}
+.mt-txrx-top { font-size: 0.85em; color: var(--fg-dim); }
+.mt-txrx-mode {
+  font-family: "Consolas", monospace;
+  font-size: 2em; font-weight: bold;
+  margin: 4px 0;
+}
+.mt-txrx-mode.tx-mode { color: var(--eme-red); }
+.mt-txrx-mode.rx-mode { color: var(--eme-green); }
+.mt-txrx-echo { font-family: monospace; font-weight: bold; }
+
+.mt-topo, .mt-rxpol, .mt-txpol { line-height: 1.5; }
+.mt-rxpol label { display: block; font-size: 0.95em; }
+.mt-rxpol input[type="radio"] { margin-right: 4px; }
+.mt-rxpol input[type="number"] { margin-left: 4px; }
+
 /* ─── Tooltip custom ─── */
 [data-tip] { position: relative; }
 .tooltip-box {

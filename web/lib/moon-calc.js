@@ -268,15 +268,45 @@ export function computeLibration(lat, lon, altM, t) {
   if (dlon < -180) dlon += 360;
   const dlat = b2 - b1;
   const libRate = Math.sqrt(dlon * dlon + dlat * dlat); // deg/h
-  // Doppler spread a 10.368 GHz
+  // Doppler spread a 10.368 GHz (EME monostatique = facteur 4)
+  // B_D = 4 * omega * R_moon * f / c  (Cole KL7UW, W5ZN, NK6K)
   const vTan = libRate * R_MOON_KM * Math.PI / 180 * 1000 / 3600;
-  const spread = 2 * vTan * 10.368e9 / C_LIGHT;
+  const spread = 4 * vTan * 10.368e9 / C_LIGHT;
   return {
     libLon: Math.round(l0 * 100) / 100,
     libLat: Math.round(b0 * 100) / 100,
     libRate: Math.round(libRate * 10000) / 10000,
     dopplerSpreadHz: Math.round(spread),
   };
+}
+
+// Taux de libration |omega| en deg/h vu d'un observateur donne
+function librationRateAt(observer, t) {
+  const dtDays = 0.5 / 24;
+  const tm = t.AddDays(-dtDays);
+  const tp = t.AddDays(+dtDays);
+  const { lon: l1, lat: b1 } = librationAt(observer, tm);
+  const { lon: l2, lat: b2 } = librationAt(observer, tp);
+  let dlon = l2 - l1;
+  if (dlon > 180) dlon -= 360;
+  if (dlon < -180) dlon += 360;
+  const dlat = b2 - b1;
+  return Math.sqrt(dlon * dlon + dlat * dlat);
+}
+
+// Spreading Doppler bistatique Home -> Lune -> DX en Hz
+// Formule : 2 * f * (v_home + v_dx) * R_moon / c
+// Se reduit a l'Echo Width monostatique quand DX = Home.
+export function computeSpreadingBistatic(latH, lonH, altH, latD, lonD, altD, t,
+    freqHz = 10368e6) {
+  const obsH = new Observer(latH, lonH, altH);
+  const obsD = new Observer(latD, lonD, altD);
+  const t0 = t instanceof AstroTime ? t : MakeTime(t);
+  const rateH = librationRateAt(obsH, t0);
+  const rateD = librationRateAt(obsD, t0);
+  const vH = rateH * R_MOON_KM * Math.PI / 180 * 1000 / 3600;
+  const vD = rateD * R_MOON_KM * Math.PI / 180 * 1000 / 3600;
+  return 2 * freqHz * (vH + vD) / C_LIGHT;
 }
 
 // ─── Doppler shift (central, aller-retour) ────────────────────────
@@ -344,7 +374,10 @@ export function computeDegradation(lat, lon, altM, t,
   const observer = new Observer(lat, lon, altM);
   const t0 = t instanceof AstroTime ? t : MakeTime(t);
   const { distKm } = moonAltAzDist(observer, t0);
-  const plExtra = distKm > 0 ? 40 * Math.log10(distKm / 356500) : 0;
+  // Path loss extra vs perigee : distance GEOCENTRIQUE (convention MoonSked,
+  // perigee 356500 km defini Terre-centre -> Lune-centre). Facteur 40 = d^4 aller-retour.
+  const distGeoKm = geoMoonDistKm(t0);
+  const plExtra = distGeoKm > 0 ? 40 * Math.log10(distGeoKm / 356500) : 0;
   const tSky = computeSkyTemp(lat, lon, altM, t0, freqHz);
   const tRef = tSysK + T_CMB + T_MOON;
   const tNow = tSysK + tSky + T_MOON;

@@ -23,7 +23,7 @@ from PyQt6.QtWidgets import (
     QLabel, QLineEdit, QSpinBox, QPushButton, QTableWidget,
     QTableWidgetItem, QHeaderView, QSlider, QCheckBox, QComboBox,
     QFileDialog, QMessageBox, QGroupBox, QScrollArea, QDialog,
-    QRadioButton, QButtonGroup,
+    QRadioButton, QButtonGroup, QGridLayout, QFrame,
 )
 from PyQt6.QtCore import Qt, QSettings, QTimer
 from PyQt6.QtGui import QColor, QFont, QIcon, QTextDocument, QPageLayout
@@ -33,12 +33,13 @@ from PyQt6.QtWidgets import QToolTip
 from moon_calc import (
     locator_to_latlon, get_moon_passes, enrich_moon_pass, compute_moon,
     sample_pass_timeline, compute_hour_angles, days_since_perigee,
-    compute_degradation, compute_libration, compute_sun, ts as _ts,
+    compute_degradation, compute_libration, compute_sun, compute_spreading_bistatic,
+    compute_polarization_offset, compute_mnr, ts as _ts,
 )
 from i18n import tr, set_language, get_language
 
-APP_VERSION = "1.8.4"
-APP_DATE = "2026-04-16"
+APP_VERSION = "1.9.0-alpha"
+APP_DATE = "2026-04-19"
 
 
 # ════════════════════════════════════════════
@@ -311,9 +312,9 @@ class MoonPredictionsWindow(QMainWindow):
         self._elMinTimer.setSingleShot(True)
         self._elMinTimer.setInterval(500)
         self._elMinTimer.timeout.connect(self._compute)
-        # Auto-refresh de la ligne MAINTENANT toutes les 10 secondes
+        # Auto-refresh temps reel de MAINTENANT (2 Hz, comme MoonSked Moon Track)
         self._nowRowTimer = QTimer()
-        self._nowRowTimer.setInterval(10000)
+        self._nowRowTimer.setInterval(500)
         self._nowRowTimer.timeout.connect(self._refreshNowRow)
 
         self._buildUI()
@@ -595,6 +596,25 @@ class MoonPredictionsWindow(QMainWindow):
         stationLayout.addWidget(self.spinAltitude)
 
         stationLayout.addSpacing(15)
+        stationLayout.addWidget(QLabel(tr("lbl_dx_locator")))
+        self.editDxLocator = QLineEdit()
+        self.editDxLocator.setPlaceholderText("JN48LL")
+        self.editDxLocator.setToolTip(tr("tip_dx_locator"))
+        self.editDxLocator.setMaximumWidth(90)
+        self.editDxLocator.textChanged.connect(self._onFilterChanged)
+        stationLayout.addWidget(self.editDxLocator)
+
+        stationLayout.addSpacing(15)
+        stationLayout.addWidget(QLabel(tr("lbl_pol_home")))
+        self.spinPolHome = QSpinBox()
+        self.spinPolHome.setRange(0, 180)
+        self.spinPolHome.setValue(90)
+        self.spinPolHome.setSuffix("\u00b0")
+        self.spinPolHome.setToolTip(tr("tip_pol_home"))
+        self.spinPolHome.valueChanged.connect(self._onFilterChanged)
+        stationLayout.addWidget(self.spinPolHome)
+
+        stationLayout.addSpacing(15)
         self.btnCompute = QPushButton(tr("btn_compute"))
         self.btnCompute.clicked.connect(self._compute)
         stationLayout.addWidget(self.btnCompute)
@@ -762,6 +782,10 @@ class MoonPredictionsWindow(QMainWindow):
             self._settings.value("locator", "", type=str))
         self.spinAltitude.setValue(
             self._settings.value("altitude", 0, type=int))
+        self.editDxLocator.setText(
+            self._settings.value("dx_locator", "", type=str))
+        self.spinPolHome.setValue(
+            self._settings.value("pol_home", 90, type=int))
         self.chkLocalTime.setChecked(
             self._settings.value("local_time", False, type=bool))
         self.sliderMinEl.setValue(
@@ -804,6 +828,8 @@ class MoonPredictionsWindow(QMainWindow):
         self._settings.setValue("callsign", self.editCallsign.text())
         self._settings.setValue("locator", self.editLocator.text())
         self._settings.setValue("altitude", self.spinAltitude.value())
+        self._settings.setValue("dx_locator", self.editDxLocator.text())
+        self._settings.setValue("pol_home", self.spinPolHome.value())
         self._settings.setValue(
             "local_time", self.chkLocalTime.isChecked())
         self._settings.setValue("slider_min_el", self.sliderMinEl.value())
@@ -1085,6 +1111,15 @@ class MoonPredictionsWindow(QMainWindow):
         # Ligne MAINTENANT : le spread est la valeur instantan\u00e9e actuelle,
         # dupliqu\u00e9e dans les 2 colonnes min/max (pas de plage pour une mesure
         # ponctuelle \u2014 seulement pour les passages futurs).
+        # Si DX configure : valeur bistatique, sinon monostatique Echo Width.
+        if getattr(self, "_dxLat", None) is not None:
+            spread = compute_spreading_bistatic(
+                self._lat, self._lon, self._alt_m,
+                self._dxLat, self._dxLon, 0, ts.now(), freq)
+            if visible:
+                if spread < 50: spr_col = QColor(t_colors["eme_green"])
+                elif spread < 150: spr_col = QColor(t_colors["eme_orange"])
+                else: spr_col = QColor(t_colors["eme_red"])
         now_time_local = datetime.now().strftime("%H:%M")
         spread_cell = f"{spread:.0f} Hz @ {now_time_local}" if visible else f"{spread:.0f} Hz"
         cells = [
@@ -1102,8 +1137,8 @@ class MoonPredictionsWindow(QMainWindow):
             (f"{total_pl:.1f} dB", pl_col),
             (f"{ms_angle:.0f}\u00b0", ms_col),
             (f"{lib_rate:.2f}\u00b0/h", lib_col),
-            (spread_cell, spr_col),  # Spread min (valeur courante)
-            (spread_cell, spr_col),  # Spread max (idem pour MAINTENANT)
+            (spread_cell, spr_col),  # min (mono ou bistatique selon DX)
+            (spread_cell, spr_col),  # max (meme valeur pour MAINTENANT)
             (f"{sq} {score:.1f}" if visible else "---", qc),
         ]
         if show_phase:
@@ -1175,6 +1210,23 @@ class MoonPredictionsWindow(QMainWindow):
             tr("col_spread_max", freq=freq_label),
             tr("col_quality"),
         ]
+        dx_locator = self.editDxLocator.text().strip()
+        self._dxLat = None
+        self._dxLon = None
+        self._dxLocatorDisplay = ""
+        if dx_locator:
+            try:
+                self._dxLat, self._dxLon = locator_to_latlon(dx_locator)
+                self._dxLocatorDisplay = dx_locator.upper()
+            except Exception:
+                self._dxLat = None
+        use_bistatic = self._dxLat is not None
+        # Quand DX configure : renommer 2 colonnes Echo Width min/max en Spreading min/max
+        if use_bistatic:
+            cols[-3] = tr("col_spreading_min", freq=freq_label,
+                          dx=self._dxLocatorDisplay)
+            cols[-2] = tr("col_spreading_max", freq=freq_label,
+                          dx=self._dxLocatorDisplay)
         if show_phase:
             cols.append(tr("col_phase"))
 
@@ -1296,9 +1348,23 @@ class MoonPredictionsWindow(QMainWindow):
             self.table.setItem(row, col, _make_item(
                 f"{lib_r:.2f}\u00b0/h", lib_col)); col += 1
 
-            # Doppler spread MIN (meilleur moment du passage)
-            spr_min = d.get("spread_min", d.get("doppler_spread", 0)) * freq / 10.368e9
+            # Spread MIN / MAX du passage
+            # Si DX configure : bistatique recalcule aux moments spread_min/max
+            # Sinon : monostatique (deja precompute par enrich_moon_pass)
             spr_min_dt = d.get("spread_min_time")
+            spr_max_dt = d.get("spread_max_time")
+            if use_bistatic and spr_min_dt is not None and spr_max_dt is not None:
+                t_min = _ts.from_datetime(spr_min_dt)
+                t_max = _ts.from_datetime(spr_max_dt)
+                spr_min = compute_spreading_bistatic(
+                    self._lat, self._lon, self._alt_m,
+                    self._dxLat, self._dxLon, 0, t_min, freq)
+                spr_max = compute_spreading_bistatic(
+                    self._lat, self._lon, self._alt_m,
+                    self._dxLat, self._dxLon, 0, t_max, freq)
+            else:
+                spr_min = d.get("spread_min", d.get("doppler_spread", 0)) * freq / 10.368e9
+                spr_max = d.get("spread_max", d.get("doppler_spread", 0)) * freq / 10.368e9
             if spr_min < 50: spr_min_col = QColor(tc["eme_green"])
             elif spr_min < 150: spr_min_col = QColor(tc["eme_orange"])
             else: spr_min_col = QColor(tc["eme_red"])
@@ -1309,9 +1375,6 @@ class MoonPredictionsWindow(QMainWindow):
                 min_txt = f"{spr_min:.0f} Hz"
             self.table.setItem(row, col, _make_item(min_txt, spr_min_col)); col += 1
 
-            # Doppler spread MAX (pire moment du passage)
-            spr_max = d.get("spread_max", d.get("doppler_spread", 0)) * freq / 10.368e9
-            spr_max_dt = d.get("spread_max_time")
             if spr_max < 50: spr_max_col = QColor(tc["eme_green"])
             elif spr_max < 150: spr_max_col = QColor(tc["eme_orange"])
             else: spr_max_col = QColor(tc["eme_red"])
@@ -1510,37 +1573,141 @@ class MoonPredictionsWindow(QMainWindow):
         if os.path.exists(icon_path):
             dlg.setWindowIcon(QIcon(icon_path))
 
+        # ── Layout MoonSked Moon Track style ──
+        # Style commun pour les "boxes" (QFrame avec bordure)
+        box_css = (
+            f"QFrame.mtBox {{ border: 1px solid {t['btn_border']}; "
+            f"border-radius: 4px; background-color: {t['bg_group']}; padding: 6px; }}"
+            f"QLabel.mtTitle {{ color: {t['fg_dim']}; font-size: 8pt; }}"
+            f"QLabel.mtBig {{ font-family: Consolas, monospace; "
+            f"font-size: 22pt; font-weight: bold; color: {t['link_color']}; }}"
+            f"QLabel.mtClock {{ font-family: Consolas, monospace; "
+            f"font-size: 28pt; font-weight: bold; color: {t['link_color']}; }}"
+        )
+        dlg.setStyleSheet(dlg.styleSheet() + box_css)
+
+        def make_box(title_text=None):
+            frm = QFrame()
+            frm.setObjectName("mtBox")
+            frm.setProperty("class", "mtBox")
+            frm.setFrameShape(QFrame.Shape.StyledPanel)
+            inner = QVBoxLayout(frm)
+            inner.setContentsMargins(8, 6, 8, 6)
+            inner.setSpacing(2)
+            if title_text:
+                lbl = QLabel(title_text)
+                lbl.setProperty("class", "mtTitle")
+                lbl.setStyleSheet(f"color: {t['fg_dim']}; font-size: 8pt;")
+                inner.addWidget(lbl)
+            return frm, inner
+
+        grid = QGridLayout()
+        grid.setSpacing(6)
+        # Colonnes equilibrees
+        grid.setColumnStretch(0, 1)
+        grid.setColumnStretch(1, 1)
+        grid.setColumnStretch(2, 1)
+
+        # Row 0 : Range | DGR/Sky/Spread | Geocentric ------------------
+        range_box, range_inner = make_box("Range")
+        range_val_lbl = QLabel()
+        range_val_lbl.setStyleSheet(f"font-size: 13pt; font-weight: bold; color: {t['link_color']};")
+        range_inner.addWidget(range_val_lbl)
+        grid.addWidget(range_box, 0, 0)
+
+        dgr_box, dgr_inner = make_box()
+        dgr_lbl = QLabel()
+        dgr_inner.addWidget(dgr_lbl)
+        grid.addWidget(dgr_box, 0, 1)
+
+        geo_box, geo_inner = make_box("Geocentric")
+        geo_lbl = QLabel()
+        geo_inner.addWidget(geo_lbl)
+        grid.addWidget(geo_box, 0, 2)
+
+        # Row 1 : perigee + date -----------------------------------------
+        perigee_lbl = QLabel()
+        perigee_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        perigee_lbl.setStyleSheet("font-size: 9pt;")
+        grid.addWidget(perigee_lbl, 1, 0, 1, 3)
+
+        # Row 2 : Home | UTC | DX ----------------------------------------
+        home_box, home_inner = make_box("Home")
+        home_lbl = QLabel()
+        home_inner.addWidget(home_lbl)
+        grid.addWidget(home_box, 2, 0)
+
+        utc_box, utc_inner = make_box("UTC")
+        utc_clock_lbl = QLabel()
+        utc_clock_lbl.setStyleSheet(
+            f"font-family: Consolas, monospace; font-size: 28pt; "
+            f"font-weight: bold; color: {t['link_color']};")
+        utc_clock_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        utc_inner.addWidget(utc_clock_lbl)
+        grid.addWidget(utc_box, 2, 1)
+
+        dx_box, dx_inner = make_box("DX")
+        dx_info_lbl = QLabel()
+        dx_inner.addWidget(dx_info_lbl)
+        grid.addWidget(dx_box, 2, 2)
+
+        # Row 3 : DX parameters horizontal -------------------------------
+        dx_row_frame = QFrame()
+        dx_row_frame.setFrameShape(QFrame.Shape.StyledPanel)
+        dx_row_frame.setStyleSheet(
+            f"QFrame {{ border: 1px solid {t['btn_border']}; border-radius: 4px; "
+            f"background-color: {t['bg_group']}; padding: 6px; }}")
+        dx_row_lay = QVBoxLayout(dx_row_frame)
+        dx_row_lay.setContentsMargins(8, 4, 8, 4)
+        dx_row_lbl = QLabel()
+        dx_row_lay.addWidget(dx_row_lbl)
+        grid.addWidget(dx_row_frame, 3, 0, 1, 3)
+
+        # Row 4 : Azimuth big | TX/RX | Elevation big --------------------
+        az_box, az_inner = make_box("Azimuth")
+        az_big_lbl = QLabel()
+        az_big_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        az_big_lbl.setStyleSheet(
+            f"font-family: Consolas, monospace; font-size: 22pt; "
+            f"font-weight: bold; color: {t['link_color']};")
+        az_inner.addWidget(az_big_lbl)
+        grid.addWidget(az_box, 4, 0)
+
+        txrx_box, txrx_inner = make_box()
+        txrx_inner.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        txrx_info_lbl = QLabel()
+        txrx_info_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        txrx_inner.addWidget(txrx_info_lbl)
+        grid.addWidget(txrx_box, 4, 1)
+
+        el_box, el_inner = make_box("Elevation")
+        el_big_lbl = QLabel()
+        el_big_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        el_big_lbl.setStyleSheet(
+            f"font-family: Consolas, monospace; font-size: 22pt; "
+            f"font-weight: bold;")
+        el_inner.addWidget(el_big_lbl)
+        grid.addWidget(el_box, 4, 2)
+
+        # Row 5 : Topocentric | RX Pol | TX Pol --------------------------
+        topo_box, topo_inner = make_box("Topocentric")
+        topo_lbl = QLabel()
+        topo_inner.addWidget(topo_lbl)
+        grid.addWidget(topo_box, 5, 0)
+
+        rxpol_box, rxpol_inner = make_box("RX Polarisation")
+        rxpol_lbl = QLabel()
+        rxpol_inner.addWidget(rxpol_lbl)
+        grid.addWidget(rxpol_box, 5, 1)
+
+        txpol_box, txpol_inner = make_box("TX Polarisation")
+        txpol_lbl = QLabel()
+        txpol_inner.addWidget(txpol_lbl)
+        grid.addWidget(txpol_box, 5, 2)
+
         lay = QVBoxLayout(dlg)
         lay.setSpacing(8)
-
-        # Creation des QLabels persistants (seront rafraichis par le timer)
-        hdr_lbl = QLabel()
-        lay.addWidget(hdr_lbl)
-
-        pos_box = QGroupBox(tr("now_grp_position"))
-        pos_lay = QVBoxLayout(pos_box)
-        pos_lbl = QLabel()
-        pos_lay.addWidget(pos_lbl)
-        lay.addWidget(pos_box)
-
-        rs_box = QGroupBox(tr("now_grp_riseset"))
-        rs_lay = QVBoxLayout(rs_box)
-        rs_lbl = QLabel()
-        rs_lay.addWidget(rs_lbl)
-        lay.addWidget(rs_box)
-
-        eme_box = QGroupBox(tr("now_grp_eme"))
-        eme_lay = QVBoxLayout(eme_box)
-        eme_lbl = QLabel()
-        eme_lay.addWidget(eme_lbl)
-        lay.addWidget(eme_box)
-
-        astro_box = QGroupBox(tr("now_grp_astro"))
-        astro_lay = QVBoxLayout(astro_box)
-        astro_lbl = QLabel()
-        astro_lay.addWidget(astro_lbl)
-        lay.addWidget(astro_box)
-
+        lay.addLayout(grid)
         lay.addStretch()
 
         # Indicateur de rafraichissement automatique
@@ -1563,17 +1730,15 @@ class MoonPredictionsWindow(QMainWindow):
         btnRow.addWidget(btnClose)
         lay.addLayout(btnRow)
 
-        # Fonction de mise a jour : recalcule tout et met a jour les QLabels
+        # Fonction de mise a jour : recalcule tout et remplit les widgets
+        # Layout MoonSked Moon Track (https://gm4jjj.co.uk)
         def update_content():
-            from moon_calc import _angular_sep_deg
             freq = self.comboFreq.currentData() or 10368e6
             freq_label = self.comboFreq.currentText()
             t_now = _ts.now()
             moon = compute_moon(self._lat, self._lon, self._alt_m,
-                                dist_reference=self._distRef,
+                                dist_reference="geo",
                                 horizon_degrees=self._effectiveHorizonDeg())
-            sun = compute_sun(self._lat, self._lon, self._alt_m,
-                              horizon_degrees=self._horizonDeg())
             lib = compute_libration(self._lat, self._lon, self._alt_m, t_now)
             deg = compute_degradation(self._lat, self._lon, self._alt_m,
                                         t_now, freq)
@@ -1581,102 +1746,170 @@ class MoonPredictionsWindow(QMainWindow):
             dsp = days_since_perigee(t_now)
 
             visible = moon["el"] > 0
-            use_local = self.chkLocalTime.isChecked()
-            tz_offset = _utc_offset() if use_local else timedelta(0)
-            tz_suffix = "" if use_local else " UTC"
-
-            # Horloge actuelle pour montrer que ca tourne
-            if use_local:
-                now_clock = datetime.now().strftime("%H:%M:%S")
-            else:
-                now_clock = datetime.now(timezone.utc).strftime("%H:%M:%S")
-
             status_color = t["eme_green"] if visible else t["eme_red"]
-            status_txt = tr("now_visible") if visible else tr("now_below")
-            hdr_lbl.setText(
-                f"<div style='font-size: 16pt; font-weight: bold;'>"
-                f"<span style='color:{t['now_visible_hi'] if visible else t['now_invisible_hi']};'>"
-                f"\u25cf {tr('now_label') if visible else tr('now_label_off')}</span>"
-                f"  <span style='color:{status_color};'>{status_txt}</span>"
-                f"  <span style='font-size: 10pt; color:{t['fg_dim']}; font-weight: normal;'>"
-                f"  \u2014  {now_clock}{tz_suffix}</span>"
-                f"</div>"
-            )
-            pos_lbl.setText(
-                f"<table cellpadding='4'>"
-                f"<tr><td><b>AZ :</b></td><td><span style='font-size:14pt;'>{moon['az']:.1f}\u00b0</span></td>"
-                f"<td width='30'></td>"
-                f"<td><b>EL :</b></td><td><span style='font-size:14pt; color:{status_color};'>{moon['el']:+.1f}\u00b0</span></td></tr>"
-                f"<tr><td><b>{tr('now_lbl_distance')} :</b></td><td>{moon['dist_km']:.0f} km</td>"
-                f"<td></td>"
-                f"<td><b>{tr('now_lbl_decl')} :</b></td><td>{ha['dec_deg']:+.2f}\u00b0</td></tr>"
-                f"<tr><td><b>{tr('now_lbl_phase')} :</b></td><td colspan='4'>{moon['phase_name']} ({moon['illumination']:.0f}%)</td></tr>"
-                f"</table>"
-            )
-            rise = moon.get("next_rise")
-            sett = moon.get("next_set")
-            rise_txt = ((rise + tz_offset).strftime("%H:%M") + tz_suffix) if rise else "---"
-            set_txt = ((sett + tz_offset).strftime("%H:%M") + tz_suffix) if sett else "---"
-            if rise and sett:
-                dur_min = abs((sett - rise).total_seconds() / 60.0)
-                dur_txt = f"{int(dur_min // 60)}h{int(dur_min % 60):02d}"
-            else:
-                dur_txt = "---"
-            rs_lbl.setText(
-                f"<table cellpadding='4'>"
-                f"<tr><td><b>{tr('col_rise')} :</b></td><td>{rise_txt}</td>"
-                f"<td width='30'></td>"
-                f"<td><b>{tr('col_set')} :</b></td><td>{set_txt}</td>"
-                f"<td width='30'></td>"
-                f"<td><b>{tr('col_duration')} :</b></td><td>{dur_txt}</td></tr>"
-                f"</table>"
-            )
-            eme_box.setTitle(f"{tr('now_grp_eme')} ({freq_label})")
-            dgr_db = deg["degradation_db"]
-            dgr_html = f"<span style='color:{t['eme_green'] if dgr_db < 1.0 else t['eme_orange'] if dgr_db < 3.0 else t['eme_red']};'>+{dgr_db:.2f} dB</span>"
-            tsky = deg["sky_temp_k"]
-            tsky_html = f"<span style='color:{t['eme_green'] if tsky < 10 else t['eme_orange'] if tsky < 50 else t['eme_red']};'>{tsky:.1f} K</span>"
-            dop = deg["doppler_hz"]
+
+            # DX info si configure
+            dx_text = self.editDxLocator.text().strip()
+            has_dx = False
+            dx_lat = dx_lon = 0
+            dx_az = dx_el = 0
+            dx_doppler = 0
+            pol_offset = 0
+            mnr = 0
+            if dx_text:
+                try:
+                    dx_lat, dx_lon = locator_to_latlon(dx_text)
+                    dx_moon = compute_moon(dx_lat, dx_lon, 0, dist_reference="topo")
+                    dx_az = dx_moon["az"]; dx_el = dx_moon["el"]
+                    dop_h = deg["doppler_hz"]  # home echo (2*vh*f/c)
+                    dop_d_raw = compute_degradation(dx_lat, dx_lon, 0, t_now, freq)
+                    dx_doppler = (dop_h + dop_d_raw["doppler_hz"]) / 2.0  # bistatique
+                    pol_offset = compute_polarization_offset(
+                        self._lat, self._lon, dx_lat, dx_lon, t_now)
+                    mnr = compute_mnr(pol_offset)
+                    has_dx = True
+                except Exception:
+                    pass
+
+            # Spread : monostatique ou bistatique
             spread = lib["doppler_spread_hz"] * freq / 10.368e9
-            spread_html = f"<span style='color:{t['eme_green'] if spread < 50 else t['eme_orange'] if spread < 150 else t['eme_red']};'>{spread:.0f} Hz</span>"
-            lib_r = lib["lib_rate"]
-            lib_html = f"<span style='color:{t['eme_green'] if lib_r < 0.10 else t['eme_orange'] if lib_r < 0.25 else t['eme_red']};'>{lib_r:.2f} \u00b0/h</span>"
+            spread_label = tr("now_lbl_spread")
+            if has_dx:
+                spread = compute_spreading_bistatic(
+                    self._lat, self._lon, self._alt_m,
+                    dx_lat, dx_lon, 0, t_now, freq)
+                spread_label = f"{tr('now_lbl_spreading')} \u2192 {dx_text.upper()}"
+
+            # Row 0 : Range / DGR + Sky + Spread / Geocentric
+            dgr_db = deg["degradation_db"]
             pl_extra = deg["path_loss_extra_db"]
-            pl_html = f"<span style='color:{t['eme_green'] if pl_extra < 1.0 else t['eme_orange'] if pl_extra < 2.0 else t['eme_red']};'>+{pl_extra:.2f} dB</span>"
-            ms_angle = _angular_sep_deg(moon["az"], moon["el"], sun["az"], sun["el"])
-            ms_html = f"<span style='color:{t['eme_red'] if ms_angle < 5 else t['eme_orange'] if ms_angle < 15 else t['eme_green']};'>{ms_angle:.0f}\u00b0</span>"
-            eme_lbl.setText(
-                f"<table cellpadding='4'>"
-                f"<tr><td><b>{tr('now_lbl_dgr')} :</b></td><td>{dgr_html}</td>"
-                f"<td width='30'></td>"
-                f"<td><b>{tr('now_lbl_tsky')} :</b></td><td>{tsky_html}</td></tr>"
-                f"<tr><td><b>{tr('now_lbl_doppler')} :</b></td><td>{dop:+.0f} Hz</td>"
-                f"<td></td>"
-                f"<td><b>{tr('now_lbl_echo')} :</b></td><td>{dop:+.0f} Hz</td></tr>"
-                f"<tr><td><b>{tr('now_lbl_spread')} :</b></td><td>{spread_html}</td>"
-                f"<td></td>"
-                f"<td><b>{tr('now_lbl_libration')} :</b></td><td>{lib_html}</td></tr>"
-                f"<tr><td><b>{tr('now_lbl_pl_extra')} :</b></td><td>{pl_html}</td>"
-                f"<td></td>"
-                f"<td><b>{tr('now_lbl_moonsun')} :</b></td><td>{ms_html}</td></tr>"
+            range_color = t["eme_green"] if pl_extra < 1.0 else t["eme_orange"] if pl_extra < 2.0 else t["eme_red"]
+            range_val_lbl.setText(
+                f"<span style='color:{range_color};'>{moon['dist_km']:,.0f} Km</span>  "
+                f"<span style='color:{t['fg_dim']}; font-size: 10pt;'>"
+                f"({pl_extra:+.2f} dB)</span>".replace(",", " ")
+            )
+            sp_color = t["eme_green"] if spread < 50 else t["eme_orange"] if spread < 150 else t["eme_red"]
+            tsky_val = deg["sky_temp_k"]
+            dgr_lbl.setText(
+                f"<table cellpadding='2'>"
+                f"<tr><td>Total DGR</td><td><b>{dgr_db:+.2f} dB</b></td></tr>"
+                f"<tr><td>Sky Temp</td><td><b>{tsky_val:.1f} K</b></td></tr>"
+                f"<tr><td>{spread_label}</td>"
+                f"<td><b><span style='color:{sp_color};'>{spread:.0f} Hz</span></b></td></tr>"
                 f"</table>"
             )
-            astro_lbl.setText(
-                f"<table cellpadding='4'>"
-                f"<tr><td><b>{tr('now_lbl_lha')} :</b></td><td>{ha['lha_deg']:+.2f}\u00b0</td>"
-                f"<td width='30'></td>"
-                f"<td><b>{tr('now_lbl_gha')} :</b></td><td>{ha['gha_deg']:.2f}\u00b0</td></tr>"
-                f"<tr><td><b>{tr('now_lbl_dsp')} :</b></td>"
-                f"<td colspan='4'>{dsp:.1f} {tr('now_lbl_days')}</td></tr>"
+            geo_lbl.setText(
+                f"<table cellpadding='2'>"
+                f"<tr><td>GHA</td><td><b>{ha['gha_deg']:.1f}\u00b0</b></td></tr>"
+                f"<tr><td>Decl</td><td><b>{ha['dec_deg']:+.1f}\u00b0</b></td></tr>"
                 f"</table>"
             )
+
+            # Row 1 : Days since perigee + date
+            date_lbl = datetime.now().strftime("%a %d %b %Y").lower()
+            perigee_lbl.setText(
+                f"<b>{dsp:.0f}</b> {tr('now_lbl_days_since_perigee')}"
+                f"  <span style='color:{t['fg_dim']};'>&nbsp;&nbsp;{date_lbl}</span>"
+            )
+
+            # Row 2 : Home / UTC / DX
+            home_callsign = (self.editCallsign.text().strip().upper() or
+                             self.editLocator.text().strip().upper() or "---")
+            home_lbl.setText(
+                f"<b>{home_callsign}</b><br>"
+                f"Lat <b>{self._lat:.2f}</b><br>"
+                f"Lon <b>{self._lon:.2f}</b>"
+            )
+            utc_clock_lbl.setText(datetime.now(timezone.utc).strftime("%H:%M:%S"))
+            if has_dx:
+                dx_info_lbl.setText(
+                    f"<b style='color:{t['link_color']};'>{dx_text.upper()}</b><br>"
+                    f"Lat <b>{dx_lat:.2f}</b><br>"
+                    f"Lon <b>{dx_lon:.2f}</b>"
+                )
+            else:
+                dx_info_lbl.setText(
+                    f"<span style='color:{t['fg_dim']};'>"
+                    f"{tr('now_hint_enter_dx')}</span>"
+                )
+
+            # Row 3 : DX data horizontal
+            if has_dx:
+                mnr_color = t["eme_green"] if mnr < 3 else t["eme_orange"] if mnr < 10 else t["eme_red"]
+                freq_mhz = int(freq / 1e6)
+                dx_row_lbl.setText(
+                    f"<b style='color:{t['fg_dim']};'>DX</b>  "
+                    f"&nbsp;&nbsp; Azimuth <b>{dx_az:.2f}\u00b0</b>"
+                    f"&nbsp;&nbsp; Elevation <b>{dx_el:+.2f}\u00b0</b>"
+                    f"&nbsp;&nbsp; {freq_mhz}MHz Doppler "
+                    f"<b>{dx_doppler:+.0f} Hz</b>"
+                    f"&nbsp;&nbsp; Polarity <b>{pol_offset:+.0f}\u00b0</b>"
+                    f"&nbsp;&nbsp; MNR <b><span style='color:{mnr_color};'>"
+                    f"{mnr:.0f} dB</span></b>"
+                )
+            else:
+                dx_row_lbl.setText(
+                    f"<b style='color:{t['fg_dim']};'>DX</b>  "
+                    f"<span style='color:{t['fg_dim']};'>"
+                    f"{tr('now_hint_enter_dx')}</span>"
+                )
+
+            # Row 4 : Azimuth | TX/RX | Elevation
+            az_big_lbl.setText(f"{moon['az']:.2f}\u00b0")
+            el_big_lbl.setText(
+                f"<span style='color:{status_color};'>{moon['el']:+.2f}\u00b0</span>"
+            )
+            # Sequence TX/RX (convention EAST, 2 min)
+            utc_now = datetime.now(timezone.utc)
+            total_sec = utc_now.minute * 60 + utc_now.second
+            is_tx = (total_sec // 120) % 2 == 0
+            tx_rx = "TX" if is_tx else "RX"
+            tx_color = t["eme_red"] if is_tx else t["eme_green"]
+            txrx_info_lbl.setText(
+                f"<div style='font-size: 9pt; color:{t['fg_dim']};'>EAST &nbsp;&nbsp; 2 Mins</div>"
+                f"<div style='font-family: Consolas, monospace; font-size: 18pt; "
+                f"font-weight: bold; color:{tx_color};'>{tx_rx}</div>"
+                f"<div style='font-size: 10pt;'>Home Echo</div>"
+                f"<div style='font-family: Consolas, monospace; font-weight: bold;'>"
+                f"{deg['doppler_hz']:+.0f} Hz</div>"
+            )
+
+            # Row 5 : Topocentric / RX Pol / TX Pol
+            topo_lbl.setText(
+                f"<table cellpadding='2'>"
+                f"<tr><td>LHA</td><td><b>{ha['lha_deg']:+.2f}\u00b0</b></td></tr>"
+                f"<tr><td>GHA</td><td><b>{ha['gha_deg']:.2f}\u00b0</b></td></tr>"
+                f"<tr><td>Decl</td><td><b>{ha['dec_deg']:+.2f}\u00b0</b></td></tr>"
+                f"</table>"
+            )
+            pol_h = self.spinPolHome.value()
+            home_pol_lbl = ("H" if pol_h == 0 else "V" if pol_h == 90
+                            else f"{pol_h}\u00b0")
+            rx_h = "\u25c9" if pol_h == 0 else "\u25cb"  # ◉ ou ○
+            rx_v = "\u25c9" if pol_h == 90 else "\u25cb"
+            rx_d = "\u25c9" if pol_h not in (0, 90) else "\u25cb"
+            rxpol_lbl.setText(
+                f"{rx_h} H &nbsp; {rx_v} V<br>"
+                f"{rx_d} Degrees <b>{pol_h}</b>\u00b0"
+            )
+            if has_dx:
+                # TX polarisation coté DX = home pol moins offset spatial
+                tx_pol_deg = ((pol_h - pol_offset) % 180 + 180) % 180
+                tx_pol_lbl_home = "H" if abs(tx_pol_deg) < 1 else "V" if abs(tx_pol_deg - 90) < 1 else f"{tx_pol_deg:.0f}\u00b0"
+                txpol_lbl.setText(
+                    f"<b>{tx_pol_lbl_home}</b><br>"
+                    f"{pol_offset:+.0f}\u00b0"
+                )
+            else:
+                txpol_lbl.setText(f"<span style='color:{t['fg_dim']};'>—</span>")
 
         # Rendu initial
         update_content()
 
-        # Auto-refresh toutes les 10 secondes
+        # Auto-refresh temps reel (2 Hz, comme MoonSked Moon Track)
         refresh_timer = QTimer(dlg)
-        refresh_timer.setInterval(10000)
+        refresh_timer.setInterval(500)
         refresh_timer.timeout.connect(update_content)
         refresh_timer.start()
         # Le timer est parent du dlg -> auto-destroyed a la fermeture
