@@ -283,8 +283,8 @@ export function computeLibration(lat, lon, altM, t) {
   };
 }
 
-// Taux de libration |omega| en deg/h vu d'un observateur donne
-function librationRateAt(observer, t) {
+// Vecteur de libration (dlon, dlat) en deg/h vu d'un observateur
+function librationRateVec(observer, t) {
   const dtDays = 0.5 / 24;
   const tm = t.AddDays(-dtDays);
   const tp = t.AddDays(+dtDays);
@@ -293,15 +293,19 @@ function librationRateAt(observer, t) {
   let dlon = l2 - l1;
   if (dlon > 180) dlon -= 360;
   if (dlon < -180) dlon += 360;
-  const dlat = b2 - b1;
-  return Math.sqrt(dlon * dlon + dlat * dlat);
+  return { dlon, dlat: b2 - b1 };
+}
+
+// Magnitude du taux de libration |omega| (deg/h)
+function librationRateAt(observer, t) {
+  const v = librationRateVec(observer, t);
+  return Math.sqrt(v.dlon * v.dlon + v.dlat * v.dlat);
 }
 
 // Spreading Doppler bistatique Home -> Lune -> DX en Hz.
-// Convention SA5IKN EME Observer / MoonSked :
-//   Rel LR = |rate_home - rate_dx| / 2 (deg/h)
-//   DX Width = 4 * f * (Rel LR en m/s) * R / c = 2 * f * |v_h - v_d| * R / c
-// Base sur la DIFFERENCE (parallaxe + libration diurne), pas la somme.
+// Formule calee sur SA5IKN EME Observer numeriquement :
+//   Rel LR = |rate_home - rate_dx| / 2 (deg/h, scalaire)
+//   DX Width = 2 * f * |v_h - v_d| * R / c
 export function computeSpreadingBistatic(latH, lonH, altH, latD, lonD, altD, t,
     freqHz = 10368e6) {
   const obsH = new Observer(latH, lonH, altH);

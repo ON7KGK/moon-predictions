@@ -724,6 +724,15 @@ def compute_libration(lat: float, lon: float, alt_m: float,
 
 def _libration_rate_at(observer, t_sky) -> float:
     """Retourne le taux de libration |omega| en deg/h vu par 'observer' a t_sky."""
+    dlon, dlat = _libration_rate_vec(observer, t_sky)
+    return math.sqrt(dlon * dlon + dlat * dlat)
+
+
+def _libration_rate_vec(observer, t_sky):
+    """Vecteur de libration (dlon/dt, dlat/dt) en deg/h vu par 'observer'.
+
+    Derivee centree sur +-30 min (soit 1h de delta total).
+    """
     dt = 0.5 / 24  # 30 min
     t1 = ts.tt_jd(t_sky.tt - dt)
     t2 = ts.tt_jd(t_sky.tt + dt)
@@ -733,7 +742,7 @@ def _libration_rate_at(observer, t_sky) -> float:
     if dlon > 180: dlon -= 360
     if dlon < -180: dlon += 360
     dlat = lat2 - lat1
-    return math.sqrt(dlon * dlon + dlat * dlat)
+    return dlon, dlat
 
 
 def _pol_hustig(lat: float, az: float, el: float) -> float:
@@ -823,8 +832,11 @@ def compute_spreading_bistatic(lat_h: float, lon_h: float, alt_h: float,
     loc_d = wgs84.latlon(lat_d, lon_d, elevation_m=alt_d)
     obs_h = eph['earth'] + loc_h
     obs_d = eph['earth'] + loc_d
-    rate_h = _libration_rate_at(obs_h, t_sky)  # deg/h
+    rate_h = _libration_rate_at(obs_h, t_sky)  # deg/h (magnitude scalaire)
     rate_d = _libration_rate_at(obs_d, t_sky)
+    # Difference scalaire des magnitudes : calee numeriquement sur SA5IKN
+    # Pour JO20BM <-> EM23MG a 19:23 UTC :
+    #   rate_h = 0.078, rate_d = 0.150, |diff| = 0.072 -> 41 Hz match SA5IKN 44.
     R_MOON = 1737.4  # km
     v_h = rate_h * R_MOON * math.pi / 180 * 1000 / 3600  # m/s
     v_d = rate_d * R_MOON * math.pi / 180 * 1000 / 3600
