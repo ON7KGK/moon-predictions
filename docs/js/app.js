@@ -464,8 +464,34 @@ function exportPdf() {
 
 // ─── Bindings ─────────────────────────────────────────────────────
 
+// Parametres optionnels via query string (pour utilisateurs qui purgent
+// les cookies a la fermeture du navigateur). Ne remplace JAMAIS une valeur
+// deja renseignee par l'utilisateur, seulement les champs vides.
+// Exemple : ?lang=fr&call=ON7KGK&locator=JO20BM&alt=118&dx=JN48LL&pol=90
+function applyQueryParams() {
+  try {
+    const qp = new URLSearchParams(window.location.search);
+    const fillIfEmpty = (id, value) => {
+      if (!value) return;
+      const el = $(id);
+      if (el && !el.value) el.value = value;
+    };
+    const lang = qp.get("lang");
+    if (lang && ["fr", "nl", "en"].includes(lang)) {
+      const sel = $("#lang");
+      if (sel) sel.value = lang;
+    }
+    fillIfEmpty("#callsign", qp.get("call"));
+    fillIfEmpty("#locator", qp.get("locator"));
+    fillIfEmpty("#altitude", qp.get("alt"));
+    fillIfEmpty("#dx-locator", qp.get("dx"));
+    fillIfEmpty("#pol-home", qp.get("pol"));
+  } catch (e) {}
+}
+
 async function init() {
   loadPrefs();
+  applyQueryParams();
   await loadLanguage($("#lang").value || "fr");
   applyTheme();
 
