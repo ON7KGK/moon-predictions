@@ -806,14 +806,18 @@ def compute_spreading_bistatic(lat_h: float, lon_h: float, alt_h: float,
                                t_sky, freq_hz: float = 10368e6) -> float:
     """Spreading Doppler bistatique Home -> Lune -> DX en Hz.
 
-    Convention MoonSked (GM4JJJ), calee sur leurs captures :
-        Spreading = f * (v_home + v_dx) * R_moon / c
-    ou v_X = taux_libration_vu_de_X * R_moon en m/s.
+    Convention SA5IKN EME Observer et MoonSked :
+        Rel LR = |rate_home - rate_dx| / 2  (en deg/h)
+        DX Width = 4 * f * (Rel LR en m/s) * R / c
+                 = 2 * f * |v_home - v_dx| * R / c
 
-    Note : notre "Echo Width" monostatique reste en peak-to-peak
-    (4 * f * v * R / c), qui est la definition physique K1JT/G3WDG.
-    La "Spreading" bistatique MoonSked vaut environ la moitie de
-    l'Echo Width quand DX = Home (convention half-width differente).
+    Le signal bistatique voit la Lune tourner relativement differemment
+    chez Home et DX (parallaxe + libration diurne). Le spreading Doppler
+    depend de cette DIFFERENCE de taux, pas de la somme.
+
+    Cas limite : Home = DX -> |diff| = 0 -> Spreading = 0 Hz. C'est
+    coherent car un home-echo pur n'a pas de composante "relative" ;
+    utiliser "Echo Width" monostatique (4*f*v*R/c) dans ce cas.
     """
     loc_h = wgs84.latlon(lat_h, lon_h, elevation_m=alt_h)
     loc_d = wgs84.latlon(lat_d, lon_d, elevation_m=alt_d)
@@ -824,7 +828,7 @@ def compute_spreading_bistatic(lat_h: float, lon_h: float, alt_h: float,
     R_MOON = 1737.4  # km
     v_h = rate_h * R_MOON * math.pi / 180 * 1000 / 3600  # m/s
     v_d = rate_d * R_MOON * math.pi / 180 * 1000 / 3600
-    return freq_hz * (v_h + v_d) / 3e8
+    return 2.0 * freq_hz * abs(v_h - v_d) / 3e8
 
 
 def enrich_moon_pass(lat: float, lon: float, alt_m: float,

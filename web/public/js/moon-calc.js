@@ -298,8 +298,10 @@ function librationRateAt(observer, t) {
 }
 
 // Spreading Doppler bistatique Home -> Lune -> DX en Hz.
-// Convention MoonSked (GM4JJJ) : f * (v_home + v_dx) * R_moon / c.
-// Notre Echo Width monostatique (4*f*v*R/c) reste en peak-to-peak.
+// Convention SA5IKN EME Observer / MoonSked :
+//   Rel LR = |rate_home - rate_dx| / 2 (deg/h)
+//   DX Width = 4 * f * (Rel LR en m/s) * R / c = 2 * f * |v_h - v_d| * R / c
+// Base sur la DIFFERENCE (parallaxe + libration diurne), pas la somme.
 export function computeSpreadingBistatic(latH, lonH, altH, latD, lonD, altD, t,
     freqHz = 10368e6) {
   const obsH = new Observer(latH, lonH, altH);
@@ -309,7 +311,7 @@ export function computeSpreadingBistatic(latH, lonH, altH, latD, lonD, altD, t,
   const rateD = librationRateAt(obsD, t0);
   const vH = rateH * R_MOON_KM * Math.PI / 180 * 1000 / 3600;
   const vD = rateD * R_MOON_KM * Math.PI / 180 * 1000 / 3600;
-  return freqHz * (vH + vD) / C_LIGHT;
+  return 2.0 * freqHz * Math.abs(vH - vD) / C_LIGHT;
 }
 
 // ─── Polarisation spatiale & MNR ─────────────────────────────────
