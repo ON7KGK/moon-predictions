@@ -190,5 +190,8 @@
   "now_lbl_mnr_hint": "< 3 dB : goed / 3-10 dB : risico / > 10 dB : one-way waarschijnlijk",
   "now_grp_polarization": "Polarisatie",
   "now_lbl_days_since_perigee": "dagen sinds perigeum",
-  "now_hint_enter_dx": "voer een DX-locator in"
+  "now_hint_enter_dx": "voer een DX-locator in",
+  "tip_tx_pol_box": "TX-polarisatie van uw station en ruimtelijke rotatie naar DX.\n\nRegel 1 : Home polarisatie (V/H/slant).\nΔ : Huidig ruimtelijk verschil Home-DX (±90°).\nΣ : Cumulatieve rotatie sinds venster open.",
+  "tip_tx_pol_inst": "Huidig ruimtelijk verschil (±90°)",
+  "tip_tx_pol_cum": "Cumulatieve rotatie sinds venster open"
 }

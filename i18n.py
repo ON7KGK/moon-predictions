@@ -26,6 +26,34 @@ _STRINGS = {
     "now_lbl_pol_home": {"fr": "Pol Home", "nl": "Pol Home", "en": "Home Pol"},
     "now_lbl_pol_dx": {"fr": "Pol vue chez DX", "nl": "Pol gezien bij DX", "en": "Pol seen at DX"},
     "now_lbl_pol_offset": {"fr": "Decalage spatial", "nl": "Ruimtelijk verschil", "en": "Spatial offset"},
+    "tip_tx_pol_box": {
+        "fr": "Polarisation TX de votre station et rotation spatiale vers le DX.\n\n"
+              "Ligne 1 : polarisation Home (V/H/slant).\n"
+              "\u0394 : d\u00e9calage spatial instantan\u00e9 Home-DX (\u00b190\u00b0).\n"
+              "\u03a3 : rotation cumul\u00e9e depuis l'ouverture de cette fen\u00eatre\n"
+              "     (non-born\u00e9e, \u00e9quivalent au 'TX Polarisation degrees'\n"
+              "     de MoonSked qui peut d\u00e9passer \u00b1180\u00b0).",
+        "nl": "TX-polarisatie van uw station en ruimtelijke rotatie naar DX.\n\n"
+              "Regel 1 : Home polarisatie (V/H/slant).\n"
+              "\u0394 : Huidig ruimtelijk verschil Home-DX (\u00b190\u00b0).\n"
+              "\u03a3 : Cumulatieve rotatie sinds venster open.",
+        "en": "Your station's TX polarization and spatial rotation to DX.\n\n"
+              "Line 1: Home polarization (V/H/slant).\n"
+              "\u0394 : Current spatial offset Home-DX (\u00b190\u00b0).\n"
+              "\u03a3 : Accumulated rotation since this window opened\n"
+              "     (unbounded, equivalent to MoonSked's 'TX Polarisation\n"
+              "     degrees' which may exceed \u00b1180\u00b0).",
+    },
+    "tip_tx_pol_inst": {
+        "fr": "D\u00e9calage spatial instantan\u00e9 entre Home et DX (\u00b190\u00b0)",
+        "nl": "Huidig ruimtelijk verschil (\u00b190\u00b0)",
+        "en": "Current spatial offset (\u00b190\u00b0)",
+    },
+    "tip_tx_pol_cum": {
+        "fr": "Rotation cumul\u00e9e depuis ouverture fen\u00eatre (non-born\u00e9e)",
+        "nl": "Cumulatieve rotatie sinds venster open",
+        "en": "Accumulated rotation since window opened",
+    },
     "now_lbl_mnr": {"fr": "MNR (non-reciprocite max)", "nl": "MNR (max niet-wederkerigheid)", "en": "MNR (max non-reciprocity)"},
     "now_lbl_mnr_hint": {
         "fr": "&lt; 3 dB : bon / 3-10 dB : a risque / &gt; 10 dB : one-way probable",

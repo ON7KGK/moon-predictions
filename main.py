@@ -1699,9 +1699,13 @@ class MoonPredictionsWindow(QMainWindow):
         grid.addWidget(rxpol_box, 5, 1)
 
         txpol_box, txpol_inner = make_box("TX Polarisation")
+        txpol_box.setToolTip(tr("tip_tx_pol_box"))
         txpol_lbl = QLabel()
         txpol_inner.addWidget(txpol_lbl)
         grid.addWidget(txpol_box, 5, 2)
+        # Tracking rotation polarisation cumulee depuis ouverture modale
+        dlg._pol_cum_last = None
+        dlg._pol_cum_total = 0.0
 
         lay = QVBoxLayout(dlg)
         lay.setSpacing(8)
@@ -1895,15 +1899,34 @@ class MoonPredictionsWindow(QMainWindow):
             )
             if has_dx:
                 # Convention MoonSked : ligne 1 = polarisation Home (V/H/slant),
-                # ligne 2 = decalage spatial (= valeur "Polarity" de la ligne DX).
+                # ligne 2 = decalage spatial instantane (= Polarity ligne DX),
+                # ligne 3 = rotation cumulee depuis ouverture modale (unwrapped,
+                # proche de ce que MoonSked affiche comme angle non-borne).
                 if pol_h == 0: home_pol_lbl2 = "H"
                 elif pol_h == 90: home_pol_lbl2 = "V"
                 else: home_pol_lbl2 = f"{pol_h}\u00b0"
+                # Tracking unwrapped : accumuler les delta entre updates
+                if dlg._pol_cum_last is None:
+                    dlg._pol_cum_last = pol_offset
+                    dlg._pol_cum_total = pol_offset
+                else:
+                    delta = pol_offset - dlg._pol_cum_last
+                    if delta > 90: delta -= 180
+                    elif delta < -90: delta += 180
+                    dlg._pol_cum_total += delta
+                    dlg._pol_cum_last = pol_offset
+                tip_inst = tr("tip_tx_pol_inst")
+                tip_cum = tr("tip_tx_pol_cum")
                 txpol_lbl.setText(
                     f"<b>{home_pol_lbl2}</b><br>"
-                    f"{pol_offset:+.0f}\u00b0"
+                    f"<span title='{tip_inst}'>"
+                    f"\u0394 {pol_offset:+.0f}\u00b0</span><br>"
+                    f"<span style='color:{t['fg_dim']}; font-size: 0.85em;' "
+                    f"title='{tip_cum}'>"
+                    f"\u03a3 {dlg._pol_cum_total:+.0f}\u00b0</span>"
                 )
             else:
+                dlg._pol_cum_last = None
                 txpol_lbl.setText(f"<span style='color:{t['fg_dim']};'>—</span>")
 
         # Rendu initial

@@ -43,6 +43,9 @@ function openModal(contentNode, wide = false, narrow = false, extra = "") {
 
 // Timer d'auto-refresh pour le dialog NowDetail (nettoye a la fermeture)
 let _nowRefreshTimer = null;
+// Tracking rotation polarisation cumulee (reinit a chaque ouverture modale)
+let _polCumLast = null;
+let _polCumTotal = 0;
 
 export function closeModal() {
   $("#modal-overlay").classList.add("hidden");
@@ -50,6 +53,8 @@ export function closeModal() {
     clearInterval(_nowRefreshTimer);
     _nowRefreshTimer = null;
   }
+  _polCumLast = null;
+  _polCumTotal = 0;
 }
 
 function closeBtn() {
@@ -393,7 +398,22 @@ async function _renderNowDetailBody(body, state, refreshHint) {
       dxLatLbl = dxInfo.lat.toFixed(2);
       // Convention MoonSked : longitude West-positive (inverse du geographique E+)
       dxLonLbl = (-dxInfo.lon).toFixed(2);
+      // Tracking rotation cumulee (unwrapped) depuis ouverture modale
+      if (_polCumLast === null) {
+        _polCumLast = polOff;
+        _polCumTotal = polOff;
+      } else {
+        let delta = polOff - _polCumLast;
+        if (delta > 90) delta -= 180;
+        else if (delta < -90) delta += 180;
+        _polCumTotal += delta;
+        _polCumLast = polOff;
+      }
+    } else {
+      _polCumLast = null;
+      _polCumTotal = 0;
     }
+    const polCumTotal = _polCumTotal;
     const mnrCls = mnr < 3 ? "eme-green" : mnr < 10 ? "eme-orange" : "eme-red";
 
     // TX/RX indicateur (convention EAST, periode 2 min : premieres 2 min TX, 2 min RX)
@@ -510,9 +530,13 @@ async function _renderNowDetailBody(body, state, refreshHint) {
           <input type="number" id="mt-rxpol-deg" min="0" max="180" value="${polHomeDeg}" style="width:50px;"></div>
         </div>
 
-        <div class="mt-box mt-txpol">
+        <div class="mt-box mt-txpol" title="${tr('tip_tx_pol_box').replace(/"/g, '&quot;')}">
           <div class="mt-title">TX Polarisation</div>
-          ${hasDx ? `<div><b>${homePolLbl}</b></div><div>${polOff >= 0 ? "+" : ""}${polOff.toFixed(0)}°</div>` : `<div style="color: var(--fg-dim);">—</div>`}
+          ${hasDx ? `
+            <div><b>${homePolLbl}</b></div>
+            <div title="${tr('tip_tx_pol_inst').replace(/"/g, '&quot;')}">Δ ${polOff >= 0 ? "+" : ""}${polOff.toFixed(0)}°</div>
+            <div style="color: var(--fg-dim); font-size: 0.85em;" title="${tr('tip_tx_pol_cum').replace(/"/g, '&quot;')}">Σ ${polCumTotal >= 0 ? "+" : ""}${polCumTotal.toFixed(0)}°</div>
+          ` : `<div style="color: var(--fg-dim);">—</div>`}
         </div>
 
       </div>

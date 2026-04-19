@@ -190,5 +190,8 @@
   "now_lbl_mnr_hint": "< 3 dB : good / 3-10 dB : risky / > 10 dB : one-way likely",
   "now_grp_polarization": "Polarization",
   "now_lbl_days_since_perigee": "days since perigee",
-  "now_hint_enter_dx": "enter a DX locator"
+  "now_hint_enter_dx": "enter a DX locator",
+  "tip_tx_pol_box": "Your station's TX polarization and spatial rotation to DX.\n\nLine 1: Home polarization (V/H/slant).\nΔ : Current spatial offset Home-DX (±90°).\nΣ : Accumulated rotation since this window opened\n    (unbounded, equivalent to MoonSked's 'TX Polarisation\n    degrees' which may exceed ±180°).",
+  "tip_tx_pol_inst": "Current spatial offset (±90°)",
+  "tip_tx_pol_cum": "Accumulated rotation since window opened"
 }
