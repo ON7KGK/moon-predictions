@@ -465,27 +465,31 @@ function exportPdf() {
 // ─── Bindings ─────────────────────────────────────────────────────
 
 // Parametres optionnels via query string (pour utilisateurs qui purgent
-// les cookies a la fermeture du navigateur). Ne remplace JAMAIS une valeur
-// deja renseignee par l'utilisateur, seulement les champs vides.
+// les cookies a la fermeture du navigateur).
+// - Si localStorage vide (cookies purges / 1re visite) : URL remplit TOUT
+// - Sinon : URL ne remplit que les champs texte vides (respecte les prefs)
 // Exemple : ?lang=fr&call=ON7KGK&locator=JO20BM&alt=118&dx=JN48LL&pol=90
 function applyQueryParams() {
   try {
     const qp = new URLSearchParams(window.location.search);
-    const fillIfEmpty = (id, value) => {
-      if (!value) return;
+    const hasPrefs = localStorage.getItem(LS_KEY) !== null;
+    const fill = (id, value) => {
+      if (value == null || value === "") return;
       const el = $(id);
-      if (el && !el.value) el.value = value;
+      if (!el) return;
+      // Si pas de prefs sauvegardees -> remplit meme si valeur par defaut
+      if (!hasPrefs || !el.value) el.value = value;
     };
     const lang = qp.get("lang");
-    if (lang && ["fr", "nl", "en"].includes(lang)) {
+    if (lang && ["fr", "nl", "en"].includes(lang) && !hasPrefs) {
       const sel = $("#lang");
       if (sel) sel.value = lang;
     }
-    fillIfEmpty("#callsign", qp.get("call"));
-    fillIfEmpty("#locator", qp.get("locator"));
-    fillIfEmpty("#altitude", qp.get("alt"));
-    fillIfEmpty("#dx-locator", qp.get("dx"));
-    fillIfEmpty("#pol-home", qp.get("pol"));
+    fill("#callsign", qp.get("call"));
+    fill("#locator", qp.get("locator"));
+    fill("#altitude", qp.get("alt"));
+    fill("#dx-locator", qp.get("dx"));
+    fill("#pol-home", qp.get("pol"));
   } catch (e) {}
 }
 
