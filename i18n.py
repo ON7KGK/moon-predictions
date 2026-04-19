@@ -141,6 +141,16 @@ _STRINGS = {
     "now_lbl_gha": {"fr": "GHA (Greenwich)", "nl": "GHA (Greenwich)", "en": "GHA (Greenwich)"},
     "now_lbl_dsp": {"fr": "Jours depuis le p\u00e9rig\u00e9e", "nl": "Dagen sinds perigeum", "en": "Days since perigee"},
     "now_lbl_days": {"fr": "jours", "nl": "dagen", "en": "days"},
+    "now_lbl_days_since_perigee": {
+        "fr": "jours depuis p\u00e9rig\u00e9e",
+        "nl": "dagen sinds perigeum",
+        "en": "Days since Perigee",
+    },
+    "now_hint_enter_dx": {
+        "fr": "entrez un locator DX",
+        "nl": "voer een DX-locator in",
+        "en": "enter a DX locator",
+    },
     "col_day_time": {"fr": "Heure", "nl": "Tijd", "en": "Time"},
     "col_az": {"fr": "AZ", "nl": "AZ", "en": "AZ"},
     "col_el": {"fr": "EL", "nl": "EL", "en": "EL"},

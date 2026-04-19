@@ -27,10 +27,10 @@ function getPolHome() {
 
 // ─── Helpers ──────────────────────────────────────────────────────
 
-function openModal(contentNode, wide = false, narrow = false) {
+function openModal(contentNode, wide = false, narrow = false, extra = "") {
   const overlay = $("#modal-overlay");
   const content = $("#modal-content");
-  content.className = `modal-content${wide ? " wide" : ""}${narrow ? " narrow" : ""}`;
+  content.className = `modal-content${wide ? " wide" : ""}${narrow ? " narrow" : ""}${extra ? " " + extra : ""}`;
   content.innerHTML = "";
   content.appendChild(contentNode);
   overlay.classList.remove("hidden");
@@ -281,7 +281,7 @@ export async function showNowDetail(state) {
   }, "");
   content.appendChild(refreshHint);
   content.appendChild(closeBtn());
-  openModal(content, true);
+  openModal(content, false, false, "moontrack");
 
   // Premier rendu immediat
   await _renderNowDetailBody(body, state, refreshHint);

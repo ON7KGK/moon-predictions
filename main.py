@@ -1555,34 +1555,28 @@ class MoonPredictionsWindow(QMainWindow):
         t = _theme()
         dlg = QDialog(self)
         dlg.setWindowTitle(tr("now_detail_title"))
-        # Taille confortable
-        parent_size = self.size()
-        dlg.resize(int(parent_size.width() * 0.6),
-                   int(parent_size.height() * 0.75))
-        dlg.setMinimumSize(700, 620)
+        # Police : suit le reglage utilisateur (taille de base pour tout le dialog)
+        base_pt = self.spinFontSize.value()
+        # Echelle des grosses polices (clock, AZ/EL) basee sur base_pt
+        big_pt = int(base_pt * 2.2)
+        clock_pt = int(base_pt * 2.6)
+        # Taille compacte, proche de MoonSked (~650x450)
+        dlg.setMinimumSize(640, 440)
+        dlg.resize(720, 500)
         dlg.setStyleSheet(
-            f"QDialog {{ background-color: {t['bg_main']}; color: {t['fg_text']}; }}"
+            f"QDialog {{ background-color: {t['bg_main']}; color: {t['fg_text']};"
+            f" font-size: {base_pt}pt; }}"
             f"QLabel {{ color: {t['fg_text']}; }}"
-            f"QGroupBox {{ border: 1px solid {t['btn_border']}; "
-            f"border-radius: 4px; margin-top: 12px; padding-top: 16px; "
-            f"font-weight: bold; color: {t['fg_header']}; }}"
-            f"QGroupBox::title {{ subcontrol-origin: margin; "
-            f"left: 10px; padding: 0 6px; }}"
         )
         icon_path = _get_icon_path()
         if os.path.exists(icon_path):
             dlg.setWindowIcon(QIcon(icon_path))
 
-        # ── Layout MoonSked Moon Track style ──
-        # Style commun pour les "boxes" (QFrame avec bordure)
+        # ── Layout MoonSked Moon Track style (compact) ──
+        title_pt = max(7, int(base_pt * 0.8))
         box_css = (
             f"QFrame.mtBox {{ border: 1px solid {t['btn_border']}; "
-            f"border-radius: 4px; background-color: {t['bg_group']}; padding: 6px; }}"
-            f"QLabel.mtTitle {{ color: {t['fg_dim']}; font-size: 8pt; }}"
-            f"QLabel.mtBig {{ font-family: Consolas, monospace; "
-            f"font-size: 22pt; font-weight: bold; color: {t['link_color']}; }}"
-            f"QLabel.mtClock {{ font-family: Consolas, monospace; "
-            f"font-size: 28pt; font-weight: bold; color: {t['link_color']}; }}"
+            f"border-radius: 3px; background-color: {t['bg_group']}; }}"
         )
         dlg.setStyleSheet(dlg.styleSheet() + box_css)
 
@@ -1592,17 +1586,18 @@ class MoonPredictionsWindow(QMainWindow):
             frm.setProperty("class", "mtBox")
             frm.setFrameShape(QFrame.Shape.StyledPanel)
             inner = QVBoxLayout(frm)
-            inner.setContentsMargins(8, 6, 8, 6)
-            inner.setSpacing(2)
+            inner.setContentsMargins(6, 4, 6, 4)
+            inner.setSpacing(1)
             if title_text:
                 lbl = QLabel(title_text)
-                lbl.setProperty("class", "mtTitle")
-                lbl.setStyleSheet(f"color: {t['fg_dim']}; font-size: 8pt;")
+                lbl.setStyleSheet(
+                    f"color: {t['fg_dim']}; font-size: {title_pt}pt;")
                 inner.addWidget(lbl)
             return frm, inner
 
         grid = QGridLayout()
-        grid.setSpacing(6)
+        grid.setSpacing(4)
+        grid.setContentsMargins(4, 4, 4, 4)
         # Colonnes equilibrees
         grid.setColumnStretch(0, 1)
         grid.setColumnStretch(1, 1)
@@ -1611,7 +1606,9 @@ class MoonPredictionsWindow(QMainWindow):
         # Row 0 : Range | DGR/Sky/Spread | Geocentric ------------------
         range_box, range_inner = make_box("Range")
         range_val_lbl = QLabel()
-        range_val_lbl.setStyleSheet(f"font-size: 13pt; font-weight: bold; color: {t['link_color']};")
+        range_val_lbl.setStyleSheet(
+            f"font-size: {int(base_pt * 1.2)}pt; font-weight: bold; "
+            f"color: {t['link_color']};")
         range_inner.addWidget(range_val_lbl)
         grid.addWidget(range_box, 0, 0)
 
@@ -1640,7 +1637,7 @@ class MoonPredictionsWindow(QMainWindow):
         utc_box, utc_inner = make_box("UTC")
         utc_clock_lbl = QLabel()
         utc_clock_lbl.setStyleSheet(
-            f"font-family: Consolas, monospace; font-size: 28pt; "
+            f"font-family: Consolas, monospace; font-size: {clock_pt}pt; "
             f"font-weight: bold; color: {t['link_color']};")
         utc_clock_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         utc_inner.addWidget(utc_clock_lbl)
@@ -1668,7 +1665,7 @@ class MoonPredictionsWindow(QMainWindow):
         az_big_lbl = QLabel()
         az_big_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         az_big_lbl.setStyleSheet(
-            f"font-family: Consolas, monospace; font-size: 22pt; "
+            f"font-family: Consolas, monospace; font-size: {big_pt}pt; "
             f"font-weight: bold; color: {t['link_color']};")
         az_inner.addWidget(az_big_lbl)
         grid.addWidget(az_box, 4, 0)
@@ -1684,7 +1681,7 @@ class MoonPredictionsWindow(QMainWindow):
         el_big_lbl = QLabel()
         el_big_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
         el_big_lbl.setStyleSheet(
-            f"font-family: Consolas, monospace; font-size: 22pt; "
+            f"font-family: Consolas, monospace; font-size: {big_pt}pt; "
             f"font-weight: bold;")
         el_inner.addWidget(el_big_lbl)
         grid.addWidget(el_box, 4, 2)
@@ -1867,10 +1864,12 @@ class MoonPredictionsWindow(QMainWindow):
             tx_rx = "TX" if is_tx else "RX"
             tx_color = t["eme_red"] if is_tx else t["eme_green"]
             txrx_info_lbl.setText(
-                f"<div style='font-size: 9pt; color:{t['fg_dim']};'>EAST &nbsp;&nbsp; 2 Mins</div>"
-                f"<div style='font-family: Consolas, monospace; font-size: 18pt; "
+                f"<div style='font-size: {title_pt}pt; color:{t['fg_dim']};'>"
+                f"EAST &nbsp;&nbsp; 2 Mins</div>"
+                f"<div style='font-family: Consolas, monospace; "
+                f"font-size: {int(base_pt * 1.5)}pt; "
                 f"font-weight: bold; color:{tx_color};'>{tx_rx}</div>"
-                f"<div style='font-size: 10pt;'>Home Echo</div>"
+                f"<div>Home Echo</div>"
                 f"<div style='font-family: Consolas, monospace; font-weight: bold;'>"
                 f"{deg['doppler_hz']:+.0f} Hz</div>"
             )
