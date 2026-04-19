@@ -1817,14 +1817,14 @@ class MoonPredictionsWindow(QMainWindow):
             home_lbl.setText(
                 f"<b>{home_callsign}</b><br>"
                 f"Lat <b>{self._lat:.2f}</b><br>"
-                f"Lon <b>{self._lon:.2f}</b>"
+                f"Lon <b>{-self._lon:.2f}</b>"
             )
             utc_clock_lbl.setText(datetime.now(timezone.utc).strftime("%H:%M:%S"))
             if has_dx:
                 dx_info_lbl.setText(
                     f"<b style='color:{t['link_color']};'>{dx_text.upper()}</b><br>"
                     f"Lat <b>{dx_lat:.2f}</b><br>"
-                    f"Lon <b>{dx_lon:.2f}</b>"
+                    f"Lon <b>{-dx_lon:.2f}</b>"
                 )
             else:
                 dx_info_lbl.setText(

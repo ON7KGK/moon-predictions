@@ -391,7 +391,8 @@ async function _renderNowDetailBody(body, state, refreshHint) {
       polHomeDeg = getPolHome();
       mnr = computeMnr(polOff);
       dxLatLbl = dxInfo.lat.toFixed(2);
-      dxLonLbl = dxInfo.lon.toFixed(2);
+      // Convention MoonSked : longitude West-positive (inverse du geographique E+)
+      dxLonLbl = (-dxInfo.lon).toFixed(2);
     }
     const mnrCls = mnr < 3 ? "eme-green" : mnr < 10 ? "eme-orange" : "eme-red";
 
@@ -409,7 +410,8 @@ async function _renderNowDetailBody(body, state, refreshHint) {
 
     // Home locator + lat/lon
     const homeLatLbl = hLat.toFixed(2);
-    const homeLonLbl = hLon.toFixed(2);
+    // Convention MoonSked : longitude West-positive (inverse du geographique E+)
+    const homeLonLbl = (-hLon).toFixed(2);
 
     // Range DGR mini (juste le path loss extra, convention MoonSked)
     const rangeDgrMini = `(${(deg.pathLossExtraDb).toFixed(2)}dB)`;
