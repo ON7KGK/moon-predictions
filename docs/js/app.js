@@ -464,24 +464,22 @@ function exportPdf() {
 
 // ─── Bindings ─────────────────────────────────────────────────────
 
-// Parametres optionnels via query string (pour utilisateurs qui purgent
-// les cookies a la fermeture du navigateur).
-// - Si localStorage vide (cookies purges / 1re visite) : URL remplit TOUT
-// - Sinon : URL ne remplit que les champs texte vides (respecte les prefs)
+// Parametres optionnels via query string.
+// PRIORITE : les parametres d'URL ecrasent TOUJOURS les valeurs
+// localStorage si presents. Pratique pour :
+//  - utilisateurs qui purgent leurs cookies
+//  - liens pre-remplis partages entre EMEers (ex: "vers ON7KGK JO20BM")
 // Exemple : ?lang=fr&call=ON7KGK&locator=JO20BM&el=118&dx=JN48LL&pol=90
 function applyQueryParams() {
   try {
     const qp = new URLSearchParams(window.location.search);
-    const hasPrefs = localStorage.getItem(LS_KEY) !== null;
     const fill = (id, value) => {
       if (value == null || value === "") return;
       const el = $(id);
-      if (!el) return;
-      // Si pas de prefs sauvegardees -> remplit meme si valeur par defaut
-      if (!hasPrefs || !el.value) el.value = value;
+      if (el) el.value = value;
     };
     const lang = qp.get("lang");
-    if (lang && ["fr", "nl", "en"].includes(lang) && !hasPrefs) {
+    if (lang && ["fr", "nl", "en"].includes(lang)) {
       const sel = $("#lang");
       if (sel) sel.value = lang;
     }
