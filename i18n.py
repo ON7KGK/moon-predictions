@@ -175,9 +175,9 @@ _STRINGS = {
         "en": "Days since Perigee",
     },
     "now_hint_enter_dx": {
-        "fr": "entrez un locator DX",
-        "nl": "voer een DX-locator in",
-        "en": "enter a DX locator",
+        "fr": "entrez un locator DX dans la barre du haut pour voir les donn\u00e9es bistatiques",
+        "nl": "voer een DX-locator in de bovenste balk voor bistatische gegevens",
+        "en": "enter a DX locator in the main window top bar for bistatic data",
     },
     "col_day_time": {"fr": "Heure", "nl": "Tijd", "en": "Time"},
     "col_az": {"fr": "AZ", "nl": "AZ", "en": "AZ"},
