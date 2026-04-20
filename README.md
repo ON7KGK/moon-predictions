@@ -52,7 +52,7 @@ GitHub Pages variant (client-side only): <https://on7kgk.github.io/moon-predicti
   - Topocentric · RX polarisation · TX polarisation
 - Updates at **2 Hz** (500 ms) like MoonSked
 - URL query parameters (for users who purge cookies):
-  `?lang=en&call=ON7KGK&locator=JO20BM&alt=118&dx=JN48LL&pol=90`
+  `?lang=en&call=ON7KGK&locator=JO20BM&el=118&dx=JN48LL&pol=90`
 
 ### Download
 
@@ -184,7 +184,7 @@ License: GPL-3.0
   - Topocentrique · polarisation RX · polarisation TX
 - Rafraîchissement **2 Hz** (500 ms) comme MoonSked
 - Paramètres d'URL (pour utilisateurs qui purgent leurs cookies) :
-  `?lang=fr&call=ON7KGK&locator=JO20BM&alt=118&dx=JN48LL&pol=90`
+  `?lang=fr&call=ON7KGK&locator=JO20BM&el=118&dx=JN48LL&pol=90`
 
 ### Téléchargement
 

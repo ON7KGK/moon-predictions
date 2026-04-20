@@ -468,7 +468,7 @@ function exportPdf() {
 // les cookies a la fermeture du navigateur).
 // - Si localStorage vide (cookies purges / 1re visite) : URL remplit TOUT
 // - Sinon : URL ne remplit que les champs texte vides (respecte les prefs)
-// Exemple : ?lang=fr&call=ON7KGK&locator=JO20BM&alt=118&dx=JN48LL&pol=90
+// Exemple : ?lang=fr&call=ON7KGK&locator=JO20BM&el=118&dx=JN48LL&pol=90
 function applyQueryParams() {
   try {
     const qp = new URLSearchParams(window.location.search);
@@ -487,7 +487,8 @@ function applyQueryParams() {
     }
     fill("#callsign", qp.get("call"));
     fill("#locator", qp.get("locator"));
-    fill("#altitude", qp.get("alt"));
+    // "el" (nouveau) ou "alt" (legacy, retrocompat)
+    fill("#altitude", qp.get("el") || qp.get("alt"));
     fill("#dx-locator", qp.get("dx"));
     fill("#pol-home", qp.get("pol"));
   } catch (e) {}
