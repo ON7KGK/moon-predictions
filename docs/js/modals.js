@@ -522,12 +522,9 @@ async function _renderNowDetailBody(body, state, refreshHint) {
           <div>Decl <b>${ha.decDeg >= 0 ? "+" : ""}${ha.decDeg.toFixed(2)}°</b></div>
         </div>
 
-        <div class="mt-box mt-rxpol">
+        <div class="mt-box mt-rxpol" id="mt-rxpol-box">
           <div class="mt-title">RX Polarisation</div>
-          <label><input type="radio" name="mt-rxpol" ${polHomeDeg === 0 ? "checked" : ""} value="0"> H</label>
-          <label><input type="radio" name="mt-rxpol" ${polHomeDeg === 90 ? "checked" : ""} value="90"> V</label>
-          <div><label><input type="radio" name="mt-rxpol" value="deg" ${polHomeDeg !== 0 && polHomeDeg !== 90 ? "checked" : ""}> Degrees</label>
-          <input type="number" id="mt-rxpol-deg" min="0" max="180" value="${polHomeDeg}" style="width:50px;"></div>
+          <!-- Contenu injecte une seule fois (voir wiring ci-dessous) -->
         </div>
 
         <div class="mt-box mt-txpol" title="${tr('tip_tx_pol_box').replace(/"/g, '&quot;')}">
@@ -542,21 +539,55 @@ async function _renderNowDetailBody(body, state, refreshHint) {
       </div>
     `;
 
-    // Wiring : radio H/V/Deg modifie le pol Home input principal
-    const mtRxDeg = body.querySelector("#mt-rxpol-deg");
-    body.querySelectorAll('input[name="mt-rxpol"]').forEach(r => {
-      r.addEventListener("change", () => {
-        if (r.value === "0") $("#pol-home").value = "0";
-        else if (r.value === "90") $("#pol-home").value = "90";
-        else if (r.value === "deg" && mtRxDeg) $("#pol-home").value = mtRxDeg.value;
-        $("#pol-home").dispatchEvent(new Event("change"));
+    // RX Polarisation : creer les radios UNE SEULE FOIS, puis sync leur etat
+    // a chaque refresh SAUF si l'utilisateur interagit (focus sur input num).
+    const rxBox = body.querySelector("#mt-rxpol-box");
+    if (rxBox && !rxBox.dataset.built) {
+      rxBox.dataset.built = "1";
+      const controls = document.createElement("div");
+      controls.innerHTML = `
+        <label style="display:inline-block; margin-right:6px;">
+          <input type="radio" name="mt-rxpol" value="0"> H</label>
+        <label style="display:inline-block; margin-right:6px;">
+          <input type="radio" name="mt-rxpol" value="90"> V</label>
+        <div>
+          <label><input type="radio" name="mt-rxpol" value="deg"> Degrees</label>
+          <input type="number" id="mt-rxpol-deg" min="0" max="180" value="${polHomeDeg}" style="width:50px;">
+        </div>`;
+      rxBox.appendChild(controls);
+      const mtRxDeg = rxBox.querySelector("#mt-rxpol-deg");
+      rxBox.querySelectorAll('input[name="mt-rxpol"]').forEach(r => {
+        r.addEventListener("change", () => {
+          if (r.value === "0") $("#pol-home").value = "0";
+          else if (r.value === "90") $("#pol-home").value = "90";
+          else if (r.value === "deg" && mtRxDeg) $("#pol-home").value = mtRxDeg.value;
+          $("#pol-home").dispatchEvent(new Event("change"));
+        });
       });
-    });
-    if (mtRxDeg) {
-      mtRxDeg.addEventListener("change", () => {
-        $("#pol-home").value = mtRxDeg.value;
-        $("#pol-home").dispatchEvent(new Event("change"));
-      });
+      if (mtRxDeg) {
+        mtRxDeg.addEventListener("input", () => {
+          // Quand utilisateur tape : passer en mode Degrees + propager
+          const degRadio = rxBox.querySelector('input[value="deg"]');
+          if (degRadio) degRadio.checked = true;
+          $("#pol-home").value = mtRxDeg.value;
+          $("#pol-home").dispatchEvent(new Event("change"));
+        });
+      }
+    }
+    // Sync l'etat visuel des radios avec polHomeDeg, mais eviter d'ecraser
+    // l'input numerique si l'utilisateur est en train de taper dedans.
+    if (rxBox) {
+      const hRadio = rxBox.querySelector('input[value="0"]');
+      const vRadio = rxBox.querySelector('input[value="90"]');
+      const dRadio = rxBox.querySelector('input[value="deg"]');
+      const degInput = rxBox.querySelector("#mt-rxpol-deg");
+      if (hRadio) hRadio.checked = (polHomeDeg === 0);
+      if (vRadio) vRadio.checked = (polHomeDeg === 90);
+      if (dRadio) dRadio.checked = (polHomeDeg !== 0 && polHomeDeg !== 90);
+      // Ne pas ecraser la valeur saisie si le champ est focus
+      if (degInput && document.activeElement !== degInput) {
+        degInput.value = polHomeDeg;
+      }
     }
     if (refreshHint) {
       refreshHint.textContent = tr("refresh_hint");
