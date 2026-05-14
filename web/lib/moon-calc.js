@@ -431,12 +431,10 @@ export function getMoonPasses(lat, lon, altM,
   const tStartReq = MakeTime(new Date(Date.now() + startOffsetHours * 3600 * 1000));
   const endTt = tStartReq.tt + hours / 24;
 
-  // Si la Lune est deja levee au debut de la fenetre, reculer la recherche
-  // d'1 jour pour inclure le passage en cours (comme moon_calc.py).
-  const { el: elStart } = moonAltAzDist(observer, tStartReq);
-  const searchStart = elStart > horizonDegrees
-    ? tStartReq.AddDays(-1)
-    : tStartReq;
+  // Toujours reculer la recherche d'1 jour pour inclure :
+  //  - le passage en cours (Lune deja levee)
+  //  - le passage du jour deja termine (Lune redescendue ce matin)
+  const searchStart = tStartReq.AddDays(-1);
 
   const passes = [];
   let current = searchStart;
@@ -452,8 +450,9 @@ export function getMoonPasses(lat, lon, altM,
       set = SearchRiseSet(Body.Moon, observer, -1, rise, 2, horizonDegrees);
     } catch (e) { set = null; }
     if (!set) break;
-    // Ignorer les passages entierement avant le debut de la fenetre
-    if (set.tt < tStartReq.tt) {
+    // Ignorer uniquement les passages termines depuis plus de 24h
+    // (on garde celui du jour meme s'il s'est acheve ce matin).
+    if (set.tt < tStartReq.tt - 1.0) {
       current = set.AddDays(0.001);
       continue;
     }
